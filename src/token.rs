@@ -108,7 +108,7 @@ impl fmt::Display for Token<'_> {
     }
 }
 
-pub(crate) fn lex_with_output(input: &'_ str) -> Vec<Token<'_>> {
+pub(crate) fn lex_with_output(input: &str) -> Vec<Token<'_>> {
     let mut lex = Token::lexer(input);
     let mut tokens = Vec::new();
 

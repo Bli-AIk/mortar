@@ -1,7 +1,8 @@
 use crate::handler::file_handler::FileHandler;
-use crate::token::lex_with_output;
+use crate::parser::ParseHandler;
 
 mod handler;
+mod parser;
 mod token;
 mod tests;
 
@@ -16,5 +17,13 @@ fn main() {
 
     println!("{}", content);
 
-    lex_with_output(&content);
+    let program = match ParseHandler::parse_source_code(&content) {
+        Ok(program) => program,
+        Err(err) => {
+            eprintln!("Parse error: {}", err);
+            return;
+        },
+    };
+
+    println!("Parsed successfully: {:#?}", program);
 }
