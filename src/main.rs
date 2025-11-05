@@ -3,6 +3,7 @@ use crate::token::lex_with_output;
 
 mod handler;
 mod token;
+mod tests;
 
 fn main() {
     let path = "hello.mortar";

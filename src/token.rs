@@ -1,4 +1,3 @@
-mod test;
 
 use logos::Logos;
 use owo_colors::OwoColorize;
@@ -16,9 +15,8 @@ pub(crate) enum Token<'a> {
 
     // region Keywords
     #[token("node")]
-    Node,
     #[token("nd")]
-    Nd,
+    Node,
     #[token("text")]
     Text,
     #[token("events")]
@@ -84,7 +82,6 @@ impl fmt::Display for Token<'_> {
             Error => write!(f, "Error"),
 
             Node => write!(f, "node"),
-            Nd => write!(f, "nd"),
             Text => write!(f, "text"),
             Events => write!(f, "events"),
             Choice => write!(f, "choice"),
