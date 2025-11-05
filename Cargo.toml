@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+ariadne = "0.6.0"
+chumsky = "0.11.1"
+clap = "4.5.51"
+logos = "0.15.1"
+owo-colors = "4.2.3"
