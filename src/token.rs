@@ -11,6 +11,7 @@ use std::fmt;
 // Multi-line comments
 #[logos(skip r"/\*([^*]|\*[^/])*\*/")]
 pub(crate) enum Token<'a> {
+    #[allow(dead_code)]
     Error,
 
     // region Keywords
@@ -109,13 +110,13 @@ impl fmt::Display for Token<'_> {
 }
 
 pub(crate) fn lex_with_output(input: &str) -> Vec<Token<'_>> {
-    let mut lex = Token::lexer(input);
+    let lex = Token::lexer(input);
     let mut tokens = Vec::new();
 
     println!();
     println!("{}", "(Mortar) Lexer output:".green());
 
-    while let Some(result) = lex.next() {
+    for result in lex {
         match result {
             Ok(token) => {
                 print!("{:?} ", token);

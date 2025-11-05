@@ -116,11 +116,11 @@ impl<'a> Parser<'a> {
         self.current >= self.tokens.len()
     }
 
-    fn peek(&self) -> Option<&Token> {
+    fn peek(&self) -> Option<&Token<'_>> {
         self.tokens.get(self.current)
     }
 
-    fn advance(&mut self) -> Option<&Token> {
+    fn advance(&mut self) -> Option<&Token<'_>> {
         if !self.is_at_end() {
             self.current += 1;
         }
@@ -135,7 +135,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn consume(&mut self, expected: &Token, error_msg: &str) -> Result<&Token, String> {
+    fn consume(&mut self, expected: &Token, error_msg: &str) -> Result<&Token<'_>, String> {
         if self.check(expected) {
             Ok(self.advance().unwrap())
         } else {
@@ -296,9 +296,7 @@ impl<'a> Parser<'a> {
         };
 
         // Parse optional condition
-        let condition = if self.check(&Token::When) {
-            Some(self.parse_choice_cond()?)
-        } else if self.check(&Token::Dot) && self.tokens.get(self.current + 1) == Some(&Token::When) {
+        let condition = if self.check(&Token::When) || (self.check(&Token::Dot) && self.tokens.get(self.current + 1) == Some(&Token::When)) {
             Some(self.parse_choice_cond()?)
         } else {
             None
