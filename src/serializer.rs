@@ -1,0 +1,297 @@
+use crate::parser::*;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use std::path::Path;
+
+#[derive(Serialize, Deserialize)]
+pub struct MortaredOutput {
+    metadata: Metadata,
+    nodes: Vec<JsonNode>,
+    functions: Vec<JsonFunction>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Metadata {
+    scene: String,
+    version: String,
+    generated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonNode {
+    name: String,
+    texts: Vec<JsonText>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    next: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    choice: Option<Vec<JsonChoice>>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonText {
+    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    events: Option<Vec<JsonEvent>>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct JsonEvent {
+    index: f64,
+    actions: Vec<JsonAction>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct JsonAction {
+    #[serde(rename = "type")]
+    action_type: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    args: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonChoice {
+    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    condition: Option<JsonCondition>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    next: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    action: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    choice: Option<Vec<JsonChoice>>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonCondition {
+    #[serde(rename = "type")]
+    condition_type: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    args: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonFunction {
+    name: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    params: Vec<JsonParam>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "return")]
+    return_type: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonParam {
+    name: String,
+    #[serde(rename = "type")]
+    param_type: String,
+}
+
+pub struct Serializer;
+
+impl Serializer {
+    pub fn serialize_to_json(program: &Program, scene_name: &str) -> Result<String, String> {
+        let mortared = Self::convert_program_to_mortared(program, scene_name)?;
+        serde_json::to_string_pretty(&mortared).map_err(|e| format!("Serialization error: {}", e))
+    }
+
+    pub fn save_to_file(program: &Program, input_path: &str) -> Result<(), String> {
+        let input_path = Path::new(input_path);
+        let scene_name = input_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown");
+        
+        let json_content = Self::serialize_to_json(program, scene_name)?;
+        
+        let output_path = input_path.with_extension("mortared");
+        std::fs::write(&output_path, json_content)
+            .map_err(|e| format!("Failed to write file {}: {}", output_path.display(), e))?;
+        
+        println!("Generated: {}", output_path.display());
+        Ok(())
+    }
+
+    fn convert_program_to_mortared(program: &Program, scene_name: &str) -> Result<MortaredOutput, String> {
+        let metadata = Metadata {
+            scene: scene_name.to_string(),
+            version: "0.1.0".to_string(),
+            generated_at: Utc::now(),
+        };
+
+        let mut nodes = Vec::new();
+        let mut functions = Vec::new();
+
+        for top_level in &program.body {
+            match top_level {
+                TopLevel::NodeDef(node_def) => {
+                    nodes.push(Self::convert_node_def(node_def)?);
+                }
+                TopLevel::FunctionDecl(func_decl) => {
+                    functions.push(Self::convert_function_decl(func_decl));
+                }
+            }
+        }
+
+        Ok(MortaredOutput {
+            metadata,
+            nodes,
+            functions,
+        })
+    }
+
+    fn convert_node_def(node_def: &NodeDef) -> Result<JsonNode, String> {
+        let mut texts = Vec::new();
+        let mut choices = None;
+
+        // Group texts and events, separate choices
+        let mut current_text: Option<String> = None;
+        let mut current_events: Vec<JsonEvent> = Vec::new();
+
+        for stmt in &node_def.body {
+            match stmt {
+                NodeStmt::Text(text) => {
+                    // If we have a current text, save it first
+                    if let Some(text_content) = current_text.take() {
+                        texts.push(JsonText {
+                            text: text_content,
+                            events: if current_events.is_empty() { None } else { Some(current_events.clone()) },
+                        });
+                        current_events.clear();
+                    }
+                    current_text = Some(text.clone());
+                }
+                NodeStmt::Events(events) => {
+                    // Convert events and associate with current text
+                    for event in events {
+                        current_events.push(Self::convert_event(event)?);
+                    }
+                }
+                NodeStmt::Choice(choice_items) => {
+                    // Save any pending text first
+                    if let Some(text_content) = current_text.take() {
+                        texts.push(JsonText {
+                            text: text_content,
+                            events: if current_events.is_empty() { None } else { Some(current_events.clone()) },
+                        });
+                        current_events.clear();
+                    }
+                    
+                    let mut json_choices = Vec::new();
+                    for item in choice_items {
+                        json_choices.push(Self::convert_choice_item(item)?);
+                    }
+                    choices = Some(json_choices);
+                }
+            }
+        }
+
+        // Don't forget the last text if any
+        if let Some(text_content) = current_text {
+            texts.push(JsonText {
+                text: text_content,
+                events: if current_events.is_empty() { None } else { Some(current_events) },
+            });
+        }
+
+        let next = match &node_def.jump {
+            Some(NodeJump::Identifier(name)) => Some(name.clone()),
+            _ => None,
+        };
+
+        Ok(JsonNode {
+            name: node_def.name.clone(),
+            texts,
+            next,
+            choice: choices,
+        })
+    }
+
+    fn convert_event(event: &Event) -> Result<JsonEvent, String> {
+        let mut actions = vec![Self::convert_func_call_to_action(&event.action.call)?];
+        
+        // Add chained actions
+        for chain_call in &event.action.chains {
+            actions.push(Self::convert_func_call_to_action(chain_call)?);
+        }
+
+        Ok(JsonEvent {
+            index: event.index,
+            actions,
+        })
+    }
+
+    fn convert_func_call_to_action(func_call: &FuncCall) -> Result<JsonAction, String> {
+        let mut args = Vec::new();
+        
+        for arg in &func_call.args {
+            match arg {
+                Arg::String(s) => args.push(s.clone()),
+                Arg::Number(n) => args.push(n.to_string()),
+                Arg::Identifier(id) => args.push(id.clone()),
+                Arg::FuncCall(_) => return Err("Nested function calls in arguments not supported in JSON output".to_string()),
+            }
+        }
+
+        Ok(JsonAction {
+            action_type: func_call.name.clone(),
+            args,
+        })
+    }
+
+    fn convert_choice_item(choice_item: &ChoiceItem) -> Result<JsonChoice, String> {
+        let condition = match &choice_item.condition {
+            Some(Condition::Identifier(id)) => Some(JsonCondition {
+                condition_type: id.clone(),
+                args: Vec::new(),
+            }),
+            Some(Condition::FuncCall(func_call)) => Some(JsonCondition {
+                condition_type: func_call.name.clone(),
+                args: func_call.args.iter().map(|arg| match arg {
+                    Arg::String(s) => s.clone(),
+                    Arg::Number(n) => n.to_string(),
+                    Arg::Identifier(id) => id.clone(),
+                    Arg::FuncCall(_) => "nested_call".to_string(), // Simplified
+                }).collect(),
+            }),
+            None => None,
+        };
+
+        let (next, action, nested_choice) = match &choice_item.target {
+            ChoiceDest::Identifier(name) => (Some(name.clone()), None, None),
+            ChoiceDest::Return => (None, Some("return".to_string()), None),
+            ChoiceDest::Break => (None, Some("break".to_string()), None),
+            ChoiceDest::NestedChoices(nested_items) => {
+                let mut nested_choices = Vec::new();
+                for item in nested_items {
+                    nested_choices.push(Self::convert_choice_item(item)?);
+                }
+                (None, None, Some(nested_choices))
+            }
+        };
+
+        Ok(JsonChoice {
+            text: choice_item.text.clone(),
+            condition,
+            next,
+            action,
+            choice: nested_choice,
+        })
+    }
+
+    fn convert_function_decl(func_decl: &FunctionDecl) -> JsonFunction {
+        let params = func_decl
+            .params
+            .iter()
+            .map(|param| JsonParam {
+                name: param.name.clone(),
+                param_type: param.type_name.clone(),
+            })
+            .collect();
+
+        JsonFunction {
+            name: func_decl.name.clone(),
+            params,
+            return_type: func_decl.return_type.clone(),
+        }
+    }
+}

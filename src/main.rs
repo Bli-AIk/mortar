@@ -1,8 +1,10 @@
 use crate::handler::file_handler::FileHandler;
 use crate::parser::ParseHandler;
+use crate::serializer::Serializer;
 
 mod handler;
 mod parser;
+mod serializer;
 mod token;
 mod tests;
 
@@ -25,5 +27,11 @@ fn main() {
         },
     };
 
-    println!("Parsed successfully: {:#?}", program);
+    println!("Parsed successfully!");
+
+    // Generate .mortared file
+    match Serializer::save_to_file(&program, path) {
+        Ok(()) => println!("Successfully generated .mortared file"),
+        Err(err) => eprintln!("Failed to generate .mortared file: {}", err),
+    }
 }
