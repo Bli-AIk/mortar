@@ -12,7 +12,6 @@ pub struct MortaredOutput {
 
 #[derive(Serialize, Deserialize)]
 struct Metadata {
-    scene: String,
     version: String,
     generated_at: DateTime<Utc>,
 }
@@ -89,19 +88,14 @@ struct JsonParam {
 pub struct Serializer;
 
 impl Serializer {
-    pub fn serialize_to_json(program: &Program, scene_name: &str) -> Result<String, String> {
-        let mortared = Self::convert_program_to_mortared(program, scene_name)?;
+    pub fn serialize_to_json(program: &Program) -> Result<String, String> {
+        let mortared = Self::convert_program_to_mortared(program)?;
         serde_json::to_string_pretty(&mortared).map_err(|e| format!("Serialization error: {}", e))
     }
 
     pub fn save_to_file(program: &Program, input_path: &str) -> Result<(), String> {
         let input_path = Path::new(input_path);
-        let scene_name = input_path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("unknown");
-        
-        let json_content = Self::serialize_to_json(program, scene_name)?;
+        let json_content = Self::serialize_to_json(program)?;
         
         let output_path = input_path.with_extension("mortared");
         std::fs::write(&output_path, json_content)
@@ -111,9 +105,8 @@ impl Serializer {
         Ok(())
     }
 
-    fn convert_program_to_mortared(program: &Program, scene_name: &str) -> Result<MortaredOutput, String> {
+    fn convert_program_to_mortared(program: &Program) -> Result<MortaredOutput, String> {
         let metadata = Metadata {
-            scene: scene_name.to_string(),
             version: "0.1.0".to_string(),
             generated_at: Utc::now(),
         };
