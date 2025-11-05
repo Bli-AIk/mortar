@@ -92,11 +92,7 @@ mod tests {
     #[test]
     fn test_comments_ignored() {
         let input = "node // single line comment\n text /* multi-line comment */ events";
-        let expected = vec![
-            Token::Node,
-            Token::Text,
-            Token::Events,
-        ];
+        let expected = vec![Token::Node, Token::Text, Token::Events];
 
         let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
         assert_eq!(tokens, expected);
@@ -105,11 +101,7 @@ mod tests {
     #[test]
     fn test_whitespace_ignored() {
         let input = "  node\t\ttext\r\n  events  ";
-        let expected = vec![
-            Token::Node,
-            Token::Text,
-            Token::Events,
-        ];
+        let expected = vec![Token::Node, Token::Text, Token::Events];
 
         let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
         assert_eq!(tokens, expected);
@@ -120,7 +112,7 @@ mod tests {
         let input = r#"node start {
             text: "Hello world"
         }"#;
-        
+
         let expected = vec![
             Token::Node,
             Token::Identifier("start"),
@@ -157,7 +149,7 @@ mod tests {
             0, play_sound("greeting.wav")
             6.5, set_animation("wave")
         ]"#;
-        
+
         let expected = vec![
             Token::Events,
             Token::Colon,
@@ -187,7 +179,7 @@ mod tests {
             "Option 1" -> node1,
             "Option 2" when condition -> node2
         ]"#;
-        
+
         let expected = vec![
             Token::Choice,
             Token::Colon,
@@ -252,7 +244,7 @@ mod tests {
             ]
         } -> choice_point
         "#;
-        
+
         let expected = vec![
             Token::Node,
             Token::Identifier("start"),
@@ -297,7 +289,7 @@ mod tests {
             "Exit" -> return,
             "Stop" -> break
         ]"#;
-        
+
         let expected = vec![
             Token::Choice,
             Token::Colon,
@@ -324,12 +316,12 @@ mod tests {
     fn test_error_handling() {
         let input = "node start { @invalid_symbol }";
         let mut lexer = Token::lexer(input);
-        
+
         //Token parsed normally
         assert_eq!(lexer.next(), Some(Ok(Token::Node)));
         assert_eq!(lexer.next(), Some(Ok(Token::Identifier("start"))));
         assert_eq!(lexer.next(), Some(Ok(Token::LeftBrace)));
-        
+
         // Invalid symbols should generate an error
         assert_eq!(lexer.next(), Some(Err(())));
     }
@@ -353,7 +345,7 @@ mod tests {
             text: "Hello"
         }
         "#;
-        
+
         let expected = vec![
             Token::Node,
             Token::Identifier("start"),
@@ -368,7 +360,7 @@ mod tests {
         assert_eq!(tokens, expected);
     }
 
-    #[test] 
+    #[test]
     fn test_empty_string() {
         let input = r#""""#;
         let expected = vec![Token::String("")];
@@ -399,7 +391,7 @@ mod tests {
         // Test that lex_with_output function does not crash
         let input = "node test { text: \"Hello\" }";
         let tokens = lex_with_output(input);
-        
+
         // Check whether the number of tokens returned is correct
         assert_eq!(tokens.len(), 7);
         assert_eq!(tokens[0], Token::Node);

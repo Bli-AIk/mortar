@@ -1,4 +1,3 @@
-
 use logos::Logos;
 use owo_colors::OwoColorize;
 use std::fmt;

@@ -96,11 +96,11 @@ impl Serializer {
     pub fn save_to_file(program: &Program, input_path: &str) -> Result<(), String> {
         let input_path = Path::new(input_path);
         let json_content = Self::serialize_to_json(program)?;
-        
+
         let output_path = input_path.with_extension("mortared");
         std::fs::write(&output_path, json_content)
             .map_err(|e| format!("Failed to write file {}: {}", output_path.display(), e))?;
-        
+
         println!("Generated: {}", output_path.display());
         Ok(())
     }
@@ -147,7 +147,11 @@ impl Serializer {
                     if let Some(text_content) = current_text.take() {
                         texts.push(JsonText {
                             text: text_content,
-                            events: if current_events.is_empty() { None } else { Some(current_events.clone()) },
+                            events: if current_events.is_empty() {
+                                None
+                            } else {
+                                Some(current_events.clone())
+                            },
                         });
                         current_events.clear();
                     }
@@ -164,11 +168,15 @@ impl Serializer {
                     if let Some(text_content) = current_text.take() {
                         texts.push(JsonText {
                             text: text_content,
-                            events: if current_events.is_empty() { None } else { Some(current_events.clone()) },
+                            events: if current_events.is_empty() {
+                                None
+                            } else {
+                                Some(current_events.clone())
+                            },
                         });
                         current_events.clear();
                     }
-                    
+
                     let mut json_choices = Vec::new();
                     for item in choice_items {
                         json_choices.push(Self::convert_choice_item(item)?);
@@ -182,7 +190,11 @@ impl Serializer {
         if let Some(text_content) = current_text {
             texts.push(JsonText {
                 text: text_content,
-                events: if current_events.is_empty() { None } else { Some(current_events) },
+                events: if current_events.is_empty() {
+                    None
+                } else {
+                    Some(current_events)
+                },
             });
         }
 
@@ -201,7 +213,7 @@ impl Serializer {
 
     fn convert_event(event: &Event) -> Result<JsonEvent, String> {
         let mut actions = vec![Self::convert_func_call_to_action(&event.action.call)?];
-        
+
         // Add chained actions
         for chain_call in &event.action.chains {
             actions.push(Self::convert_func_call_to_action(chain_call)?);
@@ -215,13 +227,18 @@ impl Serializer {
 
     fn convert_func_call_to_action(func_call: &FuncCall) -> Result<JsonAction, String> {
         let mut args = Vec::new();
-        
+
         for arg in &func_call.args {
             match arg {
                 Arg::String(s) => args.push(s.clone()),
                 Arg::Number(n) => args.push(n.to_string()),
                 Arg::Identifier(id) => args.push(id.clone()),
-                Arg::FuncCall(_) => return Err("Nested function calls in arguments not supported in JSON output".to_string()),
+                Arg::FuncCall(_) => {
+                    return Err(
+                        "Nested function calls in arguments not supported in JSON output"
+                            .to_string(),
+                    );
+                }
             }
         }
 
@@ -239,12 +256,16 @@ impl Serializer {
             }),
             Some(Condition::FuncCall(func_call)) => Some(JsonCondition {
                 condition_type: func_call.name.clone(),
-                args: func_call.args.iter().map(|arg| match arg {
-                    Arg::String(s) => s.clone(),
-                    Arg::Number(n) => n.to_string(),
-                    Arg::Identifier(id) => id.clone(),
-                    Arg::FuncCall(_) => "nested_call".to_string(), // Simplified
-                }).collect(),
+                args: func_call
+                    .args
+                    .iter()
+                    .map(|arg| match arg {
+                        Arg::String(s) => s.clone(),
+                        Arg::Number(n) => n.to_string(),
+                        Arg::Identifier(id) => id.clone(),
+                        Arg::FuncCall(_) => "nested_call".to_string(), // Simplified
+                    })
+                    .collect(),
             }),
             None => None,
         };

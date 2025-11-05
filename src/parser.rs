@@ -139,17 +139,22 @@ impl<'a> Parser<'a> {
         if self.check(expected) {
             Ok(self.advance().unwrap())
         } else {
-            Err(format!("{}: expected {:?}, found {:?}", error_msg, expected, self.peek()))
+            Err(format!(
+                "{}: expected {:?}, found {:?}",
+                error_msg,
+                expected,
+                self.peek()
+            ))
         }
     }
 
     fn parse_program(&mut self) -> Result<Program, String> {
         let mut body = Vec::new();
-        
+
         while !self.is_at_end() {
             body.push(self.parse_top_level()?);
         }
-        
+
         Ok(Program { body })
     }
 
@@ -163,7 +168,7 @@ impl<'a> Parser<'a> {
 
     fn parse_node_def(&mut self) -> Result<NodeDef, String> {
         self.consume(&Token::Node, "Expected 'node'")?;
-        
+
         let name = if let Some(Token::Identifier(name)) = self.advance() {
             name.to_string()
         } else {
@@ -171,7 +176,7 @@ impl<'a> Parser<'a> {
         };
 
         self.consume(&Token::LeftBrace, "Expected '{'")?;
-        
+
         let mut body = Vec::new();
         while !self.check(&Token::RightBrace) && !self.is_at_end() {
             // Skip optional commas
@@ -179,18 +184,18 @@ impl<'a> Parser<'a> {
                 self.advance();
                 continue;
             }
-            
+
             body.push(self.parse_node_stmt()?);
         }
-        
+
         self.consume(&Token::RightBrace, "Expected '}'")?;
-        
+
         let jump = if self.check(&Token::Arrow) {
             Some(self.parse_node_jump()?)
         } else {
             None
         };
-        
+
         Ok(NodeDef { name, body, jump })
     }
 
@@ -199,14 +204,17 @@ impl<'a> Parser<'a> {
             Some(Token::Text) => Ok(NodeStmt::Text(self.parse_text_stmt()?)),
             Some(Token::Events) => Ok(NodeStmt::Events(self.parse_events_stmt()?)),
             Some(Token::Choice) => Ok(NodeStmt::Choice(self.parse_choice_stmt()?)),
-            _ => Err(format!("Expected 'text', 'events', or 'choice', found {:?}", self.peek())),
+            _ => Err(format!(
+                "Expected 'text', 'events', or 'choice', found {:?}",
+                self.peek()
+            )),
         }
     }
 
     fn parse_text_stmt(&mut self) -> Result<String, String> {
         self.consume(&Token::Text, "Expected 'text'")?;
         self.consume(&Token::Colon, "Expected ':'")?;
-        
+
         if let Some(Token::String(text)) = self.advance() {
             Ok(text.to_string())
         } else {
@@ -218,16 +226,16 @@ impl<'a> Parser<'a> {
         self.consume(&Token::Events, "Expected 'events'")?;
         self.consume(&Token::Colon, "Expected ':'")?;
         self.consume(&Token::LeftBracket, "Expected '['")?;
-        
+
         let mut events = Vec::new();
-        
+
         while !self.check(&Token::RightBracket) && !self.is_at_end() {
             events.push(self.parse_event()?);
-            
+
             // Events are not separated by commas in the Mortar syntax
             // Each event is on its own line
         }
-        
+
         self.consume(&Token::RightBracket, "Expected ']'")?;
         Ok(events)
     }
@@ -240,21 +248,21 @@ impl<'a> Parser<'a> {
         };
 
         self.consume(&Token::Comma, "Expected ',' after event index")?;
-        
+
         let action = self.parse_event_action()?;
-        
+
         Ok(Event { index, action })
     }
 
     fn parse_event_action(&mut self) -> Result<EventAction, String> {
         let call = self.parse_func_call()?;
         let mut chains = Vec::new();
-        
+
         while self.check(&Token::Dot) {
             self.advance(); // consume '.'
             chains.push(self.parse_func_call()?);
         }
-        
+
         Ok(EventAction { call, chains })
     }
 
@@ -262,18 +270,18 @@ impl<'a> Parser<'a> {
         self.consume(&Token::Choice, "Expected 'choice'")?;
         self.consume(&Token::Colon, "Expected ':'")?;
         self.consume(&Token::LeftBracket, "Expected '['")?;
-        
+
         let mut items = Vec::new();
-        
+
         while !self.check(&Token::RightBracket) && !self.is_at_end() {
             items.push(self.parse_choice_item()?);
-            
+
             // Choices can be separated by commas, but they are optional
             if self.check(&Token::Comma) {
                 self.advance();
             }
         }
-        
+
         self.consume(&Token::RightBracket, "Expected ']'")?;
         Ok(items)
     }
@@ -296,7 +304,9 @@ impl<'a> Parser<'a> {
         };
 
         // Parse optional condition
-        let condition = if self.check(&Token::When) || (self.check(&Token::Dot) && self.tokens.get(self.current + 1) == Some(&Token::When)) {
+        let condition = if self.check(&Token::When)
+            || (self.check(&Token::Dot) && self.tokens.get(self.current + 1) == Some(&Token::When))
+        {
             Some(self.parse_choice_cond()?)
         } else {
             None
@@ -306,7 +316,11 @@ impl<'a> Parser<'a> {
         self.consume(&Token::Arrow, "Expected '->'")?;
         let target = self.parse_choice_dest()?;
 
-        Ok(ChoiceItem { text, condition, target })
+        Ok(ChoiceItem {
+            text,
+            condition,
+            target,
+        })
     }
 
     fn parse_choice_cond(&mut self) -> Result<Condition, String> {
@@ -355,29 +369,32 @@ impl<'a> Parser<'a> {
             }
             Some(Token::LeftBracket) => {
                 self.advance(); // consume '['
-                
+
                 let mut items = Vec::new();
-                
+
                 while !self.check(&Token::RightBracket) && !self.is_at_end() {
                     items.push(self.parse_choice_item()?);
-                    
+
                     if self.check(&Token::Comma) {
                         self.advance();
                     } else {
                         break;
                     }
                 }
-                
+
                 self.consume(&Token::RightBracket, "Expected ']'")?;
                 Ok(ChoiceDest::NestedChoices(items))
             }
-            _ => Err(format!("Expected choice destination, found {:?}", self.peek())),
+            _ => Err(format!(
+                "Expected choice destination, found {:?}",
+                self.peek()
+            )),
         }
     }
 
     fn parse_node_jump(&mut self) -> Result<NodeJump, String> {
         self.consume(&Token::Arrow, "Expected '->'")?;
-        
+
         match self.peek() {
             Some(Token::Identifier(name)) => {
                 let name = name.to_string();
@@ -392,13 +409,16 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Ok(NodeJump::Break)
             }
-            _ => Err(format!("Expected identifier, 'return', or 'break', found {:?}", self.peek())),
+            _ => Err(format!(
+                "Expected identifier, 'return', or 'break', found {:?}",
+                self.peek()
+            )),
         }
     }
 
     fn parse_function_decl(&mut self) -> Result<FunctionDecl, String> {
         self.consume(&Token::Fn, "Expected 'fn'")?;
-        
+
         let name = if let Some(Token::Identifier(name)) = self.advance() {
             name.to_string()
         } else {
@@ -406,21 +426,21 @@ impl<'a> Parser<'a> {
         };
 
         self.consume(&Token::LeftParen, "Expected '('")?;
-        
+
         let mut params = Vec::new();
-        
+
         while !self.check(&Token::RightParen) && !self.is_at_end() {
             params.push(self.parse_param()?);
-            
+
             if self.check(&Token::Comma) {
                 self.advance();
             } else {
                 break;
             }
         }
-        
+
         self.consume(&Token::RightParen, "Expected ')'")?;
-        
+
         let return_type = if self.check(&Token::Arrow) {
             self.advance(); // consume '->'
             if let Some(Token::Identifier(type_name)) = self.advance() {
@@ -431,8 +451,12 @@ impl<'a> Parser<'a> {
         } else {
             None
         };
-        
-        Ok(FunctionDecl { name, params, return_type })
+
+        Ok(FunctionDecl {
+            name,
+            params,
+            return_type,
+        })
     }
 
     fn parse_param(&mut self) -> Result<Param, String> {
@@ -443,7 +467,7 @@ impl<'a> Parser<'a> {
         };
 
         self.consume(&Token::Colon, "Expected ':'")?;
-        
+
         let type_name = if let Some(Token::Identifier(type_name)) = self.advance() {
             type_name.to_string()
         } else {
@@ -461,21 +485,21 @@ impl<'a> Parser<'a> {
         };
 
         self.consume(&Token::LeftParen, "Expected '('")?;
-        
+
         let mut args = Vec::new();
-        
+
         while !self.check(&Token::RightParen) && !self.is_at_end() {
             args.push(self.parse_arg()?);
-            
+
             if self.check(&Token::Comma) {
                 self.advance();
             } else {
                 break;
             }
         }
-        
+
         self.consume(&Token::RightParen, "Expected ')'")?;
-        
+
         Ok(FuncCall { name, args })
     }
 

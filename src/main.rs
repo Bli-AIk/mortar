@@ -5,8 +5,8 @@ use crate::serializer::Serializer;
 mod handler;
 mod parser;
 mod serializer;
-mod token;
 mod tests;
+mod token;
 
 fn main() {
     let path = "hello.mortar";
@@ -24,7 +24,7 @@ fn main() {
         Err(err) => {
             eprintln!("Parse error: {}", err);
             return;
-        },
+        }
     };
 
     println!("Parsed successfully!");
