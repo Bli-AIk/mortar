@@ -4,7 +4,7 @@ mod tests {
     use logos::Logos;
 
     // ---------------------------
-    // Mortar 语言 Token 测试
+    // Mortar Language Token Test
     // ---------------------------
 
     #[test]
@@ -245,7 +245,7 @@ mod tests {
     fn test_complex_mortar_snippet() {
         let input = r#"
         node start {
-            text: "你好呀，欢迎阅读这个互动故事。"
+            text: "Hello and welcome to this interactive story."
             events: [
                 0, play_sound("greeting.wav")
                 6, set_animation("wave").play_sound("wave_sound.wav")
@@ -259,7 +259,7 @@ mod tests {
             Token::LeftBrace,
             Token::Text,
             Token::Colon,
-            Token::String("你好呀，欢迎阅读这个互动故事。"),
+            Token::String("Hello and welcome to this interactive story."),
             Token::Events,
             Token::Colon,
             Token::LeftBracket,
@@ -325,12 +325,12 @@ mod tests {
         let input = "node start { @invalid_symbol }";
         let mut lexer = Token::lexer(input);
         
-        // 正常解析的 token
+        //Token parsed normally
         assert_eq!(lexer.next(), Some(Ok(Token::Node)));
         assert_eq!(lexer.next(), Some(Ok(Token::Identifier("start"))));
         assert_eq!(lexer.next(), Some(Ok(Token::LeftBrace)));
         
-        // 无效符号应该产生错误
+        // Invalid symbols should generate an error
         assert_eq!(lexer.next(), Some(Err(())));
     }
 
@@ -379,14 +379,14 @@ mod tests {
 
     #[test]
     fn test_nd_abbreviation() {
-        let input = "nd quick_node { text: \"快速节点\" }";
+        let input = "nd quick_node { text: \"fast_node\" }";
         let expected = vec![
             Token::Node,
             Token::Identifier("quick_node"),
             Token::LeftBrace,
             Token::Text,
             Token::Colon,
-            Token::String("快速节点"),
+            Token::String("fast_node"),
             Token::RightBrace,
         ];
 
@@ -396,11 +396,11 @@ mod tests {
 
     #[test]
     fn test_lexer_output_function() {
-        // 测试 lex_with_output 函数不会崩溃
+        // Test that lex_with_output function does not crash
         let input = "node test { text: \"Hello\" }";
         let tokens = lex_with_output(input);
         
-        // 检查返回的 token 数量是否正确
+        // Check whether the number of tokens returned is correct
         assert_eq!(tokens.len(), 7);
         assert_eq!(tokens[0], Token::Node);
         assert_eq!(tokens[1], Token::Identifier("test"));
