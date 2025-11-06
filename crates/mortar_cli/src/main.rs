@@ -17,12 +17,12 @@ fn main() {
                 .short('o')
                 .long("output")
                 .value_name("FILE")
-                .help("Output file path")
+                .help("Output file path"),
         )
         .get_matches();
 
     let input_path = matches.get_one::<String>("input").unwrap();
-    
+
     // Read source file
     let content = match FileHandler::read_source_file(input_path) {
         Ok(content) => content,
@@ -42,10 +42,11 @@ fn main() {
     println!("Parsed successfully!");
 
     // Generate .mortared file
-    let output_path = matches.get_one::<String>("output")
+    let output_path = matches
+        .get_one::<String>("output")
         .map(|s| s.as_str())
         .unwrap_or(input_path);
-        
+
     match Serializer::save_to_file(&program, output_path) {
         Ok(()) => println!("Successfully generated .mortared file"),
         Err(err) => eprintln!("Failed to generate .mortared file: {}", err),

@@ -6,7 +6,7 @@ pub mod cli {
     // CLI main function is not re-exported as it's meant to be used as binary
     // But we can provide a programmatic interface
     use crate::{FileHandler, ParseHandler, Serializer};
-    
+
     /// Compile a mortar file programmatically
     pub fn compile_file(input_path: &str, output_path: Option<&str>) -> Result<(), String> {
         // Read source file
@@ -18,10 +18,10 @@ pub mod cli {
 
         // Generate .mortared file
         let output_path = output_path.unwrap_or(input_path);
-        
+
         Serializer::save_to_file(&program, output_path)
             .map_err(|err| format!("Failed to generate .mortared file: {}", err))?;
-            
+
         Ok(())
     }
 }
@@ -31,7 +31,7 @@ pub mod lsp {
     pub use mortar_lsp::*;
 }
 
-// Re-export grammar functionality when available  
+// Re-export grammar functionality when available
 pub mod grammar {
     pub use mortar_grammar::*;
 }
