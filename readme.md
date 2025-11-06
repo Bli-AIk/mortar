@@ -194,13 +194,12 @@ the [Contributing Guide](https://www.google.com/search?q=./CONTRIBUTING.md) for 
 
 The following people have contributed to this project.
 
-\<a
-href = "[https://github.com/Bli-AIk/mortar/Python/graphs/contributors](https://github.com/Bli-AIk/mortar/Python/graphs/contributors)"\>
-\<img src = "[https://contrib.rocks/image?repo=Bli-AIk/mortar](https://contrib.rocks/image?repo=Bli-AIk/mortar)"
-alt=""/\>
-\</a\>
 
-**A heartfelt thank you to each and every one of you\! 🎔**
+<a href = "https://github.com/Bli-AIk/mortar/Python/graphs/contributors">
+<img src = "https://contrib.rocks/image?repo=Bli-AIk/mortar" alt=""/>
+</a>
+
+**A heartfelt thank you to each and every one of you! 🎔**
 
 ### Development Environment Setup
 
