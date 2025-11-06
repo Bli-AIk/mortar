@@ -9,6 +9,8 @@
 
 > **Current Status**: 🚧 Early Development (Initial version in progress)
 
+![Mortar](./mortar_logo.svg)
+
 **Mortar** is a Domain Specific Language (DSL) designed for game dialogue and text event systems. Its core philosophy is
 to achieve **strict separation between text content and event logic**.
 
@@ -22,7 +24,7 @@ Mortar is inspired by [ink](https://github.com/inkle/ink)
 and [Yarn Spinner](https://github.com/YarnSpinnerTool/YarnSpinner),
 but its key distinction is:
 
-> **Mortar aims for strict separation of text content and event logic**
+> **Mortar aims for strict separation of text content and event logic.**
 
 * **Text Part**: Pure narrative content, written entirely by humans, with no event logic mixed in;
 * **Event Part**: System execution commands, used to control presentation effects, independent of text content;
@@ -46,7 +48,7 @@ Static typing.**
 ### Installation
 
 ```bash
-# Install from crates.io (Not yet complete)
+# Install from crates.io
 cargo install mortar
 
 # Or build from source
@@ -170,14 +172,12 @@ mortarc hello.mortar --verbose
 Features to be implemented:
 
 * 🚧 **Command Line Tool**: Complete CLI compiler
-* 🚧 **Lexer**: High-performance tokenization using logos
-* 🚧 **Parsing Framework**: Support for complete token parsing
-* 🚧 **AST Structure**: Complete Abstract Syntax Tree definition
-* 🚧 **Node Definition**: Support for `text`, `speaker`, `tags` fields
-* 🚧 **Event System**: Event types and AST construction
-* 🚧 **Choice System**: Builder pattern-based choice definition
+* ✅ **Lexer**: High-performance tokenization using logos
+* ✅ **Parsing Framework**: Support for complete token parsing
+* ✅ **AST Structure**: Complete Abstract Syntax Tree definition
 * 🚧 **Error Handling**: `ariadne` friendly error reporting
-* 🚧 **JSON Output**: Standardized output format
+* ✅ **JSON Output**: Standardized output format
+* 🚧 **Language Server**: IDE integration and syntax highlighting
 
 Planned features:
 
@@ -185,8 +185,6 @@ Planned features:
 * 🚧 **Conditional Expressions**: Support for complex logic
 * 🚧 **Variable System**: Global and local variable management
 * 🚧 **Function Calls**: Built-in and custom functions
-* 🚧 **Language Server**: IDE integration and syntax highlighting
-
 ## Contributing
 
 Community contributions are welcome\! Please see
@@ -196,13 +194,12 @@ the [Contributing Guide](https://www.google.com/search?q=./CONTRIBUTING.md) for 
 
 The following people have contributed to this project.
 
-\<a
-href = "[https://github.com/Bli-AIk/mortar/Python/graphs/contributors](https://github.com/Bli-AIk/mortar/Python/graphs/contributors)"\>
-\<img src = "[https://contrib.rocks/image?repo=Bli-AIk/mortar](https://contrib.rocks/image?repo=Bli-AIk/mortar)"
-alt=""/\>
-\</a\>
 
-**A heartfelt thank you to each and every one of you\! 🎔**
+<a href = "https://github.com/Bli-AIk/mortar/Python/graphs/contributors">
+<img src = "https://contrib.rocks/image?repo=Bli-AIk/mortar" alt=""/>
+</a>
+
+**A heartfelt thank you to each and every one of you! 🎔**
 
 ### Development Environment Setup
 
