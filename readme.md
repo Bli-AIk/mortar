@@ -24,7 +24,7 @@ Mortar is inspired by [ink](https://github.com/inkle/ink)
 and [Yarn Spinner](https://github.com/YarnSpinnerTool/YarnSpinner),
 but its key distinction is:
 
-> **Mortar aims for strict separation of text content and event logic**
+> **Mortar aims for strict separation of text content and event logic.**
 
 * **Text Part**: Pure narrative content, written entirely by humans, with no event logic mixed in;
 * **Event Part**: System execution commands, used to control presentation effects, independent of text content;
@@ -48,7 +48,7 @@ Static typing.**
 ### Installation
 
 ```bash
-# Install from crates.io (Not yet complete)
+# Install from crates.io
 cargo install mortar
 
 # Or build from source

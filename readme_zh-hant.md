@@ -8,6 +8,7 @@
 <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
 
 > **当前状态**：🚧 早期开发中（初始版本正在开发）
+
 ![Mortar](./mortar_logo.svg)
 
 **Mortar** 是一个为游戏对话与文字事件系统设计的领域特定语言（DSL），核心理念是实现 **文本内容与事件逻辑的严格分离**。
@@ -21,7 +22,7 @@
 Mortar 的灵感来自 [ink](https://github.com/inkle/ink) 与 [Yarn Spinner](https://github.com/YarnSpinnerTool/YarnSpinner)，
 但它的核心区别在于：
 
-> **Mortar 旨在实现文本内容与事件逻辑的严格分离**
+> **Mortar 旨在实现文本内容与事件逻辑的严格分离。**
 
 * **文本部分**：纯叙事内容，完全为人类编写，不混入事件逻辑；
 * **事件部分**：系统执行指令，用于控制呈现效果，与文本内容无关；
@@ -29,7 +30,7 @@ Mortar 的灵感来自 [ink](https://github.com/inkle/ink) 与 [Yarn Spinner](ht
 
 ## 设计目标
 
-Mortar 的设计遵循以下核心原则：**内容分离、语义清晰、程序友好、静态类型**
+Mortar 的设计遵循以下核心原则：**内容分离、语义清晰、程序友好、静态类型。**
 
 1. **内容与逻辑解耦**：事件以字符索引触发，避免富文本标记污染内容；文本中不含控制标记，保持纯净；
 2. **语义清晰**：采用 Rust 风格的语法设计，DSL 语法直观、易读、易维护；
@@ -41,7 +42,7 @@ Mortar 的设计遵循以下核心原则：**内容分离、语义清晰、程�
 ### 安装
 
 ```bash
-# 从 crates.io 安装（暂未完成）
+# 从 crates.io 安装
 cargo install mortar
 
 # 或从源码构建
@@ -64,7 +65,7 @@ node start {
     
     // 这个事件列表写在紧挨着上一个 text，所以它们是关联的。
     events: [
-        // 使用 索引 + 事件 函数 的方式来编写事件。支持链式写法。
+        // 使用 索引 + 事件函数 的方式来编写事件。支持链式写法。
         // 这里的索引表示事件触发的字符位置（从 0 开始计数）。
         // 它会绑定到你的游戏具体实现——打字机播放的位置？音频时间轴？还是别的什么，都可以，看你怎么实现。
         0, play_sound("greeting.wav")
