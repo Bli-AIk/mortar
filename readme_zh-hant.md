@@ -1,4 +1,4 @@
-# Mortar DSL
+# Mortar Language
 
 [![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue)](LICENSE-MIT)
 [![Crates.io](https://img.shields.io/crates/v/mortar.svg)](https://crates.io/crates/mortar)
