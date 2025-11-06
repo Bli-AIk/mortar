@@ -9,7 +9,7 @@ use std::fmt;
 #[logos(skip r"//[^\n]*")]
 // Multi-line comments
 #[logos(skip r"/\*([^*]|\*[^/])*\*/")]
-pub(crate) enum Token<'a> {
+pub enum Token<'a> {
     #[allow(dead_code)]
     Error,
 

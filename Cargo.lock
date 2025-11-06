@@ -336,17 +336,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
-name = "mortar_language"
+name = "mortar_cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "mortar_compiler",
+]
+
+[[package]]
+name = "mortar_compiler"
 version = "0.1.0"
 dependencies = [
  "ariadne",
  "chrono",
  "chumsky",
- "clap",
  "logos",
  "owo-colors",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "mortar_grammar"
+version = "0.1.0"
+
+[[package]]
+name = "mortar_language"
+version = "0.1.0"
+dependencies = [
+ "mortar_compiler",
+ "mortar_grammar",
+ "mortar_lsp",
+]
+
+[[package]]
+name = "mortar_lsp"
+version = "0.1.0"
+dependencies = [
+ "mortar_compiler",
 ]
 
 [[package]]

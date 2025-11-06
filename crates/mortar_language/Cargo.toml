@@ -1,0 +1,23 @@
+[package]
+name = "mortar_language"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+mortar_compiler.workspace = true
+mortar_lsp.workspace = true
+mortar_grammar.workspace = true
+
+# Re-export core functionality
+[lib]
+name = "mortar_language"
+path = "src/lib.rs"

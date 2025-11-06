@@ -1,0 +1,25 @@
+[package]
+name = "mortar_compiler"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Mortar language compiler core library"
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[lib]
+name = "mortar_compiler"
+path = "src/lib.rs"
+
+[dependencies]
+ariadne.workspace = true
+chumsky.workspace = true
+logos.workspace = true
+owo-colors.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
