@@ -11,7 +11,7 @@ pub mod cli {
     pub fn compile_file(input_path: &str, output_path: Option<&str>) -> Result<(), String> {
         // Read source file
         let content = FileHandler::read_source_file(input_path)
-            .map_err(|_| "Failed to read input file".to_string())?;
+            .map_err(|err| format!("Failed to read input file: {}", err))?;
 
         let program = ParseHandler::parse_source_code(&content)
             .map_err(|err| format!("Parse error: {}", err))?;

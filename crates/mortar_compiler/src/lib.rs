@@ -6,7 +6,7 @@ pub mod token;
 #[cfg(test)]
 mod tests;
 
-pub use handler::file_handler::FileHandler;
+pub use handler::file_handler::{FileHandler, FileError};
 pub use parser::{
     ChoiceItem, Event, EventAction, NodeDef, NodeJump, NodeStmt, ParseHandler, Program, TopLevel,
 };

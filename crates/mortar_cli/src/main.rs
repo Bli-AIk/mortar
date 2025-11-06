@@ -26,7 +26,10 @@ fn main() {
     // Read source file
     let content = match FileHandler::read_source_file(input_path) {
         Ok(content) => content,
-        Err(_) => return,
+        Err(err) => {
+            eprintln!("Error reading file: {}", err);
+            return;
+        }
     };
 
     println!("{}", content);
