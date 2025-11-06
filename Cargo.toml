@@ -1,5 +1,5 @@
 [package]
-name = "mortar"
+name = "mortar_language"
 version = "0.1.0"
 edition = "2024"
 authors = ["Bli-AIk <haikun2333@gmail.com>"]
