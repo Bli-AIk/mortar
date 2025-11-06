@@ -1,0 +1,20 @@
+[package]
+name = "mortar_cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Mortar language command line tool"
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[[bin]]
+name = "mortar"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+mortar_compiler.workspace = true
