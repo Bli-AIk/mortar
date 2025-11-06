@@ -172,14 +172,12 @@ mortarc hello.mortar --verbose
 Features to be implemented:
 
 * 🚧 **Command Line Tool**: Complete CLI compiler
-* 🚧 **Lexer**: High-performance tokenization using logos
-* 🚧 **Parsing Framework**: Support for complete token parsing
-* 🚧 **AST Structure**: Complete Abstract Syntax Tree definition
-* 🚧 **Node Definition**: Support for `text`, `speaker`, `tags` fields
-* 🚧 **Event System**: Event types and AST construction
-* 🚧 **Choice System**: Builder pattern-based choice definition
+* ✅ **Lexer**: High-performance tokenization using logos
+* ✅ **Parsing Framework**: Support for complete token parsing
+* ✅ **AST Structure**: Complete Abstract Syntax Tree definition
 * 🚧 **Error Handling**: `ariadne` friendly error reporting
-* 🚧 **JSON Output**: Standardized output format
+* ✅ **JSON Output**: Standardized output format
+* 🚧 **Language Server**: IDE integration and syntax highlighting
 
 Planned features:
 
@@ -187,8 +185,6 @@ Planned features:
 * 🚧 **Conditional Expressions**: Support for complex logic
 * 🚧 **Variable System**: Global and local variable management
 * 🚧 **Function Calls**: Built-in and custom functions
-* 🚧 **Language Server**: IDE integration and syntax highlighting
-
 ## Contributing
 
 Community contributions are welcome\! Please see
