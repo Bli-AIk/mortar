@@ -143,16 +143,16 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact_name: mortar
+            artifact_name: mortar_language
             asset_name: mortar-linux-x86_64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: mortar.exe
+            artifact_name: mortar_language.exe
             asset_name: mortar-windows-x86_64.exe
           - os: macos-latest
             target: x86_64-apple-darwin
             arm_target: aarch64-apple-darwin
-            artifact_name: mortar
+            artifact_name: mortar_language
             asset_name: mortar-macos-universal
 
     steps:
@@ -209,11 +209,12 @@ jobs:
              target/${{ matrix.target }}/release/${{ matrix.artifact_name }} \
              target/${{ matrix.arm_target }}/release/${{ matrix.artifact_name }} \
              -output target/release/${{ matrix.asset_name }}
+        strip target/release/${{ matrix.asset_name }}
         echo "FINAL_ARTIFACT_PATH=target/release/${{ matrix.asset_name }}" >> $GITHUB_ENV
         echo "FINAL_ARTIFACT_NAME=${{ matrix.asset_name }}" >> $GITHUB_ENV
       
     - name: Strip binary (Linux and macOS)
-      if: matrix.os == 'ubuntu-latest' || (matrix.os == 'macos-latest' && env.FINAL_ARTIFACT_PATH == '')
+      if: matrix.os == 'ubuntu-latest'
       run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
       
     - name: Upload Release Asset
