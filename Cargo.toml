@@ -2,5 +2,28 @@
 name = "mortar"
 version = "0.1.0"
 edition = "2024"
+authors = ["Bli-AIk <haikun2333@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Bli-AIk/mortar"
+homepage = "https://github.com/Bli-AIk/mortar"
+description = "A Domain Specific Language designed for game dialogue and text event systems."
+documentation = "https://docs.rs/mortar"
+readme = "readme.md"
+keywords = ["dsl", "dialogue", "game-dialogue", "scripting", "parser"]
+categories = ["game-development", "parsing"]
+
+exclude = [
+    "target/*",
+    ".github/*"
+]
+
 
 [dependencies]
+ariadne = "0.6.0"
+chumsky = "0.11.1"
+clap = "4.5.51"
+logos = "0.15.1"
+owo-colors = "4.2.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
