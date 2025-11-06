@@ -1,0 +1,15 @@
+[package]
+name = "mortar_lsp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Mortar language LSP server"
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+mortar_compiler.workspace = true
