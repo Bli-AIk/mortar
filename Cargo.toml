@@ -1,10 +1,10 @@
 [workspace]
 members = [
-    "mortar_language",
-    "mortar_compiler", 
-    "mortar_cli",
-    "mortar_lsp",
-    "mortar_grammar"
+    "crates/mortar_language",
+    "crates/mortar_compiler", 
+    "crates/mortar_cli",
+    "crates/mortar_lsp",
+    "crates/mortar_grammar"
 ]
 resolver = "2"
 
@@ -37,8 +37,8 @@ serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Internal dependencies
-mortar_compiler = { path = "./mortar_compiler" }
-mortar_cli = { path = "./mortar_cli" }
-mortar_language = { path = "./mortar_language" }
-mortar_lsp = { path = "./mortar_lsp" }
-mortar_grammar = { path = "./mortar_grammar" }
+mortar_compiler = { path = "./crates/mortar_compiler" }
+mortar_cli = { path = "./crates/mortar_cli" }
+mortar_language = { path = "./crates/mortar_language" }
+mortar_lsp = { path = "./crates/mortar_lsp" }
+mortar_grammar = { path = "./crates/mortar_grammar" }
