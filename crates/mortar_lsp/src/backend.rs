@@ -61,12 +61,36 @@ impl Backend {
         info!("LSP服务器资源清理完成");
     }
 
-    /// 发送关闭信号
-    pub async fn signal_shutdown(&self) {
-        let mut shutdown_signal = self.shutdown_signal.write().await;
-        if let Some(sender) = shutdown_signal.take() {
-            let _ = sender.send(());
-            info!("发送了关闭信号");
+    /// 简化的清理操作，避免异步阻塞
+    pub fn cleanup_sync(&self) {
+        info!("开始同步清理LSP服务器资源...");
+        
+        // 清理文档缓存
+        let documents_count = self.documents.len();
+        self.documents.clear();
+        
+        // 清理诊断信息
+        let diagnostics_count = self.diagnostics.len();
+        self.diagnostics.clear();
+
+        // 清理符号表
+        let symbols_count = self.symbol_tables.len();
+        self.symbol_tables.clear();
+        
+        info!("同步清理完成: {} 个文档, {} 个诊断, {} 个符号表", 
+              documents_count, diagnostics_count, symbols_count);
+    }
+
+    /// 发送关闭信号（同步版本）
+    pub fn signal_shutdown_sync(&self) {
+        // 使用 try_write 避免阻塞
+        if let Ok(mut shutdown_signal) = self.shutdown_signal.try_write() {
+            if let Some(sender) = shutdown_signal.take() {
+                let _ = sender.send(());
+                info!("发送了关闭信号");
+            }
+        } else {
+            info!("无法获取关闭信号锁，跳过");
         }
     }
 
@@ -226,29 +250,18 @@ impl LanguageServer for Backend {
     async fn shutdown(&self) -> Result<()> {
         info!("收到关闭请求，开始关闭LSP服务器...");
         
-        // 记录关闭时的状态统计
+        // 使用非常简单的清理逻辑，避免任何可能的阻塞
         let documents_count = self.documents.len();
         let diagnostics_count = self.diagnostics.len();
         let symbols_count = self.symbol_tables.len();
         
-        info!("关闭时状态统计: {} 个文档, {} 个诊断, {} 个符号表", 
+        info!("关闭时状态: {} 文档, {} 诊断, {} 符号", 
               documents_count, diagnostics_count, symbols_count);
 
-        // 通知客户端开始关闭
-        self.client
-            .log_message(MessageType::INFO, "Mortar LSP 服务器正在关闭...")
-            .await;
-
-        // 清理资源
-        self.cleanup().await;
-
-        // 发送关闭信号
-        self.signal_shutdown().await;
-
-        // 最后通知客户端关闭完成
-        self.client
-            .log_message(MessageType::INFO, "Mortar LSP 服务器已安全关闭")
-            .await;
+        // 快速清理，不等待
+        self.documents.clear();
+        self.diagnostics.clear();
+        self.symbol_tables.clear();
 
         info!("LSP服务器关闭完成");
         Ok(())

@@ -1,11 +1,13 @@
 use std::env::temp_dir;
 use std::process;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use mortar_lsp::backend::Backend;
 use tokio::io::{stdin, stdout};
 use tokio::signal;
 use tower_lsp_server::{LspService, Server};
-use tracing::{subscriber, info, error};
+use tracing::{subscriber, info};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 #[tokio::main]
@@ -32,18 +34,42 @@ async fn main() {
     let stdin = stdin();
     let stdout = stdout();
 
-    let (service, socket) = LspService::new(|client| {
+    // 创建共享的退出标志
+    let exit_flag = Arc::new(AtomicBool::new(false));
+    let exit_flag_clone = exit_flag.clone();
+
+    let (service, socket) = LspService::new(move |client| {
         let backend = Backend::new(client);
         backend
     });
 
-    // 设置信号处理
+    // 启动LSP服务器
+    let server_task = tokio::spawn(async move {
+        let server = Server::new(stdin, stdout, socket);
+        server.serve(service).await;
+        info!("LSP服务器任务完成");
+    });
+
+    // 监听关闭信号
+    let signal_task = tokio::spawn(async move {
+        signal::ctrl_c().await.expect("Failed to listen for ctrl-c");
+        info!("接收到 Ctrl+C，设置退出标志");
+        exit_flag_clone.store(true, Ordering::Relaxed);
+    });
+
+    // 等待任务完成或超时
     tokio::select! {
-        () = Server::new(stdin, stdout, socket).serve(service) => {
-            info!("LSP服务器正常退出")
+        _ = server_task => {
+            info!("LSP服务器正常退出");
         }
-        _ = signal::ctrl_c() => {
-            info!("接收到 Ctrl+C，优雅关闭LSP服务器...");
+        _ = signal_task => {
+            info!("接收到关闭信号，优雅关闭LSP服务器...");
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            process::exit(0);
+        }
+        _ = tokio::time::sleep(tokio::time::Duration::from_secs(3600)) => {
+            // 1小时超时保护
+            info!("LSP服务器运行时间过长，自动退出");
             process::exit(0);
         }
     }
