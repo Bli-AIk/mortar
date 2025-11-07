@@ -1,9 +1,11 @@
 use std::env::temp_dir;
+use std::process;
 
 use mortar_lsp::backend::Backend;
 use tokio::io::{stdin, stdout};
+use tokio::signal;
 use tower_lsp_server::{LspService, Server};
-use tracing::subscriber;
+use tracing::{subscriber, info, error};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 #[tokio::main]
@@ -25,9 +27,24 @@ async fn main() {
 
     subscriber::set_global_default(subscriber).expect("Unable to set global default subscriber");
 
+    info!("启动 Mortar LSP 服务器...");
+
     let stdin = stdin();
     let stdout = stdout();
 
-    let (service, socket) = LspService::new(Backend::new);
-    Server::new(stdin, stdout, socket).serve(service).await;
+    let (service, socket) = LspService::new(|client| {
+        let backend = Backend::new(client);
+        backend
+    });
+
+    // 设置信号处理
+    tokio::select! {
+        () = Server::new(stdin, stdout, socket).serve(service) => {
+            info!("LSP服务器正常退出")
+        }
+        _ = signal::ctrl_c() => {
+            info!("接收到 Ctrl+C，优雅关闭LSP服务器...");
+            process::exit(0);
+        }
+    }
 }

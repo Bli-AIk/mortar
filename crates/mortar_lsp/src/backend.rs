@@ -3,10 +3,11 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use mortar_compiler::ParseHandler;
 use ropey::Rope;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, oneshot};
 use tower_lsp_server::jsonrpc::Result;
 use tower_lsp_server::lsp_types::*;
 use tower_lsp_server::{Client, LanguageServer};
+use tracing::{info};
 
 use crate::analysis::{analyze_program, SymbolTable};
 use crate::files::Files;
@@ -17,6 +18,7 @@ pub struct Backend {
     pub documents: Arc<DashMap<Uri, (Rope, Option<i32>)>>, // (content, version)
     pub diagnostics: Arc<DashMap<Uri, Vec<Diagnostic>>>,
     pub symbol_tables: Arc<DashMap<Uri, SymbolTable>>,
+    pub shutdown_signal: Arc<RwLock<Option<oneshot::Sender<()>>>>,
 }
 
 impl Backend {
@@ -27,7 +29,53 @@ impl Backend {
             documents: Arc::new(DashMap::new()),
             diagnostics: Arc::new(DashMap::new()),
             symbol_tables: Arc::new(DashMap::new()),
+            shutdown_signal: Arc::new(RwLock::new(None)),
         }
+    }
+
+    /// 清理所有缓存的数据
+    pub async fn cleanup(&self) {
+        info!("开始清理LSP服务器资源...");
+        
+        // 清理文档缓存
+        let documents_count = self.documents.len();
+        self.documents.clear();
+        info!("清理了 {} 个文档", documents_count);
+
+        // 清理诊断信息
+        let diagnostics_count = self.diagnostics.len();
+        self.diagnostics.clear();
+        info!("清理了 {} 个诊断信息", diagnostics_count);
+
+        // 清理符号表
+        let symbols_count = self.symbol_tables.len();
+        self.symbol_tables.clear();
+        info!("清理了 {} 个符号表", symbols_count);
+
+        // 清理文件管理器
+        {
+            let mut files = self.files.write().await;
+            *files = Files::new();
+        }
+        
+        info!("LSP服务器资源清理完成");
+    }
+
+    /// 发送关闭信号
+    pub async fn signal_shutdown(&self) {
+        let mut shutdown_signal = self.shutdown_signal.write().await;
+        if let Some(sender) = shutdown_signal.take() {
+            let _ = sender.send(());
+            info!("发送了关闭信号");
+        }
+    }
+
+    /// 等待关闭信号
+    pub async fn wait_for_shutdown(&self) -> oneshot::Receiver<()> {
+        let (sender, receiver) = oneshot::channel();
+        let mut shutdown_signal = self.shutdown_signal.write().await;
+        *shutdown_signal = Some(sender);
+        receiver
     }
 
     /// Analyze document content and generate diagnostic information
@@ -176,6 +224,33 @@ impl LanguageServer for Backend {
     }
 
     async fn shutdown(&self) -> Result<()> {
+        info!("收到关闭请求，开始关闭LSP服务器...");
+        
+        // 记录关闭时的状态统计
+        let documents_count = self.documents.len();
+        let diagnostics_count = self.diagnostics.len();
+        let symbols_count = self.symbol_tables.len();
+        
+        info!("关闭时状态统计: {} 个文档, {} 个诊断, {} 个符号表", 
+              documents_count, diagnostics_count, symbols_count);
+
+        // 通知客户端开始关闭
+        self.client
+            .log_message(MessageType::INFO, "Mortar LSP 服务器正在关闭...")
+            .await;
+
+        // 清理资源
+        self.cleanup().await;
+
+        // 发送关闭信号
+        self.signal_shutdown().await;
+
+        // 最后通知客户端关闭完成
+        self.client
+            .log_message(MessageType::INFO, "Mortar LSP 服务器已安全关闭")
+            .await;
+
+        info!("LSP服务器关闭完成");
         Ok(())
     }
 
@@ -316,10 +391,10 @@ impl LanguageServer for Backend {
                 detail: None,
                 kind: SymbolKind::CLASS,
                 tags: None,
+                deprecated: Some(false),
                 range: Range::new(Position::new(0, 0), Position::new(0, 0)), // TODO: 获取实际范围
                 selection_range: Range::new(Position::new(0, 0), Position::new(0, 0)),
                 children: None,
-                deprecated: None,
             });
         }
 
@@ -335,10 +410,10 @@ impl LanguageServer for Backend {
                 )),
                 kind: SymbolKind::FUNCTION,
                 tags: None,
+                deprecated: Some(false),
                 range: Range::new(Position::new(0, 0), Position::new(0, 0)),
                 selection_range: Range::new(Position::new(0, 0), Position::new(0, 0)),
                 children: None,
-                deprecated: None,
             });
         }
 

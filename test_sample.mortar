@@ -1,0 +1,106 @@
+// 这是一个测试用的 Mortar 文件，用于性能测试
+
+fn greet(name: string) -> string {
+    return "你好, " + name + "!"
+}
+
+fn calculate(a: int, b: int) -> int {
+    when a > b {
+        return a + b
+    }
+    when a < b {
+        return b - a
+    }
+    return a * b
+}
+
+node "开始界面" {
+    text "欢迎来到 Mortar 语言测试！"
+    text greet("玩家")
+    
+    choice "开始游戏" -> "游戏主界面"
+    choice "查看设置" -> "设置界面"
+    choice "退出游戏" -> "退出确认"
+    
+    events {
+        fn onEnter() {
+            return "进入开始界面"
+        }
+        
+        fn onCalculate() {
+            return calculate(10, 5)
+        }
+    }
+}
+
+node "游戏主界面" {
+    text "这里是游戏主界面"
+    text "你的分数是: " + calculate(100, 50)
+    
+    choice "进入战斗" -> "战斗界面"
+    choice "查看背包" -> "背包界面"
+    choice "返回主界面" -> "开始界面"
+    
+    events {
+        fn battleEvent() {
+            return "触发战斗事件"
+        }
+    }
+}
+
+node "战斗界面" {
+    text "战斗开始！"
+    
+    choice "攻击" -> "战斗结果"
+    choice "防御" -> "战斗结果"
+    choice "逃跑" -> "游戏主界面"
+    
+    events {
+        fn attack() {
+            return calculate(50, 10)
+        }
+        
+        fn defend() {
+            return "防御成功"
+        }
+    }
+}
+
+node "战斗结果" {
+    text "战斗结束"
+    choice "继续游戏" -> "游戏主界面"
+    choice "返回主界面" -> "开始界面"
+}
+
+node "背包界面" {
+    text "这是你的背包"
+    choice "使用物品" -> "游戏主界面"
+    choice "返回" -> "游戏主界面"
+}
+
+node "设置界面" {
+    text "游戏设置"
+    choice "音量设置" -> "音量设置"
+    choice "图像设置" -> "图像设置"
+    choice "返回" -> "开始界面"
+}
+
+node "音量设置" {
+    text "调整音量"
+    choice "返回设置" -> "设置界面"
+}
+
+node "图像设置" {
+    text "调整图像质量"
+    choice "返回设置" -> "设置界面"
+}
+
+node "退出确认" {
+    text "确定要退出游戏吗？"
+    choice "确定退出" -> "end"
+    choice "返回游戏" -> "开始界面"
+}
+
+node "end" {
+    text "谢谢游戏！再见！"
+}
