@@ -5,13 +5,17 @@ use std::fmt;
 #[derive(Logos, Debug, PartialEq, Clone)]
 // Ignore whitespace
 #[logos(skip r"[ \t\r\n]+")]
-// Single line comment
-#[logos(skip r"//[^\n]*")]
-// Multi-line comments
-#[logos(skip r"/\*([^*]|\*[^/])*\*/")]
 pub enum Token<'a> {
     #[allow(dead_code)]
     Error,
+
+    // region Comments
+    #[regex(r"//[^\n]*", |lex| lex.slice())]
+    SingleLineComment(&'a str),
+    
+    #[regex(r"/\*([^*]|\*[^/])*\*/", |lex| lex.slice())]
+    MultiLineComment(&'a str),
+    // endregion
 
     // region Keywords
     #[token("node")]
@@ -122,6 +126,9 @@ impl fmt::Display for Token<'_> {
         use Token::*;
         match self {
             Error => write!(f, "Error"),
+
+            SingleLineComment(s) => write!(f, "{}", s),
+            MultiLineComment(s) => write!(f, "{}", s),
 
             Node => write!(f, "node"),
             Text => write!(f, "text"),

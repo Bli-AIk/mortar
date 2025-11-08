@@ -90,9 +90,15 @@ mod tests {
     }
 
     #[test]
-    fn test_comments_ignored() {
+    fn test_comments_tokenized() {
         let input = "node // single line comment\n text /* multi-line comment */ events";
-        let expected = vec![Token::Node, Token::Text, Token::Events];
+        let expected = vec![
+            Token::Node, 
+            Token::SingleLineComment("// single line comment"),
+            Token::Text, 
+            Token::MultiLineComment("/* multi-line comment */"),
+            Token::Events
+        ];
 
         let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
         assert_eq!(tokens, expected);
@@ -349,6 +355,7 @@ mod tests {
         let expected = vec![
             Token::Node,
             Token::Identifier("start"),
+            Token::MultiLineComment("/* this is a \n        multiline comment */"),
             Token::LeftBrace,
             Token::Text,
             Token::Colon,
