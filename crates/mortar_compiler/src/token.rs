@@ -12,7 +12,7 @@ pub enum Token<'a> {
     // region Comments
     #[regex(r"//[^\n]*", |lex| lex.slice())]
     SingleLineComment(&'a str),
-    
+
     #[regex(r"/\*([^*]|\*[^/])*\*/", |lex| lex.slice())]
     MultiLineComment(&'a str),
     // endregion

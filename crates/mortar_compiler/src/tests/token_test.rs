@@ -93,11 +93,11 @@ mod tests {
     fn test_comments_tokenized() {
         let input = "node // single line comment\n text /* multi-line comment */ events";
         let expected = vec![
-            Token::Node, 
+            Token::Node,
             Token::SingleLineComment("// single line comment"),
-            Token::Text, 
+            Token::Text,
             Token::MultiLineComment("/* multi-line comment */"),
-            Token::Events
+            Token::Events,
         ];
 
         let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
