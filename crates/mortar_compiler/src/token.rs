@@ -75,6 +75,48 @@ pub enum Token<'a> {
     // endregion
 }
 
+/// Lexical analysis result containing token information and position
+#[derive(Debug, Clone)]
+pub struct TokenInfo<'a> {
+    pub token: Token<'a>,
+    pub start: usize,
+    pub end: usize,
+    pub text: &'a str,
+}
+
+/// Public lexical analysis interface for LSP and other external components
+pub fn tokenize(input: &str) -> Vec<TokenInfo<'_>> {
+    use logos::Logos;
+    
+    let mut lexer = Token::lexer(input);
+    let mut tokens = Vec::new();
+    
+    while let Some(token_result) = lexer.next() {
+        match token_result {
+            Ok(token) => {
+                let span = lexer.span();
+                tokens.push(TokenInfo {
+                    token,
+                    start: span.start,
+                    end: span.end,
+                    text: &input[span.start..span.end],
+                });
+            }
+            Err(_) => {
+                let span = lexer.span();
+                tokens.push(TokenInfo {
+                    token: Token::Error,
+                    start: span.start,
+                    end: span.end,
+                    text: &input[span.start..span.end],
+                });
+            }
+        }
+    }
+    
+    tokens
+}
+
 impl fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Token::*;
