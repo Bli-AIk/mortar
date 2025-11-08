@@ -1,4 +1,4 @@
-use mortar_compiler::{Token, tokenize};
+use mortar_compiler::{Token, TokenInfo, tokenize};
 use tower_lsp_server::lsp_types::*;
 
 use crate::backend::Backend;
@@ -13,8 +13,9 @@ impl Backend {
         // 对整个文档进行tokenize，而不是逐行处理
         let compiler_tokens = tokenize(content);
 
-        for token_info in compiler_tokens {
-            let token_type = self.get_semantic_token_type(&token_info.token);
+        for (i, token_info) in compiler_tokens.iter().enumerate() {
+            let token_type =
+                self.get_semantic_token_type_with_context(&token_info.token, &compiler_tokens, i);
 
             // 计算token的行列位置
             let (token_line, token_column) =
@@ -70,12 +71,18 @@ impl Backend {
         (line, utf16_column)
     }
 
-    /// Get semantic token type from compiler lexical token
-    fn get_semantic_token_type(&self, token: &Token) -> u32 {
+    /// Get semantic token type from compiler lexical token with context awareness
+    fn get_semantic_token_type_with_context(
+        &self,
+        token: &Token,
+        all_tokens: &[TokenInfo],
+        current_index: usize,
+    ) -> u32 {
         const KEYWORD: u32 = 0;
         const STRING: u32 = 1;
         const NUMBER: u32 = 2;
         const COMMENT: u32 = 3;
+        const FUNCTION: u32 = 4;
         const VARIABLE: u32 = 5;
         const OPERATOR: u32 = 7;
         const PUNCTUATION: u32 = 8;
@@ -108,7 +115,18 @@ impl Backend {
             | Token::LeftParen
             | Token::RightParen => PUNCTUATION,
 
-            Token::Identifier(_) => VARIABLE,
+            Token::Identifier(_) => {
+                // 检查是否是 node/nd 或 fn 后面的标识符
+                if current_index > 0 {
+                    if let Some(prev_token_info) = all_tokens.get(current_index - 1) {
+                        match prev_token_info.token {
+                            Token::Node | Token::Fn => return FUNCTION,
+                            _ => {}
+                        }
+                    }
+                }
+                VARIABLE
+            }
 
             Token::Error => KEYWORD,
         }
@@ -188,5 +206,35 @@ mod tests {
             comment_token.length, expected_utf16_length,
             "注释token的UTF-16长度计算应该正确"
         );
+    }
+
+    #[test]
+    fn test_function_name_highlighting() {
+        use tower_lsp_server::LspService;
+        let (service, _) = LspService::new(|client| Backend::new(client));
+        let backend = Backend::new(service.inner().client.clone());
+
+        // 测试节点定义和函数定义中的名称高亮
+        let content = r#"node start_game {
+    text: "Hello"
+}
+
+nd another_node {
+    text: "World"
+}
+
+fn play_sound(file: String)
+fn get_name() -> String"#;
+
+        let semantic_tokens = backend.analyze_semantic_tokens(content);
+
+        // 找出所有函数类型的标记（token_type = 4）
+        let function_tokens: Vec<_> = semantic_tokens
+            .iter()
+            .filter(|token| token.token_type == 4) // FUNCTION = 4
+            .collect();
+
+        // 应该有4个函数标记：start_game, another_node, play_sound, get_name
+        assert_eq!(function_tokens.len(), 4, "应该有4个函数名标记");
     }
 }
