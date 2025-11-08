@@ -1,5 +1,6 @@
 use tower_lsp_server::lsp_types::*;
 
+use crate::analysis::SymbolTable;
 use crate::backend::Backend;
 
 /// Autocomplete context type
@@ -17,26 +18,23 @@ impl Backend {
         if let Some(document_entry) = self.documents.get(uri) {
             let rope = &document_entry.0;
             let line_idx = position.line as usize;
-            
+
             let mut brace_depth = 0;
             let mut in_node = false;
             let mut in_function = false;
-            
+
             for i in 0..=line_idx.min(rope.len_lines() - 1) {
                 let line_content = rope.line(i).to_string();
                 let trimmed = line_content.trim();
-                
-                if trimmed.starts_with("node ") || trimmed.starts_with("nd ") {
-                    if brace_depth == 0 {
-                        in_node = false;
-                    }
+
+                if (trimmed.starts_with("node ") || trimmed.starts_with("nd ")) && brace_depth == 0
+                {
+                    in_node = false;
                 }
-                if trimmed.starts_with("fn ") {
-                    if brace_depth == 0 {
-                        in_function = false;
-                    }
+                if trimmed.starts_with("fn ") && brace_depth == 0 {
+                    in_function = false;
                 }
-                
+
                 for ch in line_content.chars() {
                     match ch {
                         '{' => {
@@ -48,32 +46,35 @@ impl Backend {
                                 in_function = true;
                                 in_node = false;
                             }
-                        },
+                        }
                         '}' => {
                             brace_depth -= 1;
                             if brace_depth == 0 {
                                 in_node = false;
                                 in_function = false;
                             }
-                        },
+                        }
                         _ => {}
                     }
                 }
-                
+
                 if i == line_idx {
                     break;
                 }
             }
-            
+
             if line_idx < rope.len_lines() {
                 let current_line = rope.line(line_idx).to_string();
                 let current_trimmed = current_line.trim();
-                if current_trimmed.contains("choice") || current_trimmed.contains("->") || 
-                   (in_node && (current_trimmed.starts_with("\"") || current_trimmed.contains("\""))) {
+                if current_trimmed.contains("choice")
+                    || current_trimmed.contains("->")
+                    || (in_node
+                        && (current_trimmed.starts_with("\"") || current_trimmed.contains("\"")))
+                {
                     return CompletionContext::InChoice;
                 }
             }
-            
+
             if in_function && brace_depth > 0 {
                 CompletionContext::InExpression
             } else if in_node && brace_depth > 0 {
@@ -94,7 +95,8 @@ impl Backend {
             return CompletionContext::TopLevel;
         }
 
-        if trimmed.starts_with("node ") || trimmed.starts_with("nd ") || trimmed.starts_with("fn ") {
+        if trimmed.starts_with("node ") || trimmed.starts_with("nd ") || trimmed.starts_with("fn ")
+        {
             return if trimmed.ends_with('{') {
                 CompletionContext::InNode
             } else {
@@ -201,6 +203,179 @@ impl Backend {
                     ..Default::default()
                 },
             ],
+        }
+    }
+
+    /// Generate filtered completion items based on current word and symbol table
+    pub fn generate_completion_items_filtered(
+        &self,
+        context: CompletionContext,
+        current_word: &str,
+        symbol_table: &SymbolTable,
+    ) -> Vec<CompletionItem> {
+        match context {
+            CompletionContext::TopLevel => {
+                let mut completions = Vec::new();
+
+                if "node".starts_with(current_word) {
+                    completions.push(CompletionItem {
+                        label: "node".to_string(),
+                        kind: Some(CompletionItemKind::KEYWORD),
+                        insert_text: Some("node ${1:node_name} {\n\t$0\n}".to_string()),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        detail: Some("Create a dialogue node".to_string()),
+                        documentation: Some(Documentation::String(
+                            "Create a new dialog node that defines dialog content and choices"
+                                .to_string(),
+                        )),
+                        ..CompletionItem::default()
+                    });
+                }
+
+                if "nd".starts_with(current_word) {
+                    completions.push(CompletionItem {
+                        label: "nd".to_string(),
+                        kind: Some(CompletionItemKind::KEYWORD),
+                        insert_text: Some("nd ${1:node_name} {\n\t$0\n}".to_string()),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        detail: Some("Create a dialogue node".to_string()),
+                        documentation: Some(Documentation::String(
+                            "Create a new dialog node that defines dialog content and choices"
+                                .to_string(),
+                        )),
+                        ..CompletionItem::default()
+                    });
+                }
+
+                if "fn".starts_with(current_word) {
+                    completions.push(CompletionItem {
+                        label: "fn".to_string(),
+                        kind: Some(CompletionItemKind::KEYWORD),
+                        insert_text: Some("fn ${1:function_name}() {\n\t$0\n}".to_string()),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        detail: Some("Create a function".to_string()),
+                        documentation: Some(Documentation::String(
+                            "Create a new function definition".to_string(),
+                        )),
+                        ..CompletionItem::default()
+                    });
+                }
+
+                completions
+            }
+            CompletionContext::InNode => {
+                let mut completions = Vec::new();
+
+                for keyword in &["text", "choice", "events"] {
+                    if keyword.starts_with(current_word) {
+                        let (insert_text, detail) = match *keyword {
+                            "text" => (
+                                "text: \"${1:text_content}\"".to_string(),
+                                "Story text content".to_string(),
+                            ),
+                            "choice" => (
+                                "choice: [\n\t\"${1:text}\" -> ${2:target_node}\n]".to_string(),
+                                "Add selection".to_string(),
+                            ),
+                            "events" => (
+                                "events: [\n\t${1:delay}, ${2:action}\n]".to_string(),
+                                "Timed events".to_string(),
+                            ),
+                            _ => (keyword.to_string(), "".to_string()),
+                        };
+                        completions.push(CompletionItem {
+                            label: keyword.to_string(),
+                            kind: Some(CompletionItemKind::PROPERTY),
+                            insert_text: Some(insert_text),
+                            insert_text_format: Some(InsertTextFormat::SNIPPET),
+                            detail: Some(detail),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+
+                completions
+            }
+            CompletionContext::InChoice => {
+                let mut completions = Vec::new();
+
+                for keyword in &["when", "return", "break"] {
+                    if keyword.starts_with(current_word) {
+                        let insert_text = match *keyword {
+                            "when" => Some("when ${1:condition}".to_string()),
+                            "return" => Some("return ${1:value}".to_string()),
+                            _ => None,
+                        };
+                        let has_snippet = insert_text.is_some();
+                        completions.push(CompletionItem {
+                            label: keyword.to_string(),
+                            kind: Some(CompletionItemKind::KEYWORD),
+                            insert_text,
+                            insert_text_format: if has_snippet {
+                                Some(InsertTextFormat::SNIPPET)
+                            } else {
+                                None
+                            },
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+
+                // Add node completions
+                for node in &symbol_table.nodes {
+                    if node.starts_with(current_word) {
+                        completions.push(CompletionItem {
+                            label: node.clone(),
+                            kind: Some(CompletionItemKind::CLASS),
+                            detail: Some("Jump to node".to_string()),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+
+                completions
+            }
+            CompletionContext::InExpression => {
+                let mut completions = Vec::new();
+
+                // Add function completions
+                for func in &symbol_table.functions {
+                    if func.name.starts_with(current_word) {
+                        completions.push(CompletionItem {
+                            label: func.name.clone(),
+                            kind: Some(CompletionItemKind::FUNCTION),
+                            detail: Some(format!(
+                                "fn {}({}){}",
+                                func.name,
+                                func.params
+                                    .iter()
+                                    .map(|p| format!("{}: {}", p.name, p.type_name))
+                                    .collect::<Vec<_>>()
+                                    .join(", "),
+                                if func.return_type.as_ref().is_none_or(|t| t.is_empty()) {
+                                    "".to_string()
+                                } else {
+                                    format!(" -> {}", func.return_type.as_ref().unwrap())
+                                }
+                            )),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+
+                // Add type keywords
+                for type_keyword in &["String", "Number", "Boolean", "true", "false"] {
+                    if type_keyword.starts_with(current_word) {
+                        completions.push(CompletionItem {
+                            label: type_keyword.to_string(),
+                            kind: Some(CompletionItemKind::KEYWORD),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+
+                completions
+            }
         }
     }
 }

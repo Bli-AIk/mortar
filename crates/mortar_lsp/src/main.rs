@@ -3,7 +3,7 @@ use std::env::temp_dir;
 use mortar_lsp::backend::Backend;
 use tokio::io::{stdin, stdout};
 use tower_lsp_server::{LspService, Server};
-use tracing::{subscriber, info};
+use tracing::{info, subscriber};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 #[tokio::main]

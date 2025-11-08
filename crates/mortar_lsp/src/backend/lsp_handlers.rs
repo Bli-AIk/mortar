@@ -1,12 +1,12 @@
 use ropey::Rope;
 use tokio;
+use tower_lsp_server::LanguageServer;
 use tower_lsp_server::jsonrpc::Result;
 use tower_lsp_server::lsp_types::*;
-use tower_lsp_server::LanguageServer;
 use tracing::info;
 
 use crate::analysis::SymbolTable;
-use crate::backend::{Backend, CompletionContext};
+use crate::backend::Backend;
 
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
@@ -188,8 +188,6 @@ impl LanguageServer for Backend {
             None => return Ok(None),
         };
 
-        let mut completions = Vec::new();
-
         let line_idx = position.line as usize;
         let char_idx = position.character as usize;
 
@@ -199,149 +197,12 @@ impl LanguageServer for Backend {
             String::new()
         };
 
-        let _text_before_cursor = if char_idx <= line_content.len() {
-            &line_content[..char_idx]
-        } else {
-            &line_content
-        };
-
         let current_word = self.get_current_word(&line_content, char_idx);
-
         let context = self.analyze_document_context(uri, position);
 
-        match context {
-            CompletionContext::TopLevel => {
-                if "node".starts_with(&current_word) {
-                    completions.push(CompletionItem {
-                        label: "node".to_string(),
-                        kind: Some(CompletionItemKind::KEYWORD),
-                        insert_text: Some("node ${1:node_name} {\n\t$0\n}".to_string()),
-                        insert_text_format: Some(InsertTextFormat::SNIPPET),
-                        detail: Some("Create a dialogue node".to_string()),
-                        documentation: Some(Documentation::String(
-                            "Create a new dialog node that defines dialog content and choices"
-                                .to_string(),
-                        )),
-                        ..CompletionItem::default()
-                    });
-                }
-                if "nd".starts_with(&current_word) {
-                    completions.push(CompletionItem {
-                        label: "nd".to_string(),
-                        kind: Some(CompletionItemKind::KEYWORD),
-                        insert_text: Some("nd ${1:node_name} {\n\t$0\n}".to_string()),
-                        insert_text_format: Some(InsertTextFormat::SNIPPET),
-                        detail: Some("Create a dialogue node".to_string()),
-                        documentation: Some(Documentation::String(
-                            "Create a new dialog node that defines dialog content and choices"
-                                .to_string(),
-                        )),
-                        ..CompletionItem::default()
-                    });
-                }
-                if "fn".starts_with(&current_word) {
-                    completions.push(CompletionItem {
-                        label: "fn".to_string(),
-                        kind: Some(CompletionItemKind::KEYWORD),
-                        insert_text: Some(
-                            "fn ${1:function_name}() {\n\t$0\n}"
-                                .to_string(),
-                        ),
-                        insert_text_format: Some(InsertTextFormat::SNIPPET),
-                        detail: Some("Create a function".to_string()),
-                        documentation: Some(Documentation::String(
-                            "Create a new function definition".to_string(),
-                        )),
-                        ..CompletionItem::default()
-                    });
-                }
-            }
-            CompletionContext::InNode => {
-                for keyword in &["text", "events", "choice"] {
-                    if keyword.starts_with(&current_word) {
-                        let (insert_text, detail) = match *keyword {
-                            "text" => (
-                                "text: \"${1:content}\"".to_string(),
-                                "Add conversation text".to_string(),
-                            ),
-                            "events" => (
-                                "events: [\n\t${1:0}, ${2:event_function}()\n]".to_string(),
-                                "Add event list".to_string(),
-                            ),
-                            "choice" => (
-                                "choice: [\n\t\"${1:text}\" -> ${2:target_node}\n]".to_string(),
-                                "Add selection".to_string(),
-                            ),
-                            _ => (keyword.to_string(), "".to_string()),
-                        };
-                        completions.push(CompletionItem {
-                            label: keyword.to_string(),
-                            kind: Some(CompletionItemKind::KEYWORD),
-                            insert_text: Some(insert_text),
-                            insert_text_format: Some(InsertTextFormat::SNIPPET),
-                            detail: Some(detail),
-                            ..CompletionItem::default()
-                        });
-                    }
-                }
-            }
-            CompletionContext::InChoice => {
-                for keyword in &["when", "return", "break"] {
-                    if keyword.starts_with(&current_word) {
-                        completions.push(CompletionItem {
-                            label: keyword.to_string(),
-                            kind: Some(CompletionItemKind::KEYWORD),
-                            ..CompletionItem::default()
-                        });
-                    }
-                }
-                for node in &symbol_table.nodes {
-                    if node.starts_with(&current_word) {
-                        completions.push(CompletionItem {
-                            label: node.clone(),
-                            kind: Some(CompletionItemKind::CLASS),
-                            detail: Some("Jump to node".to_string()),
-                            ..CompletionItem::default()
-                        });
-                    }
-                }
-            }
-            CompletionContext::InExpression => {
-                for func in &symbol_table.functions {
-                    if func.name.starts_with(&current_word) {
-                        completions.push(CompletionItem {
-                            label: func.name.clone(),
-                            kind: Some(CompletionItemKind::FUNCTION),
-                            detail: Some(format!(
-                                "fn {}({}){}",
-                                func.name,
-                                func.params
-                                    .iter()
-                                    .map(|p| format!("{}: {}", p.name, p.type_name))
-                                    .collect::<Vec<_>>()
-                                    .join(", "),
-                                func.return_type
-                                    .as_ref()
-                                    .map(|t| format!(" -> {}", t))
-                                    .unwrap_or_default()
-                            )),
-                            insert_text: Some(format!("{}(${{1}})", func.name)),
-                            insert_text_format: Some(InsertTextFormat::SNIPPET),
-                            ..CompletionItem::default()
-                        });
-                    }
-                }
-                for type_keyword in &["String", "Number", "Boolean", "true", "false"] {
-                    if type_keyword.starts_with(&current_word) {
-                        completions.push(CompletionItem {
-                            label: type_keyword.to_string(),
-                            kind: Some(CompletionItemKind::KEYWORD),
-                            ..CompletionItem::default()
-                        });
-                    }
-                }
-            }
-        }
+        // Use unified completion generation from completion.rs
+        let completions =
+            self.generate_completion_items_filtered(context, &current_word, &symbol_table);
 
         Ok(Some(CompletionResponse::Array(completions)))
     }
@@ -432,7 +293,7 @@ impl LanguageServer for Backend {
         params: SemanticTokensParams,
     ) -> Result<Option<SemanticTokensResult>> {
         let uri = &params.text_document.uri;
-        
+
         let (rope, _version) = match self.documents.get(uri) {
             Some(entry) => (entry.0.clone(), entry.1),
             None => return Ok(None),
@@ -440,7 +301,7 @@ impl LanguageServer for Backend {
 
         let content = rope.to_string();
         let tokens = self.analyze_semantic_tokens(&content);
-        
+
         Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
             result_id: None,
             data: tokens,

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use ropey::Rope;
 use tokio::sync::RwLock;
-use tower_lsp_server::lsp_types::*;
 use tower_lsp_server::Client;
+use tower_lsp_server::lsp_types::*;
 use tracing::info;
 
 use crate::analysis::SymbolTable;
@@ -82,7 +82,7 @@ impl Backend {
         let line_start = rope.line_to_char(line_idx);
         let char_offset = position.character as usize;
         let line_content = rope.line(line_idx);
-        
+
         if char_offset > line_content.len_chars() {
             return None;
         }
@@ -104,7 +104,7 @@ impl Backend {
 
     pub fn get_current_word(&self, line: &str, char_idx: usize) -> String {
         let chars: Vec<char> = line.chars().collect();
-        
+
         if char_idx >= chars.len() {
             return String::new();
         }
@@ -125,7 +125,7 @@ impl Backend {
 }
 
 // Re-export the modules from backend/ directory
-#[path = "backend/completion.rs"] 
+#[path = "backend/completion.rs"]
 mod completion;
 
 #[path = "backend/semantic_tokens.rs"]

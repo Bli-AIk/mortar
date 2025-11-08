@@ -26,7 +26,7 @@ impl Files {
         }
     }
 
-   /// Insert new file or get existing file ID
+    /// Insert new file or get existing file ID
     pub fn insert(&mut self, url: Uri) -> FileId {
         if let Some(&id) = self.url_to_id.get(&url) {
             return id;

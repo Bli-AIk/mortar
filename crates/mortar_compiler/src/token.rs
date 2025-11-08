@@ -87,10 +87,10 @@ pub struct TokenInfo<'a> {
 /// Public lexical analysis interface for LSP and other external components
 pub fn tokenize(input: &str) -> Vec<TokenInfo<'_>> {
     use logos::Logos;
-    
+
     let mut lexer = Token::lexer(input);
     let mut tokens = Vec::new();
-    
+
     while let Some(token_result) = lexer.next() {
         match token_result {
             Ok(token) => {
@@ -113,7 +113,7 @@ pub fn tokenize(input: &str) -> Vec<TokenInfo<'_>> {
             }
         }
     }
-    
+
     tokens
 }
 
