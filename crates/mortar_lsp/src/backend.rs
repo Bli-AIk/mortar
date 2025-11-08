@@ -7,9 +7,9 @@ use tokio::sync::RwLock;
 use tower_lsp_server::jsonrpc::Result;
 use tower_lsp_server::lsp_types::*;
 use tower_lsp_server::{Client, LanguageServer};
-use tracing::{info};
+use tracing::info;
 
-use crate::analysis::{analyze_program, SymbolTable};
+use crate::analysis::{SymbolTable, analyze_program};
 use crate::files::Files;
 
 #[derive(Clone)]
@@ -32,52 +32,51 @@ impl Backend {
         }
     }
 
-    /// 清理所有缓存的数据
+    /// Clear all cached data
     pub async fn cleanup(&self) {
-        info!("开始清理LSP服务器资源...");
-        
+        info!("Start cleaning up LSP server resources...");
+
         // 清理文档缓存
         let documents_count = self.documents.len();
         self.documents.clear();
-        info!("清理了 {} 个文档", documents_count);
+        info!("{} documents cleaned", documents_count);
 
         // 清理诊断信息
         let diagnostics_count = self.diagnostics.len();
         self.diagnostics.clear();
-        info!("清理了 {} 个诊断信息", diagnostics_count);
+        info!("Cleaned {} diagnostic messages", diagnostics_count);
 
         // 清理符号表
         let symbols_count = self.symbol_tables.len();
         self.symbol_tables.clear();
-        info!("清理了 {} 个符号表", symbols_count);
+        info!("Cleaned {} symbol tables", symbols_count);
 
         // 清理文件管理器
         {
             let mut files = self.files.write().await;
             *files = Files::new();
         }
-        
-        info!("LSP服务器资源清理完成");
+
+        info!("LSP server resource cleanup completed");
     }
 
-    /// 简化的清理操作，避免异步阻塞
+    /// Simplified cleanup operations to avoid asynchronous blocking
     pub fn cleanup_sync(&self) {
-        info!("开始同步清理LSP服务器资源...");
-        
-        // 清理文档缓存
+        info!("Start synchronously cleaning up LSP server resources...");
+
         let documents_count = self.documents.len();
         self.documents.clear();
-        
-        // 清理诊断信息
+
         let diagnostics_count = self.diagnostics.len();
         self.diagnostics.clear();
 
-        // 清理符号表
         let symbols_count = self.symbol_tables.len();
         self.symbol_tables.clear();
-        
-        info!("同步清理完成: {} 个文档, {} 个诊断, {} 个符号表", 
-              documents_count, diagnostics_count, symbols_count);
+
+        info!(
+            "Synchronization cleanup completed: {} documents, {} diagnostics, {} symbol tables",
+            documents_count, diagnostics_count, symbols_count
+        );
     }
 
     /// Analyze document content and generate diagnostic information
@@ -85,21 +84,16 @@ impl Backend {
         let mut diagnostics = Vec::new();
         let mut symbol_table = SymbolTable::new();
 
-        // 使用 tokio::task::spawn_blocking 来安全地执行可能阻塞的解析操作
         let content_owned = content.to_string();
-        match tokio::task::spawn_blocking(move || {
-            ParseHandler::parse_source_code(&content_owned)
-        }).await {
+        match tokio::task::spawn_blocking(move || ParseHandler::parse_source_code(&content_owned))
+            .await
+        {
             Ok(Ok(program)) => {
-                // 解析成功，进行分析
-                match tokio::task::spawn_blocking(move || {
-                    analyze_program(&program)
-                }).await {
+                match tokio::task::spawn_blocking(move || analyze_program(&program)).await {
                     Ok(Ok(table)) => {
                         symbol_table = table;
                     }
                     Ok(Err(errors)) => {
-                        // 将分析错误转换为诊断信息
                         for (message, line) in errors {
                             diagnostics.push(Diagnostic::new_simple(
                                 Range::new(
@@ -111,45 +105,41 @@ impl Backend {
                         }
                     }
                     Err(_) => {
-                        // 分析任务被取消或失败
                         diagnostics.push(Diagnostic::new_simple(
                             Range::new(Position::new(0, 0), Position::new(0, 0)),
-                            "分析任务失败".to_string(),
+                            "Analysis task failed".to_string(),
                         ));
                     }
                 }
             }
             Ok(Err(error)) => {
-                // 解析错误
                 diagnostics.push(Diagnostic::new_simple(
                     Range::new(Position::new(0, 0), Position::new(0, 0)),
                     error,
                 ));
             }
             Err(_) => {
-                // 解析任务被取消或失败
                 diagnostics.push(Diagnostic::new_simple(
                     Range::new(Position::new(0, 0), Position::new(0, 0)),
-                    "解析任务失败".to_string(),
+                    "Parse task failed".to_string(),
                 ));
             }
         }
 
-        // 保存符号表
         self.symbol_tables.insert(uri.clone(), symbol_table);
 
-        // 保存诊断信息
         self.diagnostics.insert(uri.clone(), diagnostics.clone());
 
-        // 异步发布诊断信息，避免阻塞
         let client = self.client.clone();
         let uri_clone = uri.clone();
         tokio::spawn(async move {
-            let _ = client.publish_diagnostics(uri_clone, diagnostics, None).await;
+            let _ = client
+                .publish_diagnostics(uri_clone, diagnostics, None)
+                .await;
         });
     }
 
-    /// 将位置转换为文档中的偏移量
+    /// Convert position to offset in document
     fn _position_to_offset(&self, rope: &Rope, position: Position) -> Option<usize> {
         let line_idx = position.line as usize;
         if line_idx >= rope.len_lines() {
@@ -243,18 +233,18 @@ impl LanguageServer for Backend {
 
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "Mortar LSP 服务器已初始化")
+            .log_message(MessageType::INFO, "Mortar LSP server initialized")
             .await;
     }
 
     async fn shutdown(&self) -> Result<()> {
-        info!("收到关闭请求");
-        
+        info!("Close request received");
+
         // 快速清理主要缓存，避免复杂异步操作
         self.documents.clear();
-        self.diagnostics.clear(); 
+        self.diagnostics.clear();
         self.symbol_tables.clear();
-        
+
         info!("关闭完成");
         Ok(())
     }
@@ -264,42 +254,37 @@ impl LanguageServer for Backend {
         let content = params.text_document.text;
         let version = Some(params.text_document.version);
 
-        // 存储文档内容
         let rope = Rope::from_str(&content);
         self.documents.insert(uri.clone(), (rope, version));
 
-        // 使用非阻塞方式进行文档分析
-        // 如果分析失败，不影响LSP的其他功能
         let client = self.client.clone();
         let symbol_tables = self.symbol_tables.clone();
         let diagnostics = self.diagnostics.clone();
         let uri_clone = uri.clone();
         let content_clone = content.clone();
-        
+
         tokio::spawn(async move {
-            // 简单的fallback分析，避免复杂的解析
             let mut diagnostics_vec = Vec::new();
             let symbol_table = SymbolTable::new();
-            
-            // 基本的语法检查
+
             if content_clone.trim().is_empty() {
                 diagnostics_vec.push(Diagnostic::new_simple(
                     Range::new(Position::new(0, 0), Position::new(0, 0)),
-                    "文档为空".to_string(),
+                    "Document is empty".to_string(),
                 ));
             } else if !content_clone.contains("node") {
                 diagnostics_vec.push(Diagnostic::new_simple(
                     Range::new(Position::new(0, 0), Position::new(0, 0)),
-                    "文档应包含至少一个node定义".to_string(),
+                    "The document should contain at least one node definition".to_string(),
                 ));
             }
 
-            // 保存结果
             symbol_tables.insert(uri_clone.clone(), symbol_table);
             diagnostics.insert(uri_clone.clone(), diagnostics_vec.clone());
 
-            // 发布诊断信息
-            let _ = client.publish_diagnostics(uri_clone, diagnostics_vec, None).await;
+            let _ = client
+                .publish_diagnostics(uri_clone, diagnostics_vec, None)
+                .await;
         });
     }
 
@@ -312,36 +297,34 @@ impl LanguageServer for Backend {
             let rope = Rope::from_str(&content);
             self.documents.insert(uri.clone(), (rope, version));
 
-            // 使用非阻塞方式进行文档重新分析
             let client = self.client.clone();
             let symbol_tables = self.symbol_tables.clone();
             let diagnostics = self.diagnostics.clone();
             let uri_clone = uri.clone();
             let content_clone = content.clone();
-            
+
             tokio::spawn(async move {
                 let mut diagnostics_vec = Vec::new();
                 let symbol_table = SymbolTable::new();
-                
-                // 基本的语法检查
+
                 if content_clone.trim().is_empty() {
                     diagnostics_vec.push(Diagnostic::new_simple(
                         Range::new(Position::new(0, 0), Position::new(0, 0)),
-                        "文档为空".to_string(),
+                        "Document is empty".to_string(),
                     ));
                 } else if !content_clone.contains("node") {
                     diagnostics_vec.push(Diagnostic::new_simple(
                         Range::new(Position::new(0, 0), Position::new(0, 0)),
-                        "文档应包含至少一个node定义".to_string(),
+                        "The document should contain at least one node definition".to_string(),
                     ));
                 }
 
-                // 保存结果
                 symbol_tables.insert(uri_clone.clone(), symbol_table);
                 diagnostics.insert(uri_clone.clone(), diagnostics_vec.clone());
 
-                // 发布诊断信息
-                let _ = client.publish_diagnostics(uri_clone, diagnostics_vec, None).await;
+                let _ = client
+                    .publish_diagnostics(uri_clone, diagnostics_vec, None)
+                    .await;
             });
         }
     }
@@ -357,13 +340,11 @@ impl LanguageServer for Backend {
         let uri = &params.text_document_position.text_document.uri;
         let _position = params.text_document_position.position;
 
-        // 获取当前文档
         let (_rope, _version) = match self.documents.get(uri) {
             Some(entry) => (entry.0.clone(), entry.1),
             None => return Ok(None),
         };
 
-        // 获取符号表
         let symbol_table = match self.symbol_tables.get(uri) {
             Some(table) => table.clone(),
             None => return Ok(None),
@@ -371,9 +352,9 @@ impl LanguageServer for Backend {
 
         let mut completions = Vec::new();
 
-        // 添加关键字补全
         let keywords = [
-            "node", "nd", "text", "events", "choice", "fn", "return", "break", "when",
+            "node", "nd", "text", "events", "choice", "fn", "return", "break", "when", "String",
+            "Number", "Boolean", "true", "false",
         ];
 
         for keyword in &keywords {
@@ -384,16 +365,22 @@ impl LanguageServer for Backend {
             });
         }
 
-        // 添加函数补全
         for func in &symbol_table.functions {
             completions.push(CompletionItem {
                 label: func.name.clone(),
                 kind: Some(CompletionItemKind::FUNCTION),
                 detail: Some(format!(
-                    "fn {}({}){}", 
+                    "fn {}({}){}",
                     func.name,
-                    func.params.iter().map(|p| format!("{}: {}", p.name, p.type_name)).collect::<Vec<_>>().join(", "),
-                    func.return_type.as_ref().map(|t| format!(" -> {}", t)).unwrap_or_default()
+                    func.params
+                        .iter()
+                        .map(|p| format!("{}: {}", p.name, p.type_name))
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    func.return_type
+                        .as_ref()
+                        .map(|t| format!(" -> {}", t))
+                        .unwrap_or_default()
                 )),
                 insert_text: Some(format!("{}(${{1}})", func.name)),
                 insert_text_format: Some(InsertTextFormat::SNIPPET),
@@ -401,7 +388,6 @@ impl LanguageServer for Backend {
             });
         }
 
-        // 添加节点补全
         for node in &symbol_table.nodes {
             completions.push(CompletionItem {
                 label: node.clone(),
@@ -417,12 +403,10 @@ impl LanguageServer for Backend {
         let _uri = &params.text_document_position_params.text_document.uri;
         let _position = params.text_document_position_params.position;
 
-        // 这里可以添加悬停信息的实现
-        // 目前返回基本的语言信息
         Ok(Some(Hover {
             contents: HoverContents::Markup(MarkupContent {
                 kind: MarkupKind::Markdown,
-                value: "**Mortar 语言**\n\n用于游戏对话和文本事件系统的DSL。".to_string(),
+                value: "**Mortar Language**\n\nDSL for game dialogue and text event systems.".to_string(),
             }),
             range: None,
         }))
@@ -433,15 +417,20 @@ impl LanguageServer for Backend {
         Ok(None)
     }
 
-    async fn goto_definition(&self, _params: GotoDefinitionParams) -> Result<Option<GotoDefinitionResponse>> {
+    async fn goto_definition(
+        &self,
+        _params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
         // TODO: 实现跳转到定义
         Ok(None)
     }
 
-    async fn document_symbol(&self, params: DocumentSymbolParams) -> Result<Option<DocumentSymbolResponse>> {
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
         let uri = &params.text_document.uri;
-        
-        // 获取符号表
+
         let symbol_table = match self.symbol_tables.get(uri) {
             Some(table) => table.clone(),
             None => return Ok(None),
@@ -449,7 +438,6 @@ impl LanguageServer for Backend {
 
         let mut symbols = Vec::new();
 
-        // 添加节点符号
         for node in &symbol_table.nodes {
             symbols.push(DocumentSymbol {
                 name: node.clone(),
@@ -464,15 +452,21 @@ impl LanguageServer for Backend {
             });
         }
 
-        // 添加函数符号
         for func in &symbol_table.functions {
             symbols.push(DocumentSymbol {
                 name: func.name.clone(),
                 detail: Some(format!(
-                    "fn {}({}){}", 
+                    "fn {}({}){}",
                     func.name,
-                    func.params.iter().map(|p| format!("{}: {}", p.name, p.type_name)).collect::<Vec<_>>().join(", "),
-                    func.return_type.as_ref().map(|t| format!(" -> {}", t)).unwrap_or_default()
+                    func.params
+                        .iter()
+                        .map(|p| format!("{}: {}", p.name, p.type_name))
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    func.return_type
+                        .as_ref()
+                        .map(|t| format!(" -> {}", t))
+                        .unwrap_or_default()
                 )),
                 kind: SymbolKind::FUNCTION,
                 tags: None,
@@ -487,7 +481,10 @@ impl LanguageServer for Backend {
         Ok(Some(DocumentSymbolResponse::Nested(symbols)))
     }
 
-    async fn semantic_tokens_full(&self, _params: SemanticTokensParams) -> Result<Option<SemanticTokensResult>> {
+    async fn semantic_tokens_full(
+        &self,
+        _params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
         // TODO: 实现语义token高亮
         Ok(None)
     }

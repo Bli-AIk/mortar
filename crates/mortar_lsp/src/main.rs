@@ -8,7 +8,6 @@ use tracing_subscriber::fmt::format::FmtSpan;
 
 #[tokio::main]
 async fn main() {
-    // 设置日志记录
     let cache_dir = temp_dir().join("mortar-lsp");
     let file_appender = tracing_appender::rolling::hourly(cache_dir, "mortar-lsp.log");
     let (non_blocking_writer, _guard) = tracing_appender::non_blocking(file_appender);
@@ -26,12 +25,11 @@ async fn main() {
 
     subscriber::set_global_default(subscriber).expect("Unable to set global default subscriber");
 
-    info!("启动 Mortar LSP 服务器...");
+    info!("Starting the Mortar LSP server...");
 
-    // 按照官方示例的简单模式启动LSP服务器
     let stdin = stdin();
     let stdout = stdout();
 
-    let (service, socket) = LspService::new(|client| Backend::new(client));
+    let (service, socket) = LspService::new(Backend::new);
     Server::new(stdin, stdout, socket).serve(service).await;
 }

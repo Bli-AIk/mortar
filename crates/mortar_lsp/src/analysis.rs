@@ -23,7 +23,6 @@ pub fn analyze_program(program: &Program) -> Result<SymbolTable, Vec<(String, us
     let mut symbol_table = SymbolTable::new();
     let mut errors = Vec::new();
 
-    // 收集所有节点和函数定义
     let mut node_names = HashSet::new();
     let mut function_names = HashSet::new();
 

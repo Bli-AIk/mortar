@@ -9,7 +9,7 @@
 
 > **Current Status**: 🚧 Early Development (Initial version in progress)
 
-![Mortar](./mortar_logo.svg)
+![Mortar](./crates/mortar_logo.svg)
 
 **Mortar** is a Domain Specific Language (DSL) designed for game dialogue and text event systems. Its core philosophy is
 to achieve **strict separation between text content and event logic**.
