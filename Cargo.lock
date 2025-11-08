@@ -555,15 +555,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "mortar_grammar"
-version = "0.1.0"
-
-[[package]]
 name = "mortar_language"
 version = "0.1.0"
 dependencies = [
  "mortar_compiler",
- "mortar_grammar",
  "mortar_lsp",
 ]
 
