@@ -71,6 +71,35 @@ impl Backend {
         (line, utf16_column)
     }
 
+    /// Check if the current identifier is in a choice context (e.g., choice list)
+    fn is_in_choice_context(&self, all_tokens: &[TokenInfo], current_index: usize) -> bool {
+        // 向后查找，看是否能找到 choice 关键字和相应的结构
+        let mut bracket_depth = 0;
+
+        for i in (0..current_index).rev() {
+            match all_tokens[i].token {
+                Token::RightBracket => bracket_depth += 1,
+                Token::LeftBracket => {
+                    bracket_depth -= 1;
+                    if bracket_depth < 0 {
+                        // 找到匹配的左括号，继续向前查找choice关键字
+                        for j in (0..i).rev() {
+                            match all_tokens[j].token {
+                                Token::Choice => return true,
+                                Token::LeftBrace | Token::RightBrace => break, // 跨越了节点边界
+                                _ => continue,
+                            }
+                        }
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        false
+    }
+
     /// Get semantic token type from compiler lexical token with context awareness
     fn get_semantic_token_type_with_context(
         &self,
@@ -84,6 +113,7 @@ impl Backend {
         const COMMENT: u32 = 3;
         const FUNCTION: u32 = 4;
         const VARIABLE: u32 = 5;
+        const METHOD: u32 = 6; // 用于函数调用
         const OPERATOR: u32 = 7;
         const PUNCTUATION: u32 = 8;
 
@@ -121,7 +151,7 @@ impl Backend {
             | Token::RightParen => PUNCTUATION,
 
             Token::Identifier(_) => {
-                // 检查是否是 node/nd 或 fn 后面的标识符
+                // 检查是否是 node/nd 或 fn 后面的标识符（函数/节点定义）
                 if current_index > 0 {
                     if let Some(prev_token_info) = all_tokens.get(current_index - 1) {
                         match prev_token_info.token {
@@ -130,6 +160,34 @@ impl Backend {
                         }
                     }
                 }
+
+                // 检查是否是函数调用（标识符后面跟着左括号）
+                if current_index + 1 < all_tokens.len() {
+                    if let Some(next_token_info) = all_tokens.get(current_index + 1) {
+                        if matches!(next_token_info.token, Token::LeftParen) {
+                            return METHOD;
+                        }
+                    }
+                }
+
+                // 检查是否是节点调用（在选择或跳转中的标识符）
+                // 这种情况下，标识符通常出现在箭头(->)之后或逗号之后
+                if current_index > 0 {
+                    if let Some(prev_token_info) = all_tokens.get(current_index - 1) {
+                        match prev_token_info.token {
+                            Token::Arrow => return METHOD, // 节点跳转
+                            Token::Comma => {
+                                // 在选择列表中的节点引用
+                                // 检查更前面的token是否表明这是一个选择上下文
+                                if self.is_in_choice_context(all_tokens, current_index) {
+                                    return METHOD;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+
                 VARIABLE
             }
 
@@ -282,5 +340,55 @@ fn get_name() -> String"#;
 
         // 应该有4个函数标记：start_game, another_node, play_sound, get_name
         assert_eq!(function_tokens.len(), 4, "应该有4个函数名标记");
+    }
+
+    #[test]
+    fn test_function_call_highlighting() {
+        use tower_lsp_server::LspService;
+        let (service, _) = LspService::new(|client| Backend::new(client));
+        let backend = Backend::new(service.inner().client.clone());
+
+        // 测试函数调用高亮
+        let content = "node start_game {\n    text: \"Hello world\"\n    events: [\n        0, play_sound(\"greeting.wav\")\n    ]\n}\n\nfn play_sound(file: String)";
+
+        let semantic_tokens = backend.analyze_semantic_tokens(content);
+
+        // 找出所有方法调用类型的标记（token_type = 6）
+        let function_call_tokens: Vec<_> = semantic_tokens
+            .iter()
+            .filter(|token| token.token_type == 6) // METHOD = 6
+            .collect();
+
+        // 应该有play_sound函数调用
+        assert!(
+            function_call_tokens.len() >= 1,
+            "应该有至少1个函数调用标记，实际有{}",
+            function_call_tokens.len()
+        );
+    }
+
+    #[test]
+    fn test_node_jump_highlighting() {
+        use tower_lsp_server::LspService;
+        let (service, _) = LspService::new(|client| Backend::new(client));
+        let backend = Backend::new(service.inner().client.clone());
+
+        // 测试节点跳转高亮
+        let content = "node start {\n    text: \"Beginning\"\n} -> middle_node\n\nnode middle {\n    text: \"Middle\"\n}";
+
+        let semantic_tokens = backend.analyze_semantic_tokens(content);
+
+        // 找出所有方法调用类型的标记（包括节点调用）
+        let function_call_tokens: Vec<_> = semantic_tokens
+            .iter()
+            .filter(|token| token.token_type == 6) // METHOD = 6
+            .collect();
+
+        // 应该有middle_node节点调用
+        assert!(
+            function_call_tokens.len() >= 1,
+            "应该有至少1个节点调用标记，实际有{}",
+            function_call_tokens.len()
+        );
     }
 }

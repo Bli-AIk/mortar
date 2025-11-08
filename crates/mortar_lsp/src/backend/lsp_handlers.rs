@@ -49,7 +49,7 @@ impl LanguageServer for Backend {
                                     SemanticTokenType::COMMENT,
                                     SemanticTokenType::FUNCTION,
                                     SemanticTokenType::VARIABLE,
-                                    SemanticTokenType::TYPE,
+                                    SemanticTokenType::METHOD, // 用于函数调用
                                     SemanticTokenType::OPERATOR,
                                     SemanticTokenType::new("punctuation"),
                                 ],

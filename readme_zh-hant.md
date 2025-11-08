@@ -58,14 +58,14 @@ cargo build --release
 ```mortar
 // ‘node’ 就是一个基本的对话节点。
 // 也可以缩写为 ‘nd’！
-node start {
+node Start {
     // 编写你的文本内容。
     // 双引号（或单引号）是必须的，但分号和逗号可以省略！
     text: "你好呀，欢迎阅读这个互动故事。"
-    
+
     // 这个事件列表写在紧挨着上一个 text，所以它们是关联的。
     events: [
-        // 使用 索引 + 事件函数 的方式来编写事件。支持链式写法。
+        // 使用 索引 + 事件 函数 的方式来编写事件。支持链式写法。
         // 这里的索引表示事件触发的字符位置（从 0 开始计数）。
         // 它会绑定到你的游戏具体实现——打字机播放的位置？音频时间轴？还是别的什么，都可以，看你怎么实现。
         0, play_sound("greeting.wav")
@@ -81,47 +81,47 @@ node start {
         4.2, set_color("#33CCFF")
         10.8, set_color("#FF6B6B")
     ]
-    
+
     // 这个 text 块没有 events…… 这是完全合法的！
     text: "太好啦，我们走！"
-    
+
 // 节点后面的箭头表示跳转到下一个节点。
-} -> choice_point
+} -> ChoicePoint
 
 /*
 这里还有一个节点，展示了如何编写选项——通过选择字段实现。
 */
 
-node choice_point {
+node ChoicePoint {
     text: "你想干点啥？"
-    
+
     // 通过选择字段，我们也可以跳转到不同的节点。
     choice: [
         // 这个选项没有任何条件判断。按理来说，你始终可以选择它。
         "探索森林" -> forest_scene,
-        
+
         // 这两个选项带有 when 关键字，这说明它们带有条件判断！
         // when 关键字支持 链式写法 和 函数式写法。
         ("留在城里").when(has_map) -> town_scene,
         "查看背包" when has_backpack  -> inventory,
-        
+
         // 选择字段也可以嵌套一个选择字段。你想嵌套多少层都行！
         "吃点什么" -> [
             "Apple" -> eat_apple,
             "Bread" -> eat_bread
         ]
-        
+
         // 使用 return 关键字 退出当前节点。
         // 顺带一提，如果这个节点有后续节点，那 return 不会终止整个对话流程，只会退出当前节点。
         "别朝我叭叭了！！" -> return,
-        
+
         // 使用 break 关键字 终止选项列表。
         "我不到啊……" -> break,
     ],
-    
+
     // 在这个选择字段中，只有你选了 "我不到啊……"，才会来到这一行。
     text: "我真服了。那咱就先结束对话吧。",
-    
+
     // 然后，由于没有任何后续节点，这个对话还是结束了。
 }
 
@@ -134,6 +134,10 @@ fn set_animation(anim_name: String)
 fn set_color(value: String)
 
 fn get_name() -> String
+
+fn has_map() -> Boolean
+
+fn has_backpack() -> Boolean
 ```
 
 编译该 Mortar 文件：

@@ -64,7 +64,7 @@ Create a simple Mortar file `hello.mortar`:
 ```mortar
 // 'node' is a basic dialogue node.
 // It can also be abbreviated as 'nd'!
-node start {
+node Start {
     // Write your text content.
     // Double quotes (or single quotes) are required, but semicolons and commas can be omitted!
     text: "Hello, welcome to this interactive story."
@@ -94,13 +94,13 @@ node start {
     text: "Ok, Let's GO!"
     
 // The arrow after a node indicates jumping to the next node.
-} -> choice_point
+} -> ChoicePoint
 
 /*
 There is also a node here that shows how to write options - by choice field.
 */
 
-node choice_point {
+node ChoicePoint {
     text: "What would you like to do?"
     
     // By choice field, we can also jump to different nodes.
@@ -144,6 +144,10 @@ fn set_animation(anim_name: String)
 fn set_color(value: String)
 
 fn get_name() -> String
+
+fn has_map() -> Boolean
+
+fn has_backpack() -> Boolean
 ```
 
 Compile the Mortar file:
