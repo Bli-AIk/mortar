@@ -35,6 +35,20 @@ pub enum Token<'a> {
     Break,
     #[token("when")]
     When,
+
+    // Type keywords
+    #[token("String")]
+    StringType,
+    #[token("Number")]
+    NumberType,
+    #[token("Boolean")]
+    BooleanType,
+
+    // Boolean literals
+    #[token("true")]
+    True,
+    #[token("false")]
+    False,
     // endregion
 
     // region Operators & Punctuation
@@ -138,6 +152,12 @@ impl fmt::Display for Token<'_> {
             Return => write!(f, "return"),
             Break => write!(f, "break"),
             When => write!(f, "when"),
+
+            StringType => write!(f, "String"),
+            NumberType => write!(f, "Number"),
+            BooleanType => write!(f, "Boolean"),
+            True => write!(f, "true"),
+            False => write!(f, "false"),
 
             Arrow => write!(f, "->"),
             Colon => write!(f, ":"),

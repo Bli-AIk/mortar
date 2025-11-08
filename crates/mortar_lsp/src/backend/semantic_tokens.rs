@@ -97,7 +97,12 @@ impl Backend {
             | Token::Fn
             | Token::Return
             | Token::Break
-            | Token::When => KEYWORD,
+            | Token::When
+            | Token::StringType
+            | Token::NumberType
+            | Token::BooleanType
+            | Token::True
+            | Token::False => KEYWORD,
 
             Token::String(_) => STRING,
 
@@ -209,7 +214,48 @@ mod tests {
     }
 
     #[test]
-    fn test_function_name_highlighting() {
+    fn test_type_keywords_highlighting() {
+        use tower_lsp_server::LspService;
+        let (service, _) = LspService::new(|client| Backend::new(client));
+        let backend = Backend::new(service.inner().client.clone());
+
+        // 测试类型关键字和布尔字面量的高亮
+        let content = r#"fn process_data(name: String, count: Number, active: Boolean) -> Boolean
+fn get_status() -> String
+
+node test {
+    text: "Result is true"
+    text: "Status is false"
+}"#;
+
+        let semantic_tokens = backend.analyze_semantic_tokens(content);
+
+        // 找出所有关键字类型的标记（token_type = 0）
+        let keyword_tokens: Vec<_> = semantic_tokens
+            .iter()
+            .filter(|token| token.token_type == 0) // KEYWORD = 0
+            .collect();
+
+        // 应该包含：fn, String, Number, Boolean, Boolean, fn, String, node, true, false
+        // 注意：true 和 false 作为字符串内容不会被识别为关键字，只有作为独立token才会
+        assert!(
+            keyword_tokens.len() >= 8,
+            "应该有至少8个关键字标记，实际有{}",
+            keyword_tokens.len()
+        );
+
+        // 找出所有函数类型的标记（token_type = 4）
+        let function_tokens: Vec<_> = semantic_tokens
+            .iter()
+            .filter(|token| token.token_type == 4) // FUNCTION = 4
+            .collect();
+
+        // 应该有3个函数标记：process_data, get_status, test
+        assert_eq!(function_tokens.len(), 3, "应该有3个函数名标记");
+    }
+
+    #[test]
+    fn test_original_function_name_highlighting() {
         use tower_lsp_server::LspService;
         let (service, _) = LspService::new(|client| Backend::new(client));
         let backend = Backend::new(service.inner().client.clone());

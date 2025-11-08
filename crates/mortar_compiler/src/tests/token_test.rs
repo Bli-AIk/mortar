@@ -215,7 +215,7 @@ mod tests {
             Token::LeftParen,
             Token::Identifier("file_name"),
             Token::Colon,
-            Token::Identifier("String"),
+            Token::StringType,
             Token::RightParen,
         ];
 
@@ -232,7 +232,7 @@ mod tests {
             Token::LeftParen,
             Token::RightParen,
             Token::Arrow,
-            Token::Identifier("String"),
+            Token::StringType,
         ];
 
         let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
@@ -403,5 +403,50 @@ mod tests {
         assert_eq!(tokens.len(), 7);
         assert_eq!(tokens[0], Token::Node);
         assert_eq!(tokens[1], Token::Identifier("test"));
+    }
+
+    #[test]
+    fn test_type_keywords() {
+        let input = "String Number Boolean";
+        let expected = vec![Token::StringType, Token::NumberType, Token::BooleanType];
+
+        let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_boolean_literals() {
+        let input = "true false";
+        let expected = vec![Token::True, Token::False];
+
+        let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_function_with_all_types() {
+        let input = "fn test(name: String, count: Number, active: Boolean) -> Boolean";
+        let expected = vec![
+            Token::Fn,
+            Token::Identifier("test"),
+            Token::LeftParen,
+            Token::Identifier("name"),
+            Token::Colon,
+            Token::StringType,
+            Token::Comma,
+            Token::Identifier("count"),
+            Token::Colon,
+            Token::NumberType,
+            Token::Comma,
+            Token::Identifier("active"),
+            Token::Colon,
+            Token::BooleanType,
+            Token::RightParen,
+            Token::Arrow,
+            Token::BooleanType,
+        ];
+
+        let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
+        assert_eq!(tokens, expected);
     }
 }

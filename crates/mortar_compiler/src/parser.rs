@@ -443,11 +443,7 @@ impl<'a> Parser<'a> {
 
         let return_type = if self.check(&Token::Arrow) {
             self.advance(); // consume '->'
-            if let Some(Token::Identifier(type_name)) = self.advance() {
-                Some(type_name.to_string())
-            } else {
-                return Err("Expected type after '->'".to_string());
-            }
+            Some(self.parse_type()?)
         } else {
             None
         };
@@ -468,13 +464,19 @@ impl<'a> Parser<'a> {
 
         self.consume(&Token::Colon, "Expected ':'")?;
 
-        let type_name = if let Some(Token::Identifier(type_name)) = self.advance() {
-            type_name.to_string()
-        } else {
-            return Err("Expected parameter type".to_string());
-        };
+        let type_name = self.parse_type()?;
 
         Ok(Param { name, type_name })
+    }
+
+    fn parse_type(&mut self) -> Result<String, String> {
+        match self.advance() {
+            Some(Token::Identifier(type_name)) => Ok(type_name.to_string()),
+            Some(Token::StringType) => Ok("String".to_string()),
+            Some(Token::NumberType) => Ok("Number".to_string()),
+            Some(Token::BooleanType) => Ok("Boolean".to_string()),
+            _ => Err("Expected type".to_string()),
+        }
     }
 
     fn parse_func_call(&mut self) -> Result<FuncCall, String> {
