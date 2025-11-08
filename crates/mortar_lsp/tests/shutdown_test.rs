@@ -67,7 +67,10 @@ async fn test_concurrent_operations() {
     for handle in handles {
         match handle.await {
             Ok((task_id, duration)) => {
-                println!("Concurrent task {} completed, took: {:?}", task_id, duration);
+                println!(
+                    "Concurrent task {} completed, took: {:?}",
+                    task_id, duration
+                );
                 if duration > max_duration {
                     max_duration = duration;
                 }

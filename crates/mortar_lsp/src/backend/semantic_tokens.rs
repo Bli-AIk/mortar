@@ -154,36 +154,39 @@ impl Backend {
             Token::Identifier(_) => {
                 // Check if it's an identifier after node/nd or fn (function/node definition)
                 if current_index > 0
-                    && let Some(prev_token_info) = all_tokens.get(current_index - 1) {
-                        match prev_token_info.token {
-                            Token::Node | Token::Fn => return FUNCTION,
-                            _ => {}
-                        }
+                    && let Some(prev_token_info) = all_tokens.get(current_index - 1)
+                {
+                    match prev_token_info.token {
+                        Token::Node | Token::Fn => return FUNCTION,
+                        _ => {}
                     }
+                }
 
                 // Check if it's a function call (identifier followed by left parenthesis)
                 if current_index + 1 < all_tokens.len()
                     && let Some(next_token_info) = all_tokens.get(current_index + 1)
-                    && matches!(next_token_info.token, Token::LeftParen) {
-                        return METHOD;
-                    }
+                    && matches!(next_token_info.token, Token::LeftParen)
+                {
+                    return METHOD;
+                }
 
                 // Check if it's a node call (identifier in choice or jump context)
                 // In this case, identifier usually appears after arrow (->) or comma
                 if current_index > 0
-                    && let Some(prev_token_info) = all_tokens.get(current_index - 1) {
-                        match prev_token_info.token {
-                            Token::Arrow => return METHOD, // Node jump
-                            Token::Comma => {
-                                // Node reference in choice list
-                                // Check if previous tokens indicate this is a choice context
-                                if self.is_in_choice_context(all_tokens, current_index) {
-                                    return METHOD;
-                                }
+                    && let Some(prev_token_info) = all_tokens.get(current_index - 1)
+                {
+                    match prev_token_info.token {
+                        Token::Arrow => return METHOD, // Node jump
+                        Token::Comma => {
+                            // Node reference in choice list
+                            // Check if previous tokens indicate this is a choice context
+                            if self.is_in_choice_context(all_tokens, current_index) {
+                                return METHOD;
                             }
-                            _ => {}
                         }
+                        _ => {}
                     }
+                }
 
                 VARIABLE
             }
@@ -212,7 +215,11 @@ mod tests {
             .filter(|t| matches!(t.token, Token::SingleLineComment(_)))
             .collect();
 
-        assert_eq!(comment_tokens.len(), 1, "Should have exactly one comment token");
+        assert_eq!(
+            comment_tokens.len(),
+            1,
+            "Should have exactly one comment token"
+        );
 
         let comment_token = comment_tokens[0];
         // Verify comment completeness
@@ -306,7 +313,11 @@ node test {
             .collect();
 
         // Should have 3 function tokens: process_data, get_status, test
-        assert_eq!(function_tokens.len(), 3, "Should have 3 function name tokens");
+        assert_eq!(
+            function_tokens.len(),
+            3,
+            "Should have 3 function name tokens"
+        );
     }
 
     #[test]
@@ -336,7 +347,11 @@ fn get_name() -> String"#;
             .collect();
 
         // Should have 4 function tokens: start_game, another_node, play_sound, get_name
-        assert_eq!(function_tokens.len(), 4, "Should have 4 function name tokens");
+        assert_eq!(
+            function_tokens.len(),
+            4,
+            "Should have 4 function name tokens"
+        );
     }
 
     #[test]

@@ -198,7 +198,10 @@ fn event_{}() -> String
 
     let processing_duration = start.elapsed();
     println!("Processing 200 documents took: {:?}", processing_duration);
-    println!("Successfully parsed document count: {}", parse_results.len());
+    println!(
+        "Successfully parsed document count: {}",
+        parse_results.len()
+    );
 
     // Test cleanup
     let cleanup_start = Instant::now();
