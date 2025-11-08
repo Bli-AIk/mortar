@@ -10,54 +10,58 @@ impl Backend {
         let mut last_line = 0u32;
         let mut last_column = 0u32;
 
-        for (line_idx, line_content) in content.lines().enumerate() {
-            let line_idx = line_idx as u32;
+        // 对整个文档进行tokenize，而不是逐行处理
+        let compiler_tokens = tokenize(content);
 
-            let mut line_tokens = Vec::new();
-            self.analyze_line_tokens_with_compiler(line_content, 0, &mut line_tokens);
+        for token_info in compiler_tokens {
+            let token_type = self.get_semantic_token_type(&token_info.token);
 
-            line_tokens.sort_by_key(|&(start, _length, _type)| start);
+            // 计算token的行列位置
+            let (token_line, token_column) =
+                self.get_line_column_position(content, token_info.start);
+            let length = (token_info.end - token_info.start) as u32;
 
-            for (start, length, token_type) in line_tokens {
-                let delta_line = line_idx - last_line;
-                let delta_start = if delta_line == 0 {
-                    start - last_column
-                } else {
-                    start
-                };
+            let delta_line = token_line - last_line;
+            let delta_start = if delta_line == 0 {
+                token_column - last_column
+            } else {
+                token_column
+            };
 
-                tokens.push(SemanticToken {
-                    delta_line,
-                    delta_start,
-                    length,
-                    token_type,
-                    token_modifiers_bitset: 0,
-                });
+            tokens.push(SemanticToken {
+                delta_line,
+                delta_start,
+                length,
+                token_type,
+                token_modifiers_bitset: 0,
+            });
 
-                last_line = line_idx;
-                last_column = start;
-            }
+            last_line = token_line;
+            last_column = token_column;
         }
 
         tokens
     }
 
-    /// Analyze lexical tokens for a line using compiler library
-    fn analyze_line_tokens_with_compiler(
-        &self,
-        line_content: &str,
-        offset: u32,
-        line_tokens: &mut Vec<(u32, u32, u32)>,
-    ) {
-        let tokens = tokenize(line_content);
+    /// Calculate line and column position from byte offset
+    fn get_line_column_position(&self, content: &str, offset: usize) -> (u32, u32) {
+        let mut line = 0u32;
+        let mut column = 0u32;
 
-        for token_info in tokens {
-            let start = token_info.start as u32 + offset;
-            let length = (token_info.end - token_info.start) as u32;
+        for (i, ch) in content.char_indices() {
+            if i >= offset {
+                break;
+            }
 
-            let token_type = self.get_semantic_token_type(&token_info.token);
-            line_tokens.push((start, length, token_type));
+            if ch == '\n' {
+                line += 1;
+                column = 0;
+            } else {
+                column += 1;
+            }
         }
+
+        (line, column)
     }
 
     /// Get semantic token type from compiler lexical token
