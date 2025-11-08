@@ -44,14 +44,14 @@ node ChoicePoint {
 
         // 这两个选项带有 when 关键字，这说明它们带有条件判断！
         // when 关键字支持 链式写法 和 函数式写法。
-        ("留在城里").when(has_map()) -> town_scene,
-        "查看背包" when has_backpack()  -> inventory,
+        ("留在城里").when(has_map()) -> town_scene;
+        "查看背包" when has_backpack()  -> inventory;
 
         // 选择字段也可以嵌套一个选择字段。你想嵌套多少层都行！
         "吃点什么" -> [
-            "Apple" -> eat_apple,
-            "Bread" -> eat_bread
-        ]
+            "Apple" -> eat_apple;
+            "Bread" -> eat_bread;
+        ];
 
         // 使用 return 关键字 退出当前节点。
         // 顺带一提，如果这个节点有后续节点，那 return 不会终止整个对话流程，只会退出当前节点。
@@ -69,15 +69,15 @@ node ChoicePoint {
 
 // 在 start 中调用的函数不是平白无故就出现的——你需要在 Mortar 文件中定义它们！
 // 这有点像是 C / C++ 里的函数声明。它们最终会被编译器识别并关联到你的游戏代码中。
-fn play_sound(file_name: String)
+fn play_sound(file_name: String);
 
-fn set_animation(anim_name: String)
+fn set_animation(anim_name: String);
 
-fn set_color(value: String)
+fn set_color(value: String);
 
-fn get_name() -> String
+fn get_name() -> String;
 
 // fn 可以写作 function ，Bool 也可以写作 Boolean。
-function has_map() -> Bool
+function has_map() -> Bool;
 
-fn has_backpack() -> Boolean
+fn has_backpack() -> Boolean;

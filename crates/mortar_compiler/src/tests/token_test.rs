@@ -29,11 +29,12 @@ mod tests {
 
     #[test]
     fn test_operators_and_punctuation() {
-        let input = "-> : , . { } [ ] ( )";
+        let input = "-> : , ; . { } [ ] ( )";
         let expected = vec![
             Token::Arrow,
             Token::Colon,
             Token::Comma,
+            Token::Semicolon,
             Token::Dot,
             Token::LeftBrace,
             Token::RightBrace,

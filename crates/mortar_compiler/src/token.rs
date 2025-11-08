@@ -60,6 +60,8 @@ pub enum Token<'a> {
     Colon,
     #[token(",")]
     Comma,
+    #[token(";")]
+    Semicolon,
     #[token(".")]
     Dot,
     #[token("{")]
@@ -164,6 +166,7 @@ impl fmt::Display for Token<'_> {
             Arrow => write!(f, "->"),
             Colon => write!(f, ":"),
             Comma => write!(f, ","),
+            Semicolon => write!(f, ";"),
             Dot => write!(f, "."),
             LeftBrace => write!(f, "{{"),
             RightBrace => write!(f, "}}"),

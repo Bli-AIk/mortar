@@ -2,60 +2,60 @@ use std::time::{Duration, Instant};
 
 #[tokio::test]
 async fn test_shutdown_timing() {
-    println!("🔄 测试LSP关闭时间性能");
+    println!("🔄 Testing LSP shutdown timing performance");
 
-    // 模拟简单的关闭操作计时
+    // Simulate simple shutdown operation timing
     let start = Instant::now();
 
-    // 模拟清理操作
+    // Simulate cleanup operations
     tokio::time::sleep(Duration::from_millis(1)).await;
 
     let duration = start.elapsed();
-    println!("✅ 模拟关闭操作耗时: {:?}", duration);
+    println!("✅ Simulated shutdown operation took: {:?}", duration);
 
-    // 验证关闭在合理时间内完成
+    // Verify shutdown completes within reasonable time
     assert!(
         duration < Duration::from_millis(50),
-        "关闭时间过长: {:?}",
+        "Shutdown time too long: {:?}",
         duration
     );
 
-    println!("✅ LSP关闭时间测试通过!");
+    println!("✅ LSP shutdown timing test passed!");
 }
 
 #[tokio::test]
 async fn test_repeated_shutdowns() {
-    println!("🔄 测试重复关闭操作性能");
+    println!("🔄 Testing repeated shutdown operations performance");
 
     for i in 0..10 {
         let start = Instant::now();
 
-        // 模拟关闭操作
+        // Simulate shutdown operation
         tokio::time::sleep(Duration::from_micros(100)).await;
 
         let duration = start.elapsed();
-        println!("第{}次关闭耗时: {:?}", i + 1, duration);
+        println!("Shutdown #{} took: {:?}", i + 1, duration);
         assert!(
             duration < Duration::from_millis(10),
-            "第{}次关闭时间过长: {:?}",
+            "Shutdown #{} time too long: {:?}",
             i + 1,
             duration
         );
     }
 
-    println!("✅ 重复关闭测试通过!");
+    println!("✅ Repeated shutdown test passed!");
 }
 
 #[tokio::test]
 async fn test_concurrent_operations() {
-    println!("🔄 测试并发操作性能");
+    println!("🔄 Testing concurrent operations performance");
 
     let mut handles = vec![];
 
     for i in 0..5 {
         let handle = tokio::spawn(async move {
             let start = Instant::now();
-            // 模拟并发操作
+            // Simulate concurrent operation
             tokio::time::sleep(Duration::from_micros(200)).await;
             let duration = start.elapsed();
             (i, duration)
@@ -67,23 +67,23 @@ async fn test_concurrent_operations() {
     for handle in handles {
         match handle.await {
             Ok((task_id, duration)) => {
-                println!("并发任务 {} 完成，耗时: {:?}", task_id, duration);
+                println!("Concurrent task {} completed, took: {:?}", task_id, duration);
                 if duration > max_duration {
                     max_duration = duration;
                 }
             }
             Err(e) => {
-                println!("并发任务失败: {:?}", e);
+                println!("Concurrent task failed: {:?}", e);
             }
         }
     }
 
-    println!("✅ 最大并发操作耗时: {:?}", max_duration);
+    println!("✅ Max concurrent operation time: {:?}", max_duration);
     assert!(
         max_duration < Duration::from_millis(50),
-        "并发操作时间过长: {:?}",
+        "Concurrent operation time too long: {:?}",
         max_duration
     );
 
-    println!("✅ 并发操作测试通过!");
+    println!("✅ Concurrent operations test passed!");
 }

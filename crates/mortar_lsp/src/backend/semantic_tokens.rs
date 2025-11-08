@@ -10,18 +10,18 @@ impl Backend {
         let mut last_line = 0u32;
         let mut last_column = 0u32;
 
-        // 对整个文档进行tokenize，而不是逐行处理
+        // Tokenize the entire document instead of processing line by line
         let compiler_tokens = tokenize(content);
 
         for (i, token_info) in compiler_tokens.iter().enumerate() {
             let token_type =
                 self.get_semantic_token_type_with_context(&token_info.token, &compiler_tokens, i);
 
-            // 计算token的行列位置
+            // Calculate token line and column position
             let (token_line, token_column) =
                 self.get_line_column_position(content, token_info.start);
 
-            // 计算token的UTF-16长度（而不是UTF-8字节长度）
+            // Calculate token's UTF-16 length (instead of UTF-8 byte length)
             let token_text = &content[token_info.start..token_info.end];
             let length = token_text.encode_utf16().count() as u32;
 
@@ -53,7 +53,7 @@ impl Backend {
         let mut line = 0u32;
         let mut utf16_column = 0u32;
 
-        // 使用byte indices来遍历，确保与tokenizer的offset匹配
+        // Use byte indices for iteration to ensure offset matching with tokenizer
         for (i, ch) in content.char_indices() {
             if i >= offset {
                 break;
@@ -63,7 +63,7 @@ impl Backend {
                 line += 1;
                 utf16_column = 0;
             } else {
-                // UTF-16编码单位数量：大部分字符是1个单位，但某些Unicode字符需要2个单位
+                // UTF-16 code unit count: most characters take 1 unit, but some Unicode characters need 2 units
                 utf16_column += ch.len_utf16() as u32;
             }
         }
@@ -73,7 +73,7 @@ impl Backend {
 
     /// Check if the current identifier is in a choice context (e.g., choice list)
     fn is_in_choice_context(&self, all_tokens: &[TokenInfo], current_index: usize) -> bool {
-        // 向后查找，看是否能找到 choice 关键字和相应的结构
+        // Look backward to find 'choice' keyword and corresponding structure
         let mut bracket_depth = 0;
 
         for i in (0..current_index).rev() {
@@ -82,11 +82,11 @@ impl Backend {
                 Token::LeftBracket => {
                     bracket_depth -= 1;
                     if bracket_depth < 0 {
-                        // 找到匹配的左括号，继续向前查找choice关键字
+                        // Found matching left bracket, continue looking for choice keyword
                         for j in (0..i).rev() {
                             match all_tokens[j].token {
                                 Token::Choice => return true,
-                                Token::LeftBrace | Token::RightBrace => break, // 跨越了节点边界
+                                Token::LeftBrace | Token::RightBrace => break, // Crossed node boundary
                                 _ => continue,
                             }
                         }
@@ -113,7 +113,7 @@ impl Backend {
         const COMMENT: u32 = 3;
         const FUNCTION: u32 = 4;
         const VARIABLE: u32 = 5;
-        const METHOD: u32 = 6; // 用于函数调用
+        const METHOD: u32 = 6; // Used for function calls
         const OPERATOR: u32 = 7;
         const PUNCTUATION: u32 = 8;
 
@@ -142,6 +142,7 @@ impl Backend {
 
             Token::Colon
             | Token::Comma
+            | Token::Semicolon
             | Token::Dot
             | Token::LeftBrace
             | Token::RightBrace
@@ -151,34 +152,31 @@ impl Backend {
             | Token::RightParen => PUNCTUATION,
 
             Token::Identifier(_) => {
-                // 检查是否是 node/nd 或 fn 后面的标识符（函数/节点定义）
-                if current_index > 0 {
-                    if let Some(prev_token_info) = all_tokens.get(current_index - 1) {
+                // Check if it's an identifier after node/nd or fn (function/node definition)
+                if current_index > 0
+                    && let Some(prev_token_info) = all_tokens.get(current_index - 1) {
                         match prev_token_info.token {
                             Token::Node | Token::Fn => return FUNCTION,
                             _ => {}
                         }
                     }
-                }
 
-                // 检查是否是函数调用（标识符后面跟着左括号）
-                if current_index + 1 < all_tokens.len() {
-                    if let Some(next_token_info) = all_tokens.get(current_index + 1) {
-                        if matches!(next_token_info.token, Token::LeftParen) {
-                            return METHOD;
-                        }
+                // Check if it's a function call (identifier followed by left parenthesis)
+                if current_index + 1 < all_tokens.len()
+                    && let Some(next_token_info) = all_tokens.get(current_index + 1)
+                    && matches!(next_token_info.token, Token::LeftParen) {
+                        return METHOD;
                     }
-                }
 
-                // 检查是否是节点调用（在选择或跳转中的标识符）
-                // 这种情况下，标识符通常出现在箭头(->)之后或逗号之后
-                if current_index > 0 {
-                    if let Some(prev_token_info) = all_tokens.get(current_index - 1) {
+                // Check if it's a node call (identifier in choice or jump context)
+                // In this case, identifier usually appears after arrow (->) or comma
+                if current_index > 0
+                    && let Some(prev_token_info) = all_tokens.get(current_index - 1) {
                         match prev_token_info.token {
-                            Token::Arrow => return METHOD, // 节点跳转
+                            Token::Arrow => return METHOD, // Node jump
                             Token::Comma => {
-                                // 在选择列表中的节点引用
-                                // 检查更前面的token是否表明这是一个选择上下文
+                                // Node reference in choice list
+                                // Check if previous tokens indicate this is a choice context
                                 if self.is_in_choice_context(all_tokens, current_index) {
                                     return METHOD;
                                 }
@@ -186,7 +184,6 @@ impl Backend {
                             _ => {}
                         }
                     }
-                }
 
                 VARIABLE
             }
@@ -202,23 +199,23 @@ mod tests {
 
     #[test]
     fn test_comment_tokenization() {
-        // 测试包含中文字符的注释tokenization
+        // Test comment tokenization containing Chinese characters
         let content = r#"    text: "你好呀，欢迎阅读这个互动故事。"
     
     // 这个事件列表写在紧挨着上一个 text，所以它们是关联的。"#;
 
         let tokens = tokenize(content);
 
-        // 寻找注释token
+        // Find comment tokens
         let comment_tokens: Vec<_> = tokens
             .iter()
             .filter(|t| matches!(t.token, Token::SingleLineComment(_)))
             .collect();
 
-        assert_eq!(comment_tokens.len(), 1, "应该有且仅有一个注释token");
+        assert_eq!(comment_tokens.len(), 1, "Should have exactly one comment token");
 
         let comment_token = comment_tokens[0];
-        // 验证注释的完整性
+        // Verify comment completeness
         assert_eq!(
             comment_token.text,
             "// 这个事件列表写在紧挨着上一个 text，所以它们是关联的。"
@@ -228,11 +225,11 @@ mod tests {
     #[test]
     fn test_utf16_position_calculation() {
         use tower_lsp_server::LspService;
-        let (service, _) = LspService::new(|client| Backend::new(client));
+        let (service, _) = LspService::new(Backend::new);
         let backend = Backend::new(service.inner().client.clone());
 
-        // 测试含有中文字符的位置计算
-        let content = "你好text"; // "你" 和 "好" 都是中文字符
+        // Test position calculation with Chinese characters
+        let content = "你好text"; // "你" and "好" are Chinese characters
 
         // "你" at position 0 (0 bytes)
         let (line, col) = backend.get_line_column_position(content, 0);
@@ -250,34 +247,34 @@ mod tests {
     #[test]
     fn test_semantic_tokens_utf16_length_calculation() {
         use tower_lsp_server::LspService;
-        let (service, _) = LspService::new(|client| Backend::new(client));
+        let (service, _) = LspService::new(Backend::new);
         let backend = Backend::new(service.inner().client.clone());
 
-        // 测试包含中文注释的语义token长度计算
+        // Test semantic token length calculation with Chinese comments
         let content = "// 然后，由于没有任何后续节点，这个对话还是结束了。";
 
         let semantic_tokens = backend.analyze_semantic_tokens(content);
 
-        assert_eq!(semantic_tokens.len(), 1, "应该有一个语义token");
+        assert_eq!(semantic_tokens.len(), 1, "Should have one semantic token");
 
         let comment_token = &semantic_tokens[0];
-        assert_eq!(comment_token.token_type, 3, "应该是注释类型");
+        assert_eq!(comment_token.token_type, 3, "Should be comment type");
 
-        // 验证UTF-16长度计算正确
+        // Verify UTF-16 length calculation is correct
         let expected_utf16_length = content.encode_utf16().count() as u32;
         assert_eq!(
             comment_token.length, expected_utf16_length,
-            "注释token的UTF-16长度计算应该正确"
+            "Comment token UTF-16 length calculation should be correct"
         );
     }
 
     #[test]
     fn test_type_keywords_highlighting() {
         use tower_lsp_server::LspService;
-        let (service, _) = LspService::new(|client| Backend::new(client));
+        let (service, _) = LspService::new(Backend::new);
         let backend = Backend::new(service.inner().client.clone());
 
-        // 测试类型关键字和布尔字面量的高亮
+        // Test type keyword and boolean literal highlighting
         let content = r#"fn process_data(name: String, count: Number, active: Boolean) -> Boolean
 fn get_status() -> String
 
@@ -288,37 +285,37 @@ node test {
 
         let semantic_tokens = backend.analyze_semantic_tokens(content);
 
-        // 找出所有关键字类型的标记（token_type = 0）
+        // Find all keyword type tokens (token_type = 0)
         let keyword_tokens: Vec<_> = semantic_tokens
             .iter()
             .filter(|token| token.token_type == 0) // KEYWORD = 0
             .collect();
 
-        // 应该包含：fn, String, Number, Boolean, Boolean, fn, String, node, true, false
-        // 注意：true 和 false 作为字符串内容不会被识别为关键字，只有作为独立token才会
+        // Should contain: fn, String, Number, Boolean, Boolean, fn, String, node, true, false
+        // Note: true and false as string content won't be recognized as keywords, only as independent tokens
         assert!(
             keyword_tokens.len() >= 8,
-            "应该有至少8个关键字标记，实际有{}",
+            "Should have at least 8 keyword tokens, actual: {}",
             keyword_tokens.len()
         );
 
-        // 找出所有函数类型的标记（token_type = 4）
+        // Find all function type tokens (token_type = 4)
         let function_tokens: Vec<_> = semantic_tokens
             .iter()
             .filter(|token| token.token_type == 4) // FUNCTION = 4
             .collect();
 
-        // 应该有3个函数标记：process_data, get_status, test
-        assert_eq!(function_tokens.len(), 3, "应该有3个函数名标记");
+        // Should have 3 function tokens: process_data, get_status, test
+        assert_eq!(function_tokens.len(), 3, "Should have 3 function name tokens");
     }
 
     #[test]
     fn test_original_function_name_highlighting() {
         use tower_lsp_server::LspService;
-        let (service, _) = LspService::new(|client| Backend::new(client));
+        let (service, _) = LspService::new(Backend::new);
         let backend = Backend::new(service.inner().client.clone());
 
-        // 测试节点定义和函数定义中的名称高亮
+        // Test node definition and function definition name highlighting
         let content = r#"node start_game {
     text: "Hello"
 }
@@ -332,37 +329,37 @@ fn get_name() -> String"#;
 
         let semantic_tokens = backend.analyze_semantic_tokens(content);
 
-        // 找出所有函数类型的标记（token_type = 4）
+        // Find all function type tokens (token_type = 4)
         let function_tokens: Vec<_> = semantic_tokens
             .iter()
             .filter(|token| token.token_type == 4) // FUNCTION = 4
             .collect();
 
-        // 应该有4个函数标记：start_game, another_node, play_sound, get_name
-        assert_eq!(function_tokens.len(), 4, "应该有4个函数名标记");
+        // Should have 4 function tokens: start_game, another_node, play_sound, get_name
+        assert_eq!(function_tokens.len(), 4, "Should have 4 function name tokens");
     }
 
     #[test]
     fn test_function_call_highlighting() {
         use tower_lsp_server::LspService;
-        let (service, _) = LspService::new(|client| Backend::new(client));
+        let (service, _) = LspService::new(Backend::new);
         let backend = Backend::new(service.inner().client.clone());
 
-        // 测试函数调用高亮
+        // Test function call highlighting
         let content = "node start_game {\n    text: \"Hello world\"\n    events: [\n        0, play_sound(\"greeting.wav\")\n    ]\n}\n\nfn play_sound(file: String)";
 
         let semantic_tokens = backend.analyze_semantic_tokens(content);
 
-        // 找出所有方法调用类型的标记（token_type = 6）
+        // Find all method call type tokens (token_type = 6)
         let function_call_tokens: Vec<_> = semantic_tokens
             .iter()
             .filter(|token| token.token_type == 6) // METHOD = 6
             .collect();
 
-        // 应该有play_sound函数调用
+        // Should have play_sound function call
         assert!(
-            function_call_tokens.len() >= 1,
-            "应该有至少1个函数调用标记，实际有{}",
+            !function_call_tokens.is_empty(),
+            "Should have at least 1 function call token, actual: {}",
             function_call_tokens.len()
         );
     }
@@ -370,24 +367,24 @@ fn get_name() -> String"#;
     #[test]
     fn test_node_jump_highlighting() {
         use tower_lsp_server::LspService;
-        let (service, _) = LspService::new(|client| Backend::new(client));
+        let (service, _) = LspService::new(Backend::new);
         let backend = Backend::new(service.inner().client.clone());
 
-        // 测试节点跳转高亮
+        // Test node jump highlighting
         let content = "node start {\n    text: \"Beginning\"\n} -> middle_node\n\nnode middle {\n    text: \"Middle\"\n}";
 
         let semantic_tokens = backend.analyze_semantic_tokens(content);
 
-        // 找出所有方法调用类型的标记（包括节点调用）
+        // Find all method call type tokens (including node calls)
         let function_call_tokens: Vec<_> = semantic_tokens
             .iter()
             .filter(|token| token.token_type == 6) // METHOD = 6
             .collect();
 
-        // 应该有middle_node节点调用
+        // Should have middle_node node call
         assert!(
-            function_call_tokens.len() >= 1,
-            "应该有至少1个节点调用标记，实际有{}",
+            !function_call_tokens.is_empty(),
+            "Should have at least 1 node call token, actual: {}",
             function_call_tokens.len()
         );
     }
