@@ -23,7 +23,6 @@ enum CompletionContext {
     InChoice,
     //In expressions: function calls, variable references, etc.
     InExpression,
-    Other,
 }
 
 #[derive(Clone)]
@@ -198,6 +197,88 @@ impl Backend {
 
         chars[start..end].iter().collect()
     }
+
+    /// 基于整个文档的上下文分析
+    fn analyze_document_context(&self, uri: &Uri, position: Position) -> CompletionContext {
+        if let Some(document_entry) = self.documents.get(uri) {
+            let rope = &document_entry.0;
+            let line_idx = position.line as usize;
+            
+            // 向上查找，看是否在某个节点或函数内部
+            let mut brace_depth = 0;
+            let mut in_node = false;
+            let mut in_function = false;
+            
+            // 从文档开始到当前行扫描
+            for i in 0..=line_idx.min(rope.len_lines() - 1) {
+                let line_content = rope.line(i).to_string();
+                let trimmed = line_content.trim();
+                
+                // 检查节点或函数定义
+                if trimmed.starts_with("node ") || trimmed.starts_with("nd ") {
+                    if brace_depth == 0 {
+                        in_node = false; // 重置状态
+                    }
+                }
+                if trimmed.starts_with("fn ") {
+                    if brace_depth == 0 {
+                        in_function = false; // 重置状态  
+                    }
+                }
+                
+                // 计算大括号深度
+                for ch in line_content.chars() {
+                    match ch {
+                        '{' => {
+                            brace_depth += 1;
+                            // 如果在当前行找到开括号，检查这行是否定义了节点或函数
+                            if trimmed.starts_with("node ") || trimmed.starts_with("nd ") {
+                                in_node = true;
+                                in_function = false;
+                            } else if trimmed.starts_with("fn ") {
+                                in_function = true;
+                                in_node = false;
+                            }
+                        },
+                        '}' => {
+                            brace_depth -= 1;
+                            if brace_depth == 0 {
+                                in_node = false;
+                                in_function = false;
+                            }
+                        },
+                        _ => {}
+                    }
+                }
+                
+                // 如果已经到当前行，停止扫描
+                if i == line_idx {
+                    break;
+                }
+            }
+            
+            // 检查当前行是否包含选择相关的内容
+            if line_idx < rope.len_lines() {
+                let current_line = rope.line(line_idx).to_string();
+                let current_trimmed = current_line.trim();
+                if current_trimmed.contains("choice") || current_trimmed.contains("->") || 
+                   (in_node && (current_trimmed.starts_with("\"") || current_trimmed.contains("\""))) {
+                    return CompletionContext::InChoice;
+                }
+            }
+            
+            // 根据分析结果返回上下文
+            if in_function && brace_depth > 0 {
+                CompletionContext::InExpression
+            } else if in_node && brace_depth > 0 {
+                CompletionContext::InNode
+            } else {
+                CompletionContext::TopLevel
+            }
+        } else {
+            CompletionContext::TopLevel
+        }
+    }
     /// Analyze the context of auto-completion
     fn analyze_completion_context(&self, line: &str, _char_idx: usize) -> CompletionContext {
         let trimmed = line.trim();
@@ -218,7 +299,7 @@ impl Backend {
             return CompletionContext::InNode;
         }
 
-        CompletionContext::Other
+        CompletionContext::TopLevel
     }
 }
 
@@ -416,7 +497,7 @@ impl LanguageServer for Backend {
 
         let current_word = self.get_current_word(&line_content, char_idx);
 
-        let context = self.analyze_completion_context(&line_content, char_idx);
+        let context = self.analyze_document_context(uri, position);
 
         match context {
             CompletionContext::TopLevel => {
@@ -544,20 +625,6 @@ impl LanguageServer for Backend {
                     if type_keyword.starts_with(&current_word) {
                         completions.push(CompletionItem {
                             label: type_keyword.to_string(),
-                            kind: Some(CompletionItemKind::KEYWORD),
-                            ..CompletionItem::default()
-                        });
-                    }
-                }
-            }
-            CompletionContext::Other => {
-                let basic_keywords = [
-                    "node", "nd", "fn", "text", "events", "choice", "when", "return", "break",
-                ];
-                for keyword in &basic_keywords {
-                    if keyword.starts_with(&current_word) {
-                        completions.push(CompletionItem {
-                            label: keyword.to_string(),
                             kind: Some(CompletionItemKind::KEYWORD),
                             ..CompletionItem::default()
                         });
