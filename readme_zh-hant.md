@@ -135,7 +135,8 @@ fn set_color(value: String)
 
 fn get_name() -> String
 
-fn has_map() -> Boolean
+// fn 可以写作 function ，Bool 也可以写作 Boolean。
+function has_map() -> Bool
 
 fn has_backpack() -> Boolean
 ```

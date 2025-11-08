@@ -9,13 +9,14 @@ mod tests {
 
     #[test]
     fn test_keywords() {
-        let input = "node nd text events choice fn return break when";
+        let input = "node nd text events choice fn function return break when";
         let expected = vec![
             Token::Node,
             Token::Node,
             Token::Text,
             Token::Events,
             Token::Choice,
+            Token::Fn,
             Token::Fn,
             Token::Return,
             Token::Break,
@@ -407,8 +408,13 @@ mod tests {
 
     #[test]
     fn test_type_keywords() {
-        let input = "String Number Boolean";
-        let expected = vec![Token::StringType, Token::NumberType, Token::BooleanType];
+        let input = "String Number Boolean Bool";
+        let expected = vec![
+            Token::StringType,
+            Token::NumberType,
+            Token::BooleanType,
+            Token::BooleanType,
+        ];
 
         let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
         assert_eq!(tokens, expected);
@@ -425,7 +431,7 @@ mod tests {
 
     #[test]
     fn test_function_with_all_types() {
-        let input = "fn test(name: String, count: Number, active: Boolean) -> Boolean";
+        let input = "fn test(name: String, count: Number, active: Boolean) -> Bool";
         let expected = vec![
             Token::Fn,
             Token::Identifier("test"),
@@ -448,5 +454,44 @@ mod tests {
 
         let tokens = Token::lexer(input).collect::<Result<Vec<_>, _>>().unwrap();
         assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_function_keyword_alternatives() {
+        let input1 = "fn play_sound(file_name: String)";
+        let input2 = "function play_sound(file_name: String)";
+        let expected = vec![
+            Token::Fn,
+            Token::Identifier("play_sound"),
+            Token::LeftParen,
+            Token::Identifier("file_name"),
+            Token::Colon,
+            Token::StringType,
+            Token::RightParen,
+        ];
+
+        let tokens1 = Token::lexer(input1).collect::<Result<Vec<_>, _>>().unwrap();
+        let tokens2 = Token::lexer(input2).collect::<Result<Vec<_>, _>>().unwrap();
+        assert_eq!(tokens1, expected);
+        assert_eq!(tokens2, expected);
+    }
+
+    #[test]
+    fn test_bool_type_alternatives() {
+        let input1 = "fn has_flag() -> Boolean";
+        let input2 = "fn has_flag() -> Bool";
+        let expected = vec![
+            Token::Fn,
+            Token::Identifier("has_flag"),
+            Token::LeftParen,
+            Token::RightParen,
+            Token::Arrow,
+            Token::BooleanType,
+        ];
+
+        let tokens1 = Token::lexer(input1).collect::<Result<Vec<_>, _>>().unwrap();
+        let tokens2 = Token::lexer(input2).collect::<Result<Vec<_>, _>>().unwrap();
+        assert_eq!(tokens1, expected);
+        assert_eq!(tokens2, expected);
     }
 }

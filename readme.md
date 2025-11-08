@@ -145,7 +145,8 @@ fn set_color(value: String)
 
 fn get_name() -> String
 
-fn has_map() -> Boolean
+// fn can be written as function, and Bool can also be written as Boolean.
+function has_map() -> Bool
 
 fn has_backpack() -> Boolean
 ```

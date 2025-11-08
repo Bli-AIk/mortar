@@ -28,6 +28,7 @@ pub enum Token<'a> {
     #[token("choice")]
     Choice,
     #[token("fn")]
+    #[token("function")]
     Fn,
     #[token("return")]
     Return,
@@ -42,6 +43,7 @@ pub enum Token<'a> {
     #[token("Number")]
     NumberType,
     #[token("Boolean")]
+    #[token("Bool")]
     BooleanType,
 
     // Boolean literals

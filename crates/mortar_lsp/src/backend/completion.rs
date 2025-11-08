@@ -31,7 +31,9 @@ impl Backend {
                 {
                     in_node = false;
                 }
-                if trimmed.starts_with("fn ") && brace_depth == 0 {
+                if (trimmed.starts_with("fn ") || trimmed.starts_with("function "))
+                    && brace_depth == 0
+                {
                     in_function = false;
                 }
 
@@ -42,7 +44,8 @@ impl Backend {
                             if trimmed.starts_with("node ") || trimmed.starts_with("nd ") {
                                 in_node = true;
                                 in_function = false;
-                            } else if trimmed.starts_with("fn ") {
+                            } else if trimmed.starts_with("fn ") || trimmed.starts_with("function ")
+                            {
                                 in_function = true;
                                 in_node = false;
                             }
@@ -95,7 +98,10 @@ impl Backend {
             return CompletionContext::TopLevel;
         }
 
-        if trimmed.starts_with("node ") || trimmed.starts_with("nd ") || trimmed.starts_with("fn ")
+        if trimmed.starts_with("node ")
+            || trimmed.starts_with("nd ")
+            || trimmed.starts_with("fn ")
+            || trimmed.starts_with("function ")
         {
             return if trimmed.ends_with('{') {
                 CompletionContext::InNode
@@ -261,6 +267,20 @@ impl Backend {
                     });
                 }
 
+                if "function".starts_with(current_word) {
+                    completions.push(CompletionItem {
+                        label: "function".to_string(),
+                        kind: Some(CompletionItemKind::KEYWORD),
+                        insert_text: Some("function ${1:function_name}() {\n\t$0\n}".to_string()),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        detail: Some("Create a function".to_string()),
+                        documentation: Some(Documentation::String(
+                            "Create a new function definition (alternative syntax)".to_string(),
+                        )),
+                        ..CompletionItem::default()
+                    });
+                }
+
                 completions
             }
             CompletionContext::InNode => {
@@ -364,7 +384,7 @@ impl Backend {
                 }
 
                 // Add type keywords
-                for type_keyword in &["String", "Number", "Boolean", "true", "false"] {
+                for type_keyword in &["String", "Number", "Boolean", "Bool", "true", "false"] {
                     if type_keyword.starts_with(current_word) {
                         completions.push(CompletionItem {
                             label: type_keyword.to_string(),

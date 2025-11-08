@@ -1,11 +1,11 @@
 {
   "metadata": {
     "version": "0.1.0",
-    "generated_at": "2025-11-07T13:39:47.271403548Z"
+    "generated_at": "2025-11-08T07:46:21.218650623Z"
   },
   "nodes": [
     {
-      "name": "start",
+      "name": "Start",
       "texts": [
         {
           "text": "你好呀，欢迎阅读这个互动故事。",
@@ -82,10 +82,10 @@
           "text": "太好啦，我们走！"
         }
       ],
-      "next": "choice_point"
+      "next": "ChoicePoint"
     },
     {
-      "name": "choice_point",
+      "name": "ChoicePoint",
       "texts": [
         {
           "text": "你想干点啥？"
@@ -168,6 +168,14 @@
     {
       "name": "get_name",
       "return": "String"
+    },
+    {
+      "name": "has_map",
+      "return": "Boolean"
+    },
+    {
+      "name": "has_backpack",
+      "return": "Boolean"
     }
   ]
 }

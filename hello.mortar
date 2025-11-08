@@ -44,8 +44,8 @@ node ChoicePoint {
 
         // 这两个选项带有 when 关键字，这说明它们带有条件判断！
         // when 关键字支持 链式写法 和 函数式写法。
-        ("留在城里").when(has_map) -> town_scene,
-        "查看背包" when has_backpack  -> inventory,
+        ("留在城里").when(has_map()) -> town_scene,
+        "查看背包" when has_backpack()  -> inventory,
 
         // 选择字段也可以嵌套一个选择字段。你想嵌套多少层都行！
         "吃点什么" -> [
@@ -77,6 +77,7 @@ fn set_color(value: String)
 
 fn get_name() -> String
 
-fn has_map() -> Boolean
+// fn 可以写作 function ，Bool 也可以写作 Boolean。
+function has_map() -> Bool
 
 fn has_backpack() -> Boolean

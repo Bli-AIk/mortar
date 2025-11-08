@@ -152,13 +152,39 @@ impl<'a> Parser<'a> {
         let mut body = Vec::new();
 
         while !self.is_at_end() {
-            body.push(self.parse_top_level()?);
+            // Skip comments at the top level
+            while let Some(token) = self.peek() {
+                if matches!(
+                    token,
+                    Token::SingleLineComment(_) | Token::MultiLineComment(_)
+                ) {
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
+
+            if !self.is_at_end() {
+                body.push(self.parse_top_level()?);
+            }
         }
 
         Ok(Program { body })
     }
 
     fn parse_top_level(&mut self) -> Result<TopLevel, String> {
+        // Skip comments
+        while let Some(token) = self.peek() {
+            if matches!(
+                token,
+                Token::SingleLineComment(_) | Token::MultiLineComment(_)
+            ) {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+
         match self.peek() {
             Some(Token::Node) => Ok(TopLevel::NodeDef(self.parse_node_def()?)),
             Some(Token::Fn) => Ok(TopLevel::FunctionDecl(self.parse_function_decl()?)),
@@ -179,13 +205,27 @@ impl<'a> Parser<'a> {
 
         let mut body = Vec::new();
         while !self.check(&Token::RightBrace) && !self.is_at_end() {
+            // Skip comments
+            while let Some(token) = self.peek() {
+                if matches!(
+                    token,
+                    Token::SingleLineComment(_) | Token::MultiLineComment(_)
+                ) {
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
+
             // Skip optional commas
             if self.check(&Token::Comma) {
                 self.advance();
                 continue;
             }
 
-            body.push(self.parse_node_stmt()?);
+            if !self.check(&Token::RightBrace) && !self.is_at_end() {
+                body.push(self.parse_node_stmt()?);
+            }
         }
 
         self.consume(&Token::RightBrace, "Expected '}'")?;
@@ -230,10 +270,21 @@ impl<'a> Parser<'a> {
         let mut events = Vec::new();
 
         while !self.check(&Token::RightBracket) && !self.is_at_end() {
-            events.push(self.parse_event()?);
+            // Skip comments
+            while let Some(token) = self.peek() {
+                if matches!(
+                    token,
+                    Token::SingleLineComment(_) | Token::MultiLineComment(_)
+                ) {
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
 
-            // Events are not separated by commas in the Mortar syntax
-            // Each event is on its own line
+            if !self.check(&Token::RightBracket) && !self.is_at_end() {
+                events.push(self.parse_event()?);
+            }
         }
 
         self.consume(&Token::RightBracket, "Expected ']'")?;
@@ -274,11 +325,25 @@ impl<'a> Parser<'a> {
         let mut items = Vec::new();
 
         while !self.check(&Token::RightBracket) && !self.is_at_end() {
-            items.push(self.parse_choice_item()?);
+            // Skip comments
+            while let Some(token) = self.peek() {
+                if matches!(
+                    token,
+                    Token::SingleLineComment(_) | Token::MultiLineComment(_)
+                ) {
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
 
-            // Choices can be separated by commas, but they are optional
-            if self.check(&Token::Comma) {
-                self.advance();
+            if !self.check(&Token::RightBracket) && !self.is_at_end() {
+                items.push(self.parse_choice_item()?);
+
+                // Choices can be separated by commas, but they are optional
+                if self.check(&Token::Comma) {
+                    self.advance();
+                }
             }
         }
 
