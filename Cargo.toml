@@ -37,8 +37,8 @@ serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Internal dependencies
-mortar_compiler = { path = "./crates/mortar_compiler" }
-mortar_cli = { path = "./crates/mortar_cli" }
-mortar_language = { path = "./crates/mortar_language" }
-mortar_lsp = { path = "./crates/mortar_lsp" }
-mortar_grammar = { path = "./crates/mortar_grammar" }
+mortar_compiler = { version = "0.1.0", path = "./crates/mortar_compiler" }
+mortar_cli = { version = "0.0.0", path = "./crates/mortar_cli" }
+mortar_language = { version = "0.1.1", path = "./crates/mortar_language" }
+mortar_lsp = { version = "0.0.0", path = "./crates/mortar_lsp" }
+mortar_grammar = { version = "0.0.0", path = "./crates/mortar_grammar" }
