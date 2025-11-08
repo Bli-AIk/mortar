@@ -12,6 +12,20 @@ use tracing::info;
 use crate::analysis::{SymbolTable, analyze_program};
 use crate::files::Files;
 
+/// Autocomplete context type
+#[derive(Debug, Clone, PartialEq)]
+enum CompletionContext {
+    // Top level: write node, fn, etc.
+    TopLevel,
+    // Inside the node: write text, events, choice, etc.
+    InNode,
+    // In the selection: write when, ->, node reference, etc.
+    InChoice,
+    //In expressions: function calls, variable references, etc.
+    InExpression,
+    Other,
+}
+
 #[derive(Clone)]
 pub struct Backend {
     pub client: Client,
@@ -36,22 +50,18 @@ impl Backend {
     pub async fn cleanup(&self) {
         info!("Start cleaning up LSP server resources...");
 
-        // 清理文档缓存
         let documents_count = self.documents.len();
         self.documents.clear();
         info!("{} documents cleaned", documents_count);
 
-        // 清理诊断信息
         let diagnostics_count = self.diagnostics.len();
         self.diagnostics.clear();
         info!("Cleaned {} diagnostic messages", diagnostics_count);
 
-        // 清理符号表
         let symbols_count = self.symbol_tables.len();
         self.symbol_tables.clear();
         info!("Cleaned {} symbol tables", symbols_count);
 
-        // 清理文件管理器
         {
             let mut files = self.files.write().await;
             *files = Files::new();
@@ -160,8 +170,7 @@ impl Backend {
             None
         }
     }
-
-    /// 将偏移量转换为文档中的位置
+    /// Convert the offset to a position in the document
     fn _offset_to_position(&self, rope: &Rope, offset: usize) -> Option<Position> {
         if offset > rope.len_chars() {
             return None;
@@ -172,6 +181,44 @@ impl Backend {
         let char_idx = offset - line_start;
 
         Some(Position::new(line_idx as u32, char_idx as u32))
+    }
+    /// Get the word at the current cursor position
+    fn get_current_word(&self, line: &str, char_idx: usize) -> String {
+        let chars: Vec<char> = line.chars().collect();
+        let mut start = char_idx;
+        let mut end = char_idx;
+
+        while start > 0 && (chars[start - 1].is_alphanumeric() || chars[start - 1] == '_') {
+            start -= 1;
+        }
+
+        while end < chars.len() && (chars[end].is_alphanumeric() || chars[end] == '_') {
+            end += 1;
+        }
+
+        chars[start..end].iter().collect()
+    }
+    /// Analyze the context of auto-completion
+    fn analyze_completion_context(&self, line: &str, _char_idx: usize) -> CompletionContext {
+        let trimmed = line.trim();
+
+        if trimmed.is_empty() || (!trimmed.contains('{') && !trimmed.contains('}')) {
+            return CompletionContext::TopLevel;
+        }
+
+        if trimmed.contains("choice") || trimmed.contains("->") {
+            return CompletionContext::InChoice;
+        }
+
+        if trimmed.contains('(') || trimmed.contains('"') {
+            return CompletionContext::InExpression;
+        }
+
+        if trimmed.contains("text") || trimmed.contains("events") {
+            return CompletionContext::InNode;
+        }
+
+        CompletionContext::Other
     }
 }
 
@@ -338,9 +385,9 @@ impl LanguageServer for Backend {
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let uri = &params.text_document_position.text_document.uri;
-        let _position = params.text_document_position.position;
+        let position = params.text_document_position.position;
 
-        let (_rope, _version) = match self.documents.get(uri) {
+        let (rope, _version) = match self.documents.get(uri) {
             Some(entry) => (entry.0.clone(), entry.1),
             None => return Ok(None),
         };
@@ -352,48 +399,171 @@ impl LanguageServer for Backend {
 
         let mut completions = Vec::new();
 
-        let keywords = [
-            "node", "nd", "text", "events", "choice", "fn", "return", "break", "when", "String",
-            "Number", "Boolean", "true", "false",
-        ];
+        let line_idx = position.line as usize;
+        let char_idx = position.character as usize;
 
-        for keyword in &keywords {
-            completions.push(CompletionItem {
-                label: keyword.to_string(),
-                kind: Some(CompletionItemKind::KEYWORD),
-                ..CompletionItem::default()
-            });
-        }
+        let line_content = if line_idx < rope.len_lines() {
+            rope.line(line_idx).to_string()
+        } else {
+            String::new()
+        };
 
-        for func in &symbol_table.functions {
-            completions.push(CompletionItem {
-                label: func.name.clone(),
-                kind: Some(CompletionItemKind::FUNCTION),
-                detail: Some(format!(
-                    "fn {}({}){}",
-                    func.name,
-                    func.params
-                        .iter()
-                        .map(|p| format!("{}: {}", p.name, p.type_name))
-                        .collect::<Vec<_>>()
-                        .join(", "),
-                    func.return_type
-                        .as_ref()
-                        .map(|t| format!(" -> {}", t))
-                        .unwrap_or_default()
-                )),
-                insert_text: Some(format!("{}(${{1}})", func.name)),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                ..CompletionItem::default()
-            });
-        }
+        let _text_before_cursor = if char_idx <= line_content.len() {
+            &line_content[..char_idx]
+        } else {
+            &line_content
+        };
 
-        for node in &symbol_table.nodes {
-            completions.push(CompletionItem {
-                label: node.clone(),
-                kind: Some(CompletionItemKind::CLASS),
-                ..CompletionItem::default()
-            });
+        let current_word = self.get_current_word(&line_content, char_idx);
+
+        let context = self.analyze_completion_context(&line_content, char_idx);
+
+        match context {
+            CompletionContext::TopLevel => {
+                if "node".starts_with(&current_word) {
+                    completions.push(CompletionItem {
+                        label: "node".to_string(),
+                        kind: Some(CompletionItemKind::KEYWORD),
+                        insert_text: Some("node ${1:node_name} {\n\t$0\n}".to_string()),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        detail: Some("Create a dialogue node".to_string()),
+                        documentation: Some(Documentation::String(
+                            "Create a new dialog node that defines dialog content and choices"
+                                .to_string(),
+                        )),
+                        ..CompletionItem::default()
+                    });
+                }
+                if "nd".starts_with(&current_word) {
+                    completions.push(CompletionItem {
+                        label: "nd".to_string(),
+                        kind: Some(CompletionItemKind::KEYWORD),
+                        insert_text: Some("nd ${1:node_name} {\n\t$0\n}".to_string()),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        detail: Some("Create a dialogue node".to_string()),
+                        documentation: Some(Documentation::String(
+                            "Create a new dialog node that defines dialog content and choices"
+                                .to_string(),
+                        )),
+                        ..CompletionItem::default()
+                    });
+                }
+                if "fn".starts_with(&current_word) {
+                    completions.push(CompletionItem {
+                        label: "fn".to_string(),
+                        kind: Some(CompletionItemKind::KEYWORD),
+                        insert_text: Some(
+                            "fn ${1:function_name}() {\n\t$0\n}"
+                                .to_string(),
+                        ),
+                        insert_text_format: Some(InsertTextFormat::SNIPPET),
+                        detail: Some("Create a function".to_string()),
+                        documentation: Some(Documentation::String(
+                            "Create a new function definition".to_string(),
+                        )),
+                        ..CompletionItem::default()
+                    });
+                }
+            }
+            CompletionContext::InNode => {
+                for keyword in &["text", "events", "choice"] {
+                    if keyword.starts_with(&current_word) {
+                        let (insert_text, detail) = match *keyword {
+                            "text" => (
+                                "text: \"${1:content}\"".to_string(),
+                                "Add conversation text".to_string(),
+                            ),
+                            "events" => (
+                                "events: [\n\t${1:0}, ${2:event_function}()\n]".to_string(),
+                                "Add event list".to_string(),
+                            ),
+                            "choice" => (
+                                "choice: [\n\t\"${1:text}\" -> ${2:target_node}\n]".to_string(),
+                                "Add selection".to_string(),
+                            ),
+                            _ => (keyword.to_string(), "".to_string()),
+                        };
+                        completions.push(CompletionItem {
+                            label: keyword.to_string(),
+                            kind: Some(CompletionItemKind::KEYWORD),
+                            insert_text: Some(insert_text),
+                            insert_text_format: Some(InsertTextFormat::SNIPPET),
+                            detail: Some(detail),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+            }
+            CompletionContext::InChoice => {
+                for keyword in &["when", "return", "break"] {
+                    if keyword.starts_with(&current_word) {
+                        completions.push(CompletionItem {
+                            label: keyword.to_string(),
+                            kind: Some(CompletionItemKind::KEYWORD),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+                for node in &symbol_table.nodes {
+                    if node.starts_with(&current_word) {
+                        completions.push(CompletionItem {
+                            label: node.clone(),
+                            kind: Some(CompletionItemKind::CLASS),
+                            detail: Some("Jump to node".to_string()),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+            }
+            CompletionContext::InExpression => {
+                for func in &symbol_table.functions {
+                    if func.name.starts_with(&current_word) {
+                        completions.push(CompletionItem {
+                            label: func.name.clone(),
+                            kind: Some(CompletionItemKind::FUNCTION),
+                            detail: Some(format!(
+                                "fn {}({}){}",
+                                func.name,
+                                func.params
+                                    .iter()
+                                    .map(|p| format!("{}: {}", p.name, p.type_name))
+                                    .collect::<Vec<_>>()
+                                    .join(", "),
+                                func.return_type
+                                    .as_ref()
+                                    .map(|t| format!(" -> {}", t))
+                                    .unwrap_or_default()
+                            )),
+                            insert_text: Some(format!("{}(${{1}})", func.name)),
+                            insert_text_format: Some(InsertTextFormat::SNIPPET),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+                for type_keyword in &["String", "Number", "Boolean", "true", "false"] {
+                    if type_keyword.starts_with(&current_word) {
+                        completions.push(CompletionItem {
+                            label: type_keyword.to_string(),
+                            kind: Some(CompletionItemKind::KEYWORD),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+            }
+            CompletionContext::Other => {
+                let basic_keywords = [
+                    "node", "nd", "fn", "text", "events", "choice", "when", "return", "break",
+                ];
+                for keyword in &basic_keywords {
+                    if keyword.starts_with(&current_word) {
+                        completions.push(CompletionItem {
+                            label: keyword.to_string(),
+                            kind: Some(CompletionItemKind::KEYWORD),
+                            ..CompletionItem::default()
+                        });
+                    }
+                }
+            }
         }
 
         Ok(Some(CompletionResponse::Array(completions)))
@@ -406,7 +576,8 @@ impl LanguageServer for Backend {
         Ok(Some(Hover {
             contents: HoverContents::Markup(MarkupContent {
                 kind: MarkupKind::Markdown,
-                value: "**Mortar Language**\n\nDSL for game dialogue and text event systems.".to_string(),
+                value: "**Mortar Language**\n\nDSL for game dialogue and text event systems."
+                    .to_string(),
             }),
             range: None,
         }))

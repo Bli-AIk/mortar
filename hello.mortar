@@ -76,3 +76,9 @@ fn set_animation(anim_name: String)
 fn set_color(value: String)
 
 fn get_name() -> String
+
+node node_name {
+
+
+}
+
