@@ -8,22 +8,34 @@ use crate::backend::Backend;
 
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        let mut language = self.get_language().await; // 使用之前设置的语言或默认语言
+
         // Check for language preference in client info or initialization options
         if let Some(client_info) = &params.client_info {
-            info!("Client: {}", client_info.name);
+            info!(
+                "{}: {}",
+                crate::backend::i18n::get_lsp_text("client_connected", language),
+                client_info.name
+            );
         }
 
-        // Try to detect language from initialization options
+        // Try to detect language from initialization options (overrides command line)
         if let Some(init_options) = &params.initialization_options {
-            if let Ok(options) = serde_json::from_value::<serde_json::Map<String, serde_json::Value>>(init_options.clone()) {
+            if let Ok(options) = serde_json::from_value::<serde_json::Map<String, serde_json::Value>>(
+                init_options.clone(),
+            ) {
                 if let Some(lang_value) = options.get("language") {
                     if let Ok(lang_str) = serde_json::from_value::<String>(lang_value.clone()) {
-                        let language = match lang_str.as_str() {
+                        language = match lang_str.as_str() {
                             "zh" | "chinese" => mortar_compiler::Language::Chinese,
                             _ => mortar_compiler::Language::English,
                         };
                         self.set_language(language).await;
-                        info!("Set language to: {:?}", language);
+                        info!(
+                            "{}: {:?}",
+                            crate::backend::i18n::get_lsp_text("language_set_to", language),
+                            language
+                        );
                     }
                 }
             }
@@ -100,7 +112,11 @@ impl LanguageServer for Backend {
     }
 
     async fn shutdown(&self) -> Result<()> {
-        info!("Close request received");
+        let language = self.get_language().await;
+        info!(
+            "{}",
+            crate::backend::i18n::get_lsp_text("shutdown_requested", language)
+        );
 
         self.documents.clear();
         self.diagnostics.clear();
@@ -277,24 +293,35 @@ impl LanguageServer for Backend {
         })))
     }
 
-    async fn execute_command(&self, params: ExecuteCommandParams) -> Result<Option<serde_json::Value>> {
+    async fn execute_command(
+        &self,
+        params: ExecuteCommandParams,
+    ) -> Result<Option<serde_json::Value>> {
         match params.command.as_str() {
             "mortar.setLanguage" => {
                 if !params.arguments.is_empty()
                     && let Some(lang_arg) = params.arguments.first()
-                    && let Ok(lang_str) = serde_json::from_value::<String>(lang_arg.clone()) {
+                    && let Ok(lang_str) = serde_json::from_value::<String>(lang_arg.clone())
+                {
                     let language = match lang_str.as_str() {
                         "en" | "english" => mortar_compiler::Language::English,
                         "zh" | "chinese" => mortar_compiler::Language::Chinese,
-                        _ => return Ok(Some(serde_json::json!({
-                            "error": "Unsupported language. Use 'en' or 'zh'"
-                        }))),
+                        _ => {
+                            let error_msg = crate::backend::i18n::get_lsp_text(
+                                "unsupported_language_error",
+                                self.get_language().await,
+                            );
+                            return Ok(Some(serde_json::json!({
+                                "error": error_msg
+                            })));
+                        }
                     };
 
                     self.set_language(language).await;
 
                     // Re-analyze all open documents with the new language
-                    let documents_snapshot: Vec<(Uri, String)> = self.documents
+                    let documents_snapshot: Vec<(Uri, String)> = self
+                        .documents
                         .iter()
                         .map(|entry| {
                             let uri = entry.key().clone();
@@ -307,12 +334,19 @@ impl LanguageServer for Backend {
                         self.analyze_document(&uri, &content).await;
                     }
 
+                    let success_msg =
+                        crate::backend::i18n::get_lsp_text("language_changed_success", language);
                     return Ok(Some(serde_json::json!({
+                        "message": success_msg,
                         "language": lang_str
                     })));
                 }
+                let error_msg = crate::backend::i18n::get_lsp_text(
+                    "invalid_command_arguments",
+                    self.get_language().await,
+                );
                 Ok(Some(serde_json::json!({
-                    "error": "Invalid arguments for setLanguage command"
+                    "error": error_msg
                 })))
             }
             _ => Ok(None),

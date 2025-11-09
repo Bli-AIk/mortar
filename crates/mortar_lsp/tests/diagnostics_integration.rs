@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod diagnostics_integration_tests {
-    use mortar_lsp::backend::diagnostics::parse_with_diagnostics;
     use mortar_compiler::Language;
+    use mortar_lsp::backend::diagnostics::parse_with_diagnostics;
     use tower_lsp_server::lsp_types::DiagnosticSeverity;
 
     #[test]
@@ -16,30 +16,26 @@ fn AnotherBadFunction();
 "#;
 
         // Test English diagnostics
-        let (diagnostics_en, _) = parse_with_diagnostics(
-            content, 
-            "test.mortar".to_string(), 
-            Language::English
-        );
-        
+        let (diagnostics_en, _) =
+            parse_with_diagnostics(content, "test.mortar".to_string(), Language::English);
+
         // Test Chinese diagnostics
-        let (diagnostics_zh, _) = parse_with_diagnostics(
-            content, 
-            "test.mortar".to_string(), 
-            Language::Chinese
-        );
-        
+        let (diagnostics_zh, _) =
+            parse_with_diagnostics(content, "test.mortar".to_string(), Language::Chinese);
+
         // Should have the same number of diagnostics
         assert_eq!(diagnostics_en.len(), diagnostics_zh.len());
-        
+
         // Should have warnings for naming conventions and unused functions
         assert!(!diagnostics_en.is_empty());
         assert!(!diagnostics_zh.is_empty());
 
         // At least one should be a warning
-        let has_warning_en = diagnostics_en.iter()
+        let has_warning_en = diagnostics_en
+            .iter()
             .any(|d| d.severity == Some(DiagnosticSeverity::WARNING));
-        let has_warning_zh = diagnostics_zh.iter()
+        let has_warning_zh = diagnostics_zh
+            .iter()
             .any(|d| d.severity == Some(DiagnosticSeverity::WARNING));
 
         assert!(has_warning_en);
@@ -49,11 +45,11 @@ fn AnotherBadFunction();
         if !diagnostics_en.is_empty() && !diagnostics_zh.is_empty() {
             let en_msg = &diagnostics_en[0].message;
             let zh_msg = &diagnostics_zh[0].message;
-            
+
             // Print for debugging
             println!("English: {}", en_msg);
             println!("Chinese: {}", zh_msg);
-            
+
             // Messages should be different
             assert_ne!(en_msg, zh_msg);
         }
@@ -68,13 +64,10 @@ node TestNode {
 
 fn test_function() -> String;
 "#;
-        
-        let (diagnostics, program) = parse_with_diagnostics(
-            content, 
-            "test.mortar".to_string(), 
-            Language::English
-        );
-        
+
+        let (diagnostics, program) =
+            parse_with_diagnostics(content, "test.mortar".to_string(), Language::English);
+
         println!("Program parsed: {:?}", program.is_some());
         if program.is_none() {
             println!("Parse failed. Diagnostics:");
@@ -82,13 +75,18 @@ fn test_function() -> String;
                 println!("  {:?}: {}", diag.severity, diag.message);
             }
         }
-        
+
         assert!(program.is_some(), "Program should parse successfully");
-        
+
         // Should have minimal diagnostics for properly formatted code
         println!("Diagnostics count: {}", diagnostics.len());
         for diag in &diagnostics {
-            println!("  {}: {}", diag.severity.map_or("Info".to_string(), |s| format!("{:?}", s)), diag.message);
+            println!(
+                "  {}: {}",
+                diag.severity
+                    .map_or("Info".to_string(), |s| format!("{:?}", s)),
+                diag.message
+            );
         }
     }
 
@@ -99,18 +97,16 @@ node TestNode {
     invalid syntax here
 }
 "#;
-        
-        let (diagnostics, program) = parse_with_diagnostics(
-            content, 
-            "test.mortar".to_string(), 
-            Language::English
-        );
-        
+
+        let (diagnostics, program) =
+            parse_with_diagnostics(content, "test.mortar".to_string(), Language::English);
+
         assert!(program.is_none());
         assert!(!diagnostics.is_empty());
 
         // Should have at least one error
-        let has_error = diagnostics.iter()
+        let has_error = diagnostics
+            .iter()
             .any(|d| d.severity == Some(DiagnosticSeverity::ERROR));
         assert!(has_error);
     }

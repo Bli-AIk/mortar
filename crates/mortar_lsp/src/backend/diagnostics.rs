@@ -1,4 +1,6 @@
-use mortar_compiler::{Diagnostic as CompilerDiagnostic, DiagnosticCollector, Language, ParseHandler, Severity};
+use mortar_compiler::{
+    Diagnostic as CompilerDiagnostic, DiagnosticCollector, Language, ParseHandler, Severity,
+};
 use tower_lsp_server::lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
 
 /// Convert compiler diagnostics to LSP diagnostics
@@ -55,14 +57,14 @@ fn byte_offset_to_position(content: &str, offset: usize) -> Position {
         if current_offset >= offset {
             break;
         }
-        
+
         if ch == '\n' {
             line += 1;
             character = 0;
         } else {
             character += 1;
         }
-        
+
         current_offset += ch.len_utf8();
     }
 
@@ -76,9 +78,7 @@ pub fn parse_with_diagnostics(
     language: Language,
 ) -> (Vec<Diagnostic>, Option<mortar_compiler::Program>) {
     let (parse_result, diagnostics) = ParseHandler::parse_source_code_with_diagnostics_and_language(
-        content,
-        file_name,
-        false, // verbose_lexer
+        content, file_name, false, // verbose_lexer
         language,
     );
 
@@ -87,14 +87,13 @@ pub fn parse_with_diagnostics(
     // Analyze the program if parsing succeeded
     let program = if let Ok(ref program) = parse_result {
         // Create a new diagnostics collector for analysis
-        let mut analysis_diagnostics = DiagnosticCollector::new_with_language(
-            "analysis".to_string(),
-            language,
-        );
+        let mut analysis_diagnostics =
+            DiagnosticCollector::new_with_language("analysis".to_string(), language);
         analysis_diagnostics.analyze_program(program);
-        
+
         // Add analysis diagnostics to the result
-        let analysis_lsp_diagnostics = convert_diagnostics_to_lsp(content, analysis_diagnostics.get_diagnostics());
+        let analysis_lsp_diagnostics =
+            convert_diagnostics_to_lsp(content, analysis_diagnostics.get_diagnostics());
         lsp_diagnostics.extend(analysis_lsp_diagnostics);
 
         Some(program.clone())
@@ -112,19 +111,19 @@ mod tests {
     #[test]
     fn test_byte_offset_to_position() {
         let content = "Hello\nWorld";
-        
+
         // Test start of file
         assert_eq!(byte_offset_to_position(content, 0), Position::new(0, 0));
-        
+
         // Test position 'H' (position 0)
         assert_eq!(byte_offset_to_position(content, 0), Position::new(0, 0));
-        
+
         // Test position 'e' (position 1)
         assert_eq!(byte_offset_to_position(content, 1), Position::new(0, 1));
-        
+
         // Test position after newline
         assert_eq!(byte_offset_to_position(content, 6), Position::new(1, 0)); // 'W'
-        
+
         // Test position 'o' in "World"
         assert_eq!(byte_offset_to_position(content, 7), Position::new(1, 1));
     }
@@ -136,13 +135,10 @@ node TestNode {
     text: "Hello World"
 }
 "#;
-        
-        let (_diagnostics, program) = parse_with_diagnostics(
-            content, 
-            "test.mortar".to_string(), 
-            Language::English
-        );
-        
+
+        let (_diagnostics, program) =
+            parse_with_diagnostics(content, "test.mortar".to_string(), Language::English);
+
         assert!(program.is_some());
         // Should have no errors, but might have warnings about naming
     }
@@ -155,13 +151,10 @@ node test_node {
 }
 fn unused_function();
 "#;
-        
-        let (diagnostics, program) = parse_with_diagnostics(
-            content, 
-            "test.mortar".to_string(), 
-            Language::English
-        );
-        
+
+        let (diagnostics, program) =
+            parse_with_diagnostics(content, "test.mortar".to_string(), Language::English);
+
         assert!(program.is_some());
         // Should have warnings for naming convention and unused function
         let warning_count = diagnostics
@@ -178,22 +171,16 @@ node test_node {
     text: "Hello World"
 }
 "#;
-        
-        let (diagnostics_en, _) = parse_with_diagnostics(
-            content, 
-            "test.mortar".to_string(), 
-            Language::English
-        );
-        
-        let (diagnostics_zh, _) = parse_with_diagnostics(
-            content, 
-            "test.mortar".to_string(), 
-            Language::Chinese
-        );
-        
+
+        let (diagnostics_en, _) =
+            parse_with_diagnostics(content, "test.mortar".to_string(), Language::English);
+
+        let (diagnostics_zh, _) =
+            parse_with_diagnostics(content, "test.mortar".to_string(), Language::Chinese);
+
         // Both should have the same number of diagnostics
         assert_eq!(diagnostics_en.len(), diagnostics_zh.len());
-        
+
         // But messages should be in different languages (if there are warnings)
         if !diagnostics_en.is_empty() && !diagnostics_zh.is_empty() {
             // Should have different message content for different languages

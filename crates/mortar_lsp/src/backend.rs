@@ -46,26 +46,39 @@ impl Backend {
 
     /// Clear all cached data
     pub async fn cleanup(&self) {
-        info!("Start cleaning up LSP server resources...");
+        let language = self.get_language().await;
+        info!("{}", i18n::get_lsp_text("cleanup_resources", language));
 
         let documents_count = self.documents.len();
         self.documents.clear();
-        info!("{} documents cleaned", documents_count);
+        info!(
+            "{} {}",
+            documents_count,
+            i18n::get_lsp_text("documents_cleaned", language)
+        );
 
         let diagnostics_count = self.diagnostics.len();
         self.diagnostics.clear();
-        info!("Cleaned {} diagnostic messages", diagnostics_count);
+        info!(
+            "{} {}",
+            diagnostics_count,
+            i18n::get_lsp_text("diagnostics_cleaned", language)
+        );
 
         let symbols_count = self.symbol_tables.len();
         self.symbol_tables.clear();
-        info!("Cleaned {} symbol tables", symbols_count);
+        info!(
+            "{} {}",
+            symbols_count,
+            i18n::get_lsp_text("symbols_cleaned", language)
+        );
 
         {
             let mut files = self.files.write().await;
             *files = Files::new();
         }
 
-        info!("LSP server resource cleanup completed");
+        info!("{}", i18n::get_lsp_text("cleanup_completed", language));
     }
 
     /// Simplified cleanup operations to avoid asynchronous blocking
@@ -138,6 +151,9 @@ impl Backend {
     }
 }
 
+#[path = "backend/i18n.rs"]
+pub mod i18n;
+
 #[path = "backend/diagnostics.rs"]
 pub mod diagnostics;
 
@@ -155,3 +171,4 @@ mod lsp_handlers;
 
 pub use completion::CompletionContext;
 pub use diagnostics::{convert_diagnostics_to_lsp, parse_with_diagnostics};
+pub use i18n::{detect_system_language, parse_language_from_args};

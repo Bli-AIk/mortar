@@ -18,15 +18,21 @@ impl Backend {
         .await
         .unwrap_or_else(|_| {
             // If the task panicked, create a simple error diagnostic
-            (vec![Diagnostic::new_simple(
-                Range::new(Position::new(0, 0), Position::new(0, 0)),
-                "Analysis task failed".to_string(),
-            )], None)
+            (
+                vec![Diagnostic::new_simple(
+                    Range::new(Position::new(0, 0), Position::new(0, 0)),
+                    crate::backend::i18n::get_lsp_text("analysis_task_failed", language)
+                        .to_string(),
+                )],
+                None,
+            )
         });
 
         // Update symbol table if program was parsed successfully
         if let Some(program) = program_opt {
-            if let Ok(symbol_table) = tokio::task::spawn_blocking(move || analyze_program(&program)).await {
+            if let Ok(symbol_table) =
+                tokio::task::spawn_blocking(move || analyze_program(&program)).await
+            {
                 match symbol_table {
                     Ok(table) => {
                         self.symbol_tables.insert(uri.clone(), table);
