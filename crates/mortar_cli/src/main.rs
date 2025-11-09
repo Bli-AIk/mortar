@@ -68,7 +68,7 @@ fn build_command(language: CliLanguage) -> Command {
 }
 
 fn main() {
-    // 首先用简单的解析器获取语言设置
+    // First parse language setting with a simple parser
     let args: Vec<String> = std::env::args().collect();
     let language = if let Some(pos) = args.iter().position(|arg| arg == "--lang" || arg == "-L") {
         if let Some(lang_str) = args.get(pos + 1) {

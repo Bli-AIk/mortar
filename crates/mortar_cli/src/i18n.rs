@@ -9,14 +9,14 @@ pub enum Language {
 
 impl Language {
     pub fn from_env() -> Self {
-        // 检查环境变量来确定系统语言
+        // Check environment variables to determine system language
         if let Ok(lang) = std::env::var("LANG")
             && (lang.contains("zh") || lang.contains("cn") || lang.contains("CN"))
         {
             return Language::Chinese;
         }
 
-        // 检查其他常见的语言环境变量
+        // Check other common language environment variables
         for env_var in &["LC_ALL", "LC_MESSAGES", "LANGUAGE"] {
             if let Ok(lang) = std::env::var(env_var)
                 && (lang.contains("zh") || lang.contains("cn") || lang.contains("CN"))
@@ -43,7 +43,7 @@ fn init_texts() -> &'static HashMap<&'static str, HashMap<Language, &'static str
     TEXTS.get_or_init(|| {
         let mut texts = HashMap::new();
 
-        // CLI应用描述
+        // CLI application description
         texts.insert(
             "app_about",
             [
@@ -53,7 +53,7 @@ fn init_texts() -> &'static HashMap<&'static str, HashMap<Language, &'static str
             .into(),
         );
 
-        // 参数帮助文本
+        // Argument help texts
         texts.insert(
             "input_help",
             [
@@ -123,7 +123,7 @@ fn init_texts() -> &'static HashMap<&'static str, HashMap<Language, &'static str
             .into(),
         );
 
-        // 运行时消息
+        // Runtime messages
         texts.insert(
             "error_reading_file",
             [
@@ -202,7 +202,7 @@ fn init_texts() -> &'static HashMap<&'static str, HashMap<Language, &'static str
             .into(),
         );
 
-        // 编译器输出文本
+        // Compiler output texts
         texts.insert(
             "checking_file",
             [
@@ -241,7 +241,7 @@ pub fn get_text(key: &str, language: Language) -> &'static str {
         .get(key)
         .and_then(|map| map.get(&language))
         .unwrap_or_else(|| {
-            // 如果找不到对应语言的文本，回退到英文
+            // Fall back to English if the corresponding language text is not found
             texts
                 .get(key)
                 .and_then(|map| map.get(&Language::English))

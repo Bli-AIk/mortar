@@ -14,8 +14,69 @@ fn get_text(key: &str, language: Language) -> &'static str {
         ("error", Language::Chinese) => "错误",
         ("warning", Language::English) => "warning",
         ("warning", Language::Chinese) => "警告",
+
+        // Function naming warnings
+        ("function_should_use_snake_case", Language::English) => {
+            "Function '{}' should use snake_case naming"
+        }
+        ("function_should_use_snake_case", Language::Chinese) => {
+            "函数 '{}' 应该使用 snake_case 命名"
+        }
+
+        // Node naming warnings
+        ("node_should_use_pascal_case", Language::English) => {
+            "Node '{}' should use PascalCase naming"
+        }
+        ("node_should_use_pascal_case", Language::Chinese) => "节点 '{}' 应该使用 PascalCase 命名",
+
+        // Unused function warnings
+        ("function_declared_but_never_used", Language::English) => {
+            "Function '{}' is declared but never used"
+        }
+        ("function_declared_but_never_used", Language::Chinese) => "函数 '{}' 已声明但从未使用",
+
+        // Node not found errors
+        ("node_not_defined", Language::English) => "Node '{}' is not defined",
+        ("node_not_defined", Language::Chinese) => "节点 '{}' 未定义",
+
+        // Function not found errors
+        ("function_not_declared", Language::English) => "Function '{}' is not declared",
+        ("function_not_declared", Language::Chinese) => "函数 '{}' 未声明",
+
+        // Argument count mismatch errors
+        ("function_expects_args", Language::English) => {
+            "Function '{}' expects {} arguments, but {} were provided"
+        }
+        ("function_expects_args", Language::Chinese) => "函数 '{}' 期望 {} 个参数，但提供了 {} 个",
+
+        // Argument type mismatch errors
+        ("function_parameter_type_mismatch", Language::English) => {
+            "Function '{}' parameter '{}' expects type '{}', but '{}' was provided"
+        }
+        ("function_parameter_type_mismatch", Language::Chinese) => {
+            "函数 '{}' 的参数 '{}' 期望类型 '{}'，但提供了 '{}'"
+        }
+
+        // Condition type mismatch errors
+        ("condition_must_return_boolean", Language::English) => {
+            "Condition function '{}' must return a boolean type, but returns '{}'"
+        }
+        ("condition_must_return_boolean", Language::Chinese) => {
+            "条件函数 '{}' 必须返回布尔类型，但返回了 '{}'"
+        }
+
         _ => "",
     }
+}
+
+fn format_message(template: &str, args: &[&str]) -> String {
+    let mut result = template.to_string();
+    for arg in args {
+        if let Some(pos) = result.find("{}") {
+            result.replace_range(pos..pos + 2, arg);
+        }
+    }
+    result
 }
 
 fn get_line_col(source: &str, pos: usize) -> (usize, usize) {
@@ -156,10 +217,10 @@ impl DiagnosticCollector {
             };
 
             if let Some((start, _end)) = diagnostic.span {
-                // 计算行号和列号
+                // Calculate line and column numbers
                 let (line, col) = get_line_col(source, start);
 
-                // 打印错误信息头部，使用彩色
+                // Print colored error header
                 let header = format!(
                     "{}: {}:{}:{}: {}",
                     severity_str, self.file_name, line, col, diagnostic.message
@@ -170,7 +231,7 @@ impl DiagnosticCollector {
                     Severity::Warning => println!("{}", header.yellow()),
                 }
 
-                // 显示源代码片段
+                // Show source code snippet
                 let lines: Vec<&str> = source.lines().collect();
                 if line > 0 && (line - 1) < lines.len() {
                     let source_line = lines[line - 1];
@@ -181,17 +242,17 @@ impl DiagnosticCollector {
                         source_line
                     );
 
-                    // 计算错误范围内的字符数量来生成等长的指示符
+                    // Calculate character count within error range for equal-length indicators
                     let error_length = if let Some((span_start, span_end)) = diagnostic.span {
-                        // 直接使用字节长度，转换为字符长度
+                        // Convert byte length to character length
                         let error_text = &source[span_start..std::cmp::min(span_end, source.len())];
                         std::cmp::max(1, error_text.chars().count())
                     } else {
                         1
                     };
 
-                    // 创建指示符，使用等长的 ^ 字符
-                    let padding = " ".repeat(col - 1); // col已经是1-based，减1得到正确的位置
+                    // Create pointer indicators with equal-length ^ characters
+                    let padding = " ".repeat(col - 1); // col is 1-based, subtract 1 for correct position
                     let pointer_str = "^".repeat(error_length);
                     let pointer = match diagnostic.severity {
                         Severity::Error => {
@@ -243,9 +304,9 @@ impl DiagnosticCollector {
                             },
                             severity: Severity::Warning,
                             span: func.name_span,
-                            message: format!(
-                                "Function '{}' should use snake_case naming",
-                                func.name
+                            message: format_message(
+                                get_text("function_should_use_snake_case", self.language),
+                                &[&func.name],
                             ),
                         });
                     }
@@ -261,7 +322,10 @@ impl DiagnosticCollector {
                             },
                             severity: Severity::Warning,
                             span: node.name_span,
-                            message: format!("Node '{}' should use PascalCase naming", node.name),
+                            message: format_message(
+                                get_text("node_should_use_pascal_case", self.language),
+                                &[&node.name],
+                            ),
                         });
                     }
 
@@ -292,7 +356,10 @@ impl DiagnosticCollector {
                     },
                     severity: Severity::Warning,
                     span: declared_functions[func_name].name_span,
-                    message: format!("Function '{}' is declared but never used", func_name),
+                    message: format_message(
+                        get_text("function_declared_but_never_used", self.language),
+                        &[func_name],
+                    ),
                 });
             }
         }
@@ -364,7 +431,10 @@ impl DiagnosticCollector {
                         },
                         severity: Severity::Error,
                         span: *span,
-                        message: format!("Node '{}' is not defined", node_name),
+                        message: format_message(
+                            get_text("node_not_defined", self.language),
+                            &[node_name],
+                        ),
                     });
                 }
             }
@@ -405,10 +475,9 @@ impl DiagnosticCollector {
                                 },
                                 severity: Severity::Error,
                                 span: func_call.name_span,
-                                message: format!(
-                                    "Condition function '{}' must return a boolean type, but returns '{}'",
-                                    func_call.name,
-                                    return_type
+                                message: format_message(
+                                    get_text("condition_must_return_boolean", self.language),
+                                    &[&func_call.name, return_type],
                                 ),
                             });
                         }
@@ -427,7 +496,10 @@ impl DiagnosticCollector {
                             },
                             severity: Severity::Error,
                             span: *span,
-                            message: format!("Node '{}' is not defined", node_name),
+                            message: format_message(
+                                get_text("node_not_defined", self.language),
+                                &[node_name],
+                            ),
                         });
                     }
                 }
@@ -476,7 +548,10 @@ impl DiagnosticCollector {
                 },
                 severity: Severity::Error,
                 span: func_call.name_span,
-                message: format!("Function '{}' is not declared", func_call.name),
+                message: format_message(
+                    get_text("function_not_declared", self.language),
+                    &[&func_call.name],
+                ),
             });
             return;
         }
@@ -493,11 +568,13 @@ impl DiagnosticCollector {
                 },
                 severity: Severity::Error,
                 span: func_call.name_span,
-                message: format!(
-                    "Function '{}' expects {} arguments, but {} were provided",
-                    func_call.name,
-                    func_decl.params.len(),
-                    func_call.args.len()
+                message: format_message(
+                    get_text("function_expects_args", self.language),
+                    &[
+                        &func_call.name,
+                        &func_decl.params.len().to_string(),
+                        &func_call.args.len().to_string(),
+                    ],
                 ),
             });
         } else {
@@ -505,6 +582,7 @@ impl DiagnosticCollector {
             for (arg, param) in func_call.args.iter().zip(func_decl.params.iter()) {
                 let arg_type = self.infer_argument_type(arg, declared_functions);
                 if !self.is_type_compatible(&arg_type, &param.type_name) {
+                    let arg_type_for_message = self.infer_argument_type(arg, declared_functions);
                     self.add_diagnostic(Diagnostic {
                         kind: DiagnosticKind::ArgumentTypeMismatch {
                             function_name: func_call.name.clone(),
@@ -514,12 +592,14 @@ impl DiagnosticCollector {
                         },
                         severity: Severity::Error,
                         span: func_call.name_span,
-                        message: format!(
-                            "Function '{}' parameter '{}' expects type '{}', but '{}' was provided",
-                            func_call.name,
-                            param.name,
-                            param.type_name,
-                            self.infer_argument_type(arg, declared_functions)
+                        message: format_message(
+                            get_text("function_parameter_type_mismatch", self.language),
+                            &[
+                                &func_call.name,
+                                &param.name,
+                                &param.type_name,
+                                &arg_type_for_message,
+                            ],
                         ),
                     });
                 }

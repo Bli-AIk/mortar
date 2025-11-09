@@ -205,7 +205,7 @@ mod tests {
         // Test comment tokenization containing Chinese characters
         let content = r#"    text: "你好呀，欢迎阅读这个互动故事。"
     
-    // 这个事件列表写在紧挨着上一个 text，所以它们是关联的。"#;
+    // This event list is written next to the previous text, so they are associated."#;
 
         let tokens = tokenize(content);
 
@@ -225,7 +225,7 @@ mod tests {
         // Verify comment completeness
         assert_eq!(
             comment_token.text,
-            "// 这个事件列表写在紧挨着上一个 text，所以它们是关联的。"
+            "// This event list is written next to the previous text, so they are associated."
         );
     }
 
@@ -258,7 +258,7 @@ mod tests {
         let backend = Backend::new(service.inner().client.clone());
 
         // Test semantic token length calculation with Chinese comments
-        let content = "// 然后，由于没有任何后续节点，这个对话还是结束了。";
+        let content = "// Then, since there are no subsequent nodes, this conversation ends.";
 
         let semantic_tokens = backend.analyze_semantic_tokens(content);
 

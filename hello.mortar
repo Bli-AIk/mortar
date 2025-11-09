@@ -86,7 +86,7 @@ node test_warning{
 
 }
 
-fn test_warning2();
+fn TestWarning2();
 
 node ForestScene {
     text: "你进入了森林。"
