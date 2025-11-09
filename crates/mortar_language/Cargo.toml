@@ -15,7 +15,6 @@ categories.workspace = true
 [dependencies]
 mortar_compiler.workspace = true
 mortar_lsp.workspace = true
-mortar_grammar.workspace = true
 
 # Re-export core functionality
 [lib]

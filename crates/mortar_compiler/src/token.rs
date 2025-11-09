@@ -5,13 +5,17 @@ use std::fmt;
 #[derive(Logos, Debug, PartialEq, Clone)]
 // Ignore whitespace
 #[logos(skip r"[ \t\r\n]+")]
-// Single line comment
-#[logos(skip r"//[^\n]*")]
-// Multi-line comments
-#[logos(skip r"/\*([^*]|\*[^/])*\*/")]
 pub enum Token<'a> {
     #[allow(dead_code)]
     Error,
+
+    // region Comments
+    #[regex(r"//[^\n]*", |lex| lex.slice())]
+    SingleLineComment(&'a str),
+
+    #[regex(r"/\*([^*]|\*[^/])*\*/", |lex| lex.slice())]
+    MultiLineComment(&'a str),
+    // endregion
 
     // region Keywords
     #[token("node")]
@@ -24,6 +28,7 @@ pub enum Token<'a> {
     #[token("choice")]
     Choice,
     #[token("fn")]
+    #[token("function")]
     Fn,
     #[token("return")]
     Return,
@@ -31,6 +36,21 @@ pub enum Token<'a> {
     Break,
     #[token("when")]
     When,
+
+    // Type keywords
+    #[token("String")]
+    StringType,
+    #[token("Number")]
+    NumberType,
+    #[token("Boolean")]
+    #[token("Bool")]
+    BooleanType,
+
+    // Boolean literals
+    #[token("true")]
+    True,
+    #[token("false")]
+    False,
     // endregion
 
     // region Operators & Punctuation
@@ -40,6 +60,8 @@ pub enum Token<'a> {
     Colon,
     #[token(",")]
     Comma,
+    #[token(";")]
+    Semicolon,
     #[token(".")]
     Dot,
     #[token("{")]
@@ -75,11 +97,56 @@ pub enum Token<'a> {
     // endregion
 }
 
+/// Lexical analysis result containing token information and position
+#[derive(Debug, Clone)]
+pub struct TokenInfo<'a> {
+    pub token: Token<'a>,
+    pub start: usize,
+    pub end: usize,
+    pub text: &'a str,
+}
+
+/// Public lexical analysis interface for LSP and other external components
+pub fn tokenize(input: &str) -> Vec<TokenInfo<'_>> {
+    use logos::Logos;
+
+    let mut lexer = Token::lexer(input);
+    let mut tokens = Vec::new();
+
+    while let Some(token_result) = lexer.next() {
+        match token_result {
+            Ok(token) => {
+                let span = lexer.span();
+                tokens.push(TokenInfo {
+                    token,
+                    start: span.start,
+                    end: span.end,
+                    text: &input[span.start..span.end],
+                });
+            }
+            Err(_) => {
+                let span = lexer.span();
+                tokens.push(TokenInfo {
+                    token: Token::Error,
+                    start: span.start,
+                    end: span.end,
+                    text: &input[span.start..span.end],
+                });
+            }
+        }
+    }
+
+    tokens
+}
+
 impl fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Token::*;
         match self {
             Error => write!(f, "Error"),
+
+            SingleLineComment(s) => write!(f, "{}", s),
+            MultiLineComment(s) => write!(f, "{}", s),
 
             Node => write!(f, "node"),
             Text => write!(f, "text"),
@@ -90,9 +157,16 @@ impl fmt::Display for Token<'_> {
             Break => write!(f, "break"),
             When => write!(f, "when"),
 
+            StringType => write!(f, "String"),
+            NumberType => write!(f, "Number"),
+            BooleanType => write!(f, "Boolean"),
+            True => write!(f, "true"),
+            False => write!(f, "false"),
+
             Arrow => write!(f, "->"),
             Colon => write!(f, ":"),
             Comma => write!(f, ","),
+            Semicolon => write!(f, ";"),
             Dot => write!(f, "."),
             LeftBrace => write!(f, "{{"),
             RightBrace => write!(f, "}}"),

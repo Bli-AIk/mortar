@@ -9,7 +9,7 @@
 
 > **Current Status**: 🚧 Early Development (Initial version in progress)
 
-![Mortar](./mortar_logo.svg)
+![Mortar](./crates/mortar_logo.svg)
 
 **Mortar** is a Domain Specific Language (DSL) designed for game dialogue and text event systems. Its core philosophy is
 to achieve **strict separation between text content and event logic**.
@@ -64,7 +64,7 @@ Create a simple Mortar file `hello.mortar`:
 ```mortar
 // 'node' is a basic dialogue node.
 // It can also be abbreviated as 'nd'!
-node start {
+node Start {
     // Write your text content.
     // Double quotes (or single quotes) are required, but semicolons and commas can be omitted!
     text: "Hello, welcome to this interactive story."
@@ -94,13 +94,13 @@ node start {
     text: "Ok, Let's GO!"
     
 // The arrow after a node indicates jumping to the next node.
-} -> choice_point
+} -> ChoicePoint
 
 /*
 There is also a node here that shows how to write options - by choice field.
 */
 
-node choice_point {
+node ChoicePoint {
     text: "What would you like to do?"
     
     // By choice field, we can also jump to different nodes.
@@ -144,6 +144,11 @@ fn set_animation(anim_name: String)
 fn set_color(value: String)
 
 fn get_name() -> String
+
+// fn can be written as function, and Bool can also be written as Boolean.
+function has_map() -> Bool
+
+fn has_backpack() -> Boolean
 ```
 
 Compile the Mortar file:

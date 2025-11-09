@@ -4,7 +4,6 @@ members = [
     "crates/mortar_compiler", 
     "crates/mortar_cli",
     "crates/mortar_lsp",
-    "crates/mortar_grammar"
 ]
 resolver = "2"
 
@@ -41,4 +40,3 @@ mortar_compiler = { version = "0.1.0", path = "./crates/mortar_compiler" }
 mortar_cli = { version = "0.0.0", path = "./crates/mortar_cli" }
 mortar_language = { version = "0.1.1", path = "./crates/mortar_language" }
 mortar_lsp = { version = "0.0.0", path = "./crates/mortar_lsp" }
-mortar_grammar = { version = "0.0.0", path = "./crates/mortar_grammar" }
