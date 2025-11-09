@@ -245,6 +245,7 @@ jobs:
         cp "$BINARY_PATH" "$FINAL_NAME"
         echo "FINAL_ARTIFACT_PATH=$FINAL_NAME" >> $GITHUB_ENV
         echo "FINAL_ARTIFACT_NAME=$FINAL_NAME" >> $GITHUB_ENV
+      shell: bash
       
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v2
