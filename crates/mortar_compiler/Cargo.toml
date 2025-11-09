@@ -1,6 +1,9 @@
 [package]
 name = "mortar_compiler"
 version.workspace = true
+
+[package.metadata.workspaces]
+independent = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
