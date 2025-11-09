@@ -1,5 +1,6 @@
 use clap::{Arg, Command};
 use mortar_compiler::{FileHandler, ParseHandler, Serializer};
+use std::process;
 
 fn main() {
     let matches = Command::new("mortar")
@@ -40,19 +41,27 @@ fn main() {
                 .action(clap::ArgAction::SetTrue)
                 .help("Show original source text"),
         )
+        .arg(
+            Arg::new("check-only")
+                .short('c')
+                .long("check")
+                .action(clap::ArgAction::SetTrue)
+                .help("Only check for errors and warnings without generating output"),
+        )
         .get_matches();
 
     let input_path = matches.get_one::<String>("input").unwrap();
     let pretty = matches.get_flag("pretty");
     let verbose_lexer = matches.get_flag("verbose-lexer");
     let show_source = matches.get_flag("show-source");
+    let check_only = matches.get_flag("check-only");
 
     // Read source file
     let content = match FileHandler::read_source_file(input_path) {
         Ok(content) => content,
         Err(err) => {
             eprintln!("Error reading file: {}", err);
-            return;
+            process::exit(1);
         }
     };
 
@@ -63,24 +72,46 @@ fn main() {
         println!();
     }
 
-    let program = match ParseHandler::parse_source_code(&content, verbose_lexer) {
+    // Parse with diagnostics
+    let (parse_result, diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
+        &content, 
+        input_path.clone(), 
+        verbose_lexer
+    );
+
+    // Print diagnostics
+    diagnostics.print_diagnostics(&content);
+
+    // Check for errors
+    if diagnostics.has_errors() {
+        eprintln!("\nCompilation failed due to errors.");
+        process::exit(1);
+    }
+
+    let program = match parse_result {
         Ok(program) => program,
         Err(err) => {
             eprintln!("Parse error: {}", err);
-            return;
+            process::exit(1);
         }
     };
 
     println!("Parsed successfully!");
 
-    // Generate .mortared file
-    let output_path = matches
-        .get_one::<String>("output")
-        .map(|s| s.as_str())
-        .unwrap_or(input_path);
+    // Only generate output if not in check-only mode
+    if !check_only {
+        // Generate .mortared file
+        let output_path = matches
+            .get_one::<String>("output")
+            .map(|s| s.as_str())
+            .unwrap_or(input_path);
 
-    match Serializer::save_to_file(&program, output_path, pretty) {
-        Ok(()) => println!("Successfully generated .mortared file"),
-        Err(err) => eprintln!("Failed to generate .mortared file: {}", err),
+        match Serializer::save_to_file(&program, output_path, pretty) {
+            Ok(()) => println!("Successfully generated .mortared file"),
+            Err(err) => {
+                eprintln!("Failed to generate .mortared file: {}", err);
+                process::exit(1);
+            }
+        }
     }
 }

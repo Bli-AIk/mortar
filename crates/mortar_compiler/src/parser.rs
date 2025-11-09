@@ -1,4 +1,5 @@
-use crate::token::Token;
+use crate::token::{Token, TokenInfo};
+use crate::diagnostics::DiagnosticCollector;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
@@ -14,6 +15,7 @@ pub enum TopLevel {
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeDef {
     pub name: String,
+    pub name_span: Option<(usize, usize)>,
     pub body: Vec<NodeStmt>,
     pub jump: Option<NodeJump>,
 }
@@ -27,7 +29,7 @@ pub enum NodeStmt {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NodeJump {
-    Identifier(String),
+    Identifier(String, Option<(usize, usize)>),
     Return,
     Break,
 }
@@ -59,7 +61,7 @@ pub enum Condition {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ChoiceDest {
-    Identifier(String),
+    Identifier(String, Option<(usize, usize)>),
     Return,
     Break,
     NestedChoices(Vec<ChoiceItem>),
@@ -68,6 +70,7 @@ pub enum ChoiceDest {
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDecl {
     pub name: String,
+    pub name_span: Option<(usize, usize)>,
     pub params: Vec<Param>,
     pub return_type: Option<String>,
 }
@@ -81,6 +84,7 @@ pub struct Param {
 #[derive(Debug, Clone, PartialEq)]
 pub struct FuncCall {
     pub name: String,
+    pub name_span: Option<(usize, usize)>,
     pub args: Vec<Arg>,
 }
 
@@ -98,21 +102,64 @@ impl ParseHandler {
     pub fn parse_source_code(content: &str, verbose_lexer: bool) -> Result<Program, String> {
         let tokens = if verbose_lexer {
             crate::token::lex_with_output(content)
+                .into_iter()
+                .enumerate()
+                .map(|(_i, token)| TokenInfo {
+                    token,
+                    start: 0, // We'll use better position tracking later
+                    end: 0,
+                    text: "",
+                })
+                .collect()
         } else {
-            crate::token::lex_silent(content)
+            crate::token::tokenize(content)
         };
+        
         let mut parser = Parser::new(tokens);
         parser.parse_program()
+    }
+    
+    pub fn parse_source_code_with_diagnostics(
+        content: &str, 
+        file_name: String, 
+        verbose_lexer: bool
+    ) -> (Result<Program, String>, DiagnosticCollector) {
+        let tokens = if verbose_lexer {
+            crate::token::lex_with_output(content)
+                .into_iter()
+                .enumerate()
+                .map(|(_i, token)| TokenInfo {
+                    token,
+                    start: 0, // We'll use better position tracking later
+                    end: 0,
+                    text: "",
+                })
+                .collect()
+        } else {
+            crate::token::tokenize(content)
+        };
+        
+        let mut parser = Parser::new(tokens);
+        let mut diagnostics = DiagnosticCollector::new(file_name);
+        
+        let result = parser.parse_program();
+        
+        // If parsing succeeded, run semantic analysis
+        if let Ok(ref program) = result {
+            diagnostics.analyze_program(program);
+        }
+        
+        (result, diagnostics)
     }
 }
 
 struct Parser<'a> {
-    tokens: Vec<Token<'a>>,
+    tokens: Vec<TokenInfo<'a>>,
     current: usize,
 }
 
 impl<'a> Parser<'a> {
-    fn new(tokens: Vec<Token<'a>>) -> Self {
+    fn new(tokens: Vec<TokenInfo<'a>>) -> Self {
         Self { tokens, current: 0 }
     }
 
@@ -120,11 +167,11 @@ impl<'a> Parser<'a> {
         self.current >= self.tokens.len()
     }
 
-    fn peek(&self) -> Option<&Token<'_>> {
+    fn peek(&self) -> Option<&TokenInfo<'_>> {
         self.tokens.get(self.current)
     }
 
-    fn advance(&mut self) -> Option<&Token<'_>> {
+    fn advance(&mut self) -> Option<&TokenInfo<'_>> {
         if !self.is_at_end() {
             self.current += 1;
         }
@@ -133,13 +180,13 @@ impl<'a> Parser<'a> {
 
     fn check(&self, token: &Token) -> bool {
         if let Some(current_token) = self.peek() {
-            std::mem::discriminant(current_token) == std::mem::discriminant(token)
+            std::mem::discriminant(&current_token.token) == std::mem::discriminant(token)
         } else {
             false
         }
     }
 
-    fn consume(&mut self, expected: &Token, error_msg: &str) -> Result<&Token<'_>, String> {
+    fn consume(&mut self, expected: &Token, error_msg: &str) -> Result<&TokenInfo<'_>, String> {
         if self.check(expected) {
             Ok(self.advance().unwrap())
         } else {
@@ -147,15 +194,15 @@ impl<'a> Parser<'a> {
                 "{}: expected {:?}, found {:?}",
                 error_msg,
                 expected,
-                self.peek()
+                self.peek().map(|t| &t.token)
             ))
         }
     }
 
     /// Skip optional separators (commas and semicolons)
     fn skip_optional_separators(&mut self) {
-        while let Some(token) = self.peek() {
-            if matches!(token, Token::Comma | Token::Semicolon) {
+        while let Some(token_info) = self.peek() {
+            if matches!(token_info.token, Token::Comma | Token::Semicolon) {
                 self.advance();
             } else {
                 break;
@@ -169,9 +216,9 @@ impl<'a> Parser<'a> {
             let mut skipped_something = false;
 
             // Skip comments
-            while let Some(token) = self.peek() {
+            while let Some(token_info) = self.peek() {
                 if matches!(
-                    token,
+                    token_info.token,
                     Token::SingleLineComment(_) | Token::MultiLineComment(_)
                 ) {
                     self.advance();
@@ -182,8 +229,8 @@ impl<'a> Parser<'a> {
             }
 
             // Skip separators
-            while let Some(token) = self.peek() {
-                if matches!(token, Token::Comma | Token::Semicolon) {
+            while let Some(token_info) = self.peek() {
+                if matches!(token_info.token, Token::Comma | Token::Semicolon) {
                     self.advance();
                     skipped_something = true;
                 } else {
@@ -214,18 +261,22 @@ impl<'a> Parser<'a> {
     fn parse_top_level(&mut self) -> Result<TopLevel, String> {
         self.skip_comments_and_separators();
 
-        match self.peek() {
+        match self.peek().map(|t| &t.token) {
             Some(Token::Node) => Ok(TopLevel::NodeDef(self.parse_node_def()?)),
             Some(Token::Fn) => Ok(TopLevel::FunctionDecl(self.parse_function_decl()?)),
-            _ => Err(format!("Expected 'node' or 'fn', found {:?}", self.peek())),
+            _ => Err(format!("Expected 'node' or 'fn', found {:?}", self.peek().map(|t| &t.token))),
         }
     }
 
     fn parse_node_def(&mut self) -> Result<NodeDef, String> {
         self.consume(&Token::Node, "Expected 'node'")?;
 
-        let name = if let Some(Token::Identifier(name)) = self.advance() {
-            name.to_string()
+        let (name, name_span) = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                (name.to_string(), Some((token_info.start, token_info.end)))
+            } else {
+                return Err("Expected identifier after 'node'".to_string());
+            }
         } else {
             return Err("Expected identifier after 'node'".to_string());
         };
@@ -250,17 +301,17 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Ok(NodeDef { name, body, jump })
+        Ok(NodeDef { name, name_span, body, jump })
     }
 
     fn parse_node_stmt(&mut self) -> Result<NodeStmt, String> {
-        match self.peek() {
+        match self.peek().map(|t| &t.token) {
             Some(Token::Text) => Ok(NodeStmt::Text(self.parse_text_stmt()?)),
             Some(Token::Events) => Ok(NodeStmt::Events(self.parse_events_stmt()?)),
             Some(Token::Choice) => Ok(NodeStmt::Choice(self.parse_choice_stmt()?)),
             _ => Err(format!(
                 "Expected 'text', 'events', or 'choice', found {:?}",
-                self.peek()
+                self.peek().map(|t| &t.token)
             )),
         }
     }
@@ -269,8 +320,12 @@ impl<'a> Parser<'a> {
         self.consume(&Token::Text, "Expected 'text'")?;
         self.consume(&Token::Colon, "Expected ':'")?;
 
-        if let Some(Token::String(text)) = self.advance() {
-            Ok(text.to_string())
+        if let Some(token_info) = self.advance() {
+            if let Token::String(text) = &token_info.token {
+                Ok(text.to_string())
+            } else {
+                Err("Expected string after 'text:'".to_string())
+            }
         } else {
             Err("Expected string after 'text:'".to_string())
         }
@@ -297,8 +352,12 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_event(&mut self) -> Result<Event, String> {
-        let index = if let Some(Token::Number(n)) = self.advance() {
-            n.parse::<f64>().map_err(|_| "Invalid number")?
+        let index = if let Some(token_info) = self.advance() {
+            if let Token::Number(n) = &token_info.token {
+                n.parse::<f64>().map_err(|_| "Invalid number")?
+            } else {
+                return Err("Expected number for event index".to_string());
+            }
         } else {
             return Err("Expected number for event index".to_string());
         };
@@ -347,22 +406,30 @@ impl<'a> Parser<'a> {
         // Parse choice text
         let text = if self.check(&Token::LeftParen) {
             self.advance(); // consume '('
-            let text = if let Some(Token::String(s)) = self.advance() {
-                s.to_string()
+            let text = if let Some(token_info) = self.advance() {
+                if let Token::String(s) = &token_info.token {
+                    s.to_string()
+                } else {
+                    return Err("Expected string in parentheses".to_string());
+                }
             } else {
                 return Err("Expected string in parentheses".to_string());
             };
             self.consume(&Token::RightParen, "Expected ')'")?;
             text
-        } else if let Some(Token::String(s)) = self.advance() {
-            s.to_string()
+        } else if let Some(token_info) = self.advance() {
+            if let Token::String(s) = &token_info.token {
+                s.to_string()
+            } else {
+                return Err("Expected choice text".to_string());
+            }
         } else {
             return Err("Expected choice text".to_string());
         };
 
         // Parse optional condition
         let condition = if self.check(&Token::When)
-            || (self.check(&Token::Dot) && self.tokens.get(self.current + 1) == Some(&Token::When))
+            || (self.check(&Token::Dot) && self.tokens.get(self.current + 1).map(|t| &t.token) == Some(&Token::When))
         {
             Some(self.parse_choice_cond()?)
         } else {
@@ -395,14 +462,18 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_condition(&mut self) -> Result<Condition, String> {
-        if let Some(Token::Identifier(name)) = self.peek() {
-            // Look ahead to see if it's a function call
-            if self.tokens.get(self.current + 1) == Some(&Token::LeftParen) {
-                Ok(Condition::FuncCall(self.parse_func_call()?))
+        if let Some(token_info) = self.peek() {
+            if let Token::Identifier(name) = &token_info.token {
+                // Look ahead to see if it's a function call
+                if self.tokens.get(self.current + 1).map(|t| &t.token) == Some(&Token::LeftParen) {
+                    Ok(Condition::FuncCall(self.parse_func_call()?))
+                } else {
+                    let name = name.to_string();
+                    self.advance();
+                    Ok(Condition::Identifier(name))
+                }
             } else {
-                let name = name.to_string();
-                self.advance();
-                Ok(Condition::Identifier(name))
+                Err("Expected identifier or function call in condition".to_string())
             }
         } else {
             Err("Expected identifier or function call in condition".to_string())
@@ -410,11 +481,16 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_choice_dest(&mut self) -> Result<ChoiceDest, String> {
-        match self.peek() {
-            Some(Token::Identifier(name)) => {
-                let name = name.to_string();
-                self.advance();
-                Ok(ChoiceDest::Identifier(name))
+        match self.peek().map(|t| &t.token) {
+            Some(Token::Identifier(_name)) => {
+                let token_info = self.advance().unwrap();
+                let name = if let Token::Identifier(name) = &token_info.token {
+                    name.to_string()
+                } else {
+                    unreachable!()
+                };
+                let span = Some((token_info.start, token_info.end));
+                Ok(ChoiceDest::Identifier(name, span))
             }
             Some(Token::Return) => {
                 self.advance();
@@ -443,7 +519,7 @@ impl<'a> Parser<'a> {
             }
             _ => Err(format!(
                 "Expected choice destination, found {:?}",
-                self.peek()
+                self.peek().map(|t| &t.token)
             )),
         }
     }
@@ -451,11 +527,16 @@ impl<'a> Parser<'a> {
     fn parse_node_jump(&mut self) -> Result<NodeJump, String> {
         self.consume(&Token::Arrow, "Expected '->'")?;
 
-        match self.peek() {
-            Some(Token::Identifier(name)) => {
-                let name = name.to_string();
-                self.advance();
-                Ok(NodeJump::Identifier(name))
+        match self.peek().map(|t| &t.token) {
+            Some(Token::Identifier(_name)) => {
+                let token_info = self.advance().unwrap();
+                let name = if let Token::Identifier(name) = &token_info.token {
+                    name.to_string()
+                } else {
+                    unreachable!()
+                };
+                let span = Some((token_info.start, token_info.end));
+                Ok(NodeJump::Identifier(name, span))
             }
             Some(Token::Return) => {
                 self.advance();
@@ -467,7 +548,7 @@ impl<'a> Parser<'a> {
             }
             _ => Err(format!(
                 "Expected identifier, 'return', or 'break', found {:?}",
-                self.peek()
+                self.peek().map(|t| &t.token)
             )),
         }
     }
@@ -475,8 +556,12 @@ impl<'a> Parser<'a> {
     fn parse_function_decl(&mut self) -> Result<FunctionDecl, String> {
         self.consume(&Token::Fn, "Expected 'fn'")?;
 
-        let name = if let Some(Token::Identifier(name)) = self.advance() {
-            name.to_string()
+        let (name, name_span) = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                (name.to_string(), Some((token_info.start, token_info.end)))
+            } else {
+                return Err("Expected function name".to_string());
+            }
         } else {
             return Err("Expected function name".to_string());
         };
@@ -505,14 +590,19 @@ impl<'a> Parser<'a> {
 
         Ok(FunctionDecl {
             name,
+            name_span,
             params,
             return_type,
         })
     }
 
     fn parse_param(&mut self) -> Result<Param, String> {
-        let name = if let Some(Token::Identifier(name)) = self.advance() {
-            name.to_string()
+        let name = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                name.to_string()
+            } else {
+                return Err("Expected parameter name".to_string());
+            }
         } else {
             return Err("Expected parameter name".to_string());
         };
@@ -525,7 +615,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_type(&mut self) -> Result<String, String> {
-        match self.advance() {
+        match self.advance().map(|t| &t.token) {
             Some(Token::Identifier(type_name)) => Ok(type_name.to_string()),
             Some(Token::StringType) => Ok("String".to_string()),
             Some(Token::NumberType) => Ok("Number".to_string()),
@@ -535,8 +625,12 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_func_call(&mut self) -> Result<FuncCall, String> {
-        let name = if let Some(Token::Identifier(name)) = self.advance() {
-            name.to_string()
+        let (name, name_span) = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                (name.to_string(), Some((token_info.start, token_info.end)))
+            } else {
+                return Err("Expected function name".to_string());
+            }
         } else {
             return Err("Expected function name".to_string());
         };
@@ -556,11 +650,11 @@ impl<'a> Parser<'a> {
 
         self.consume(&Token::RightParen, "Expected ')'")?;
 
-        Ok(FuncCall { name, args })
+        Ok(FuncCall { name, name_span, args })
     }
 
     fn parse_arg(&mut self) -> Result<Arg, String> {
-        match self.peek() {
+        match self.peek().map(|t| &t.token) {
             Some(Token::String(s)) => {
                 let s = s.to_string();
                 self.advance();
@@ -573,7 +667,7 @@ impl<'a> Parser<'a> {
             }
             Some(Token::Identifier(name)) => {
                 // Look ahead to see if it's a function call
-                if self.tokens.get(self.current + 1) == Some(&Token::LeftParen) {
+                if self.tokens.get(self.current + 1).map(|t| &t.token) == Some(&Token::LeftParen) {
                     Ok(Arg::FuncCall(Box::new(self.parse_func_call()?)))
                 } else {
                     let name = name.to_string();
@@ -581,7 +675,7 @@ impl<'a> Parser<'a> {
                     Ok(Arg::Identifier(name))
                 }
             }
-            _ => Err(format!("Expected argument, found {:?}", self.peek())),
+            _ => Err(format!("Expected argument, found {:?}", self.peek().map(|t| &t.token))),
         }
     }
 }

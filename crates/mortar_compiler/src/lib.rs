@@ -2,6 +2,7 @@ pub mod handler;
 pub mod parser;
 pub mod serializer;
 pub mod token;
+pub mod diagnostics;
 
 #[cfg(test)]
 mod tests;
@@ -12,3 +13,4 @@ pub use parser::{
 };
 pub use serializer::Serializer;
 pub use token::{Token, TokenInfo, tokenize};
+pub use diagnostics::{DiagnosticCollector, Diagnostic, DiagnosticKind, Severity};

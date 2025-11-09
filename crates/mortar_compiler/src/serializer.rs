@@ -203,7 +203,7 @@ impl Serializer {
         }
 
         let next = match &node_def.jump {
-            Some(NodeJump::Identifier(name)) => Some(name.clone()),
+            Some(NodeJump::Identifier(name, _)) => Some(name.clone()),
             _ => None,
         };
 
@@ -275,7 +275,7 @@ impl Serializer {
         };
 
         let (next, action, nested_choice) = match &choice_item.target {
-            ChoiceDest::Identifier(name) => (Some(name.clone()), None, None),
+            ChoiceDest::Identifier(name, _) => (Some(name.clone()), None, None),
             ChoiceDest::Return => (None, Some("return".to_string()), None),
             ChoiceDest::Break => (None, Some("break".to_string()), None),
             ChoiceDest::NestedChoices(nested_items) => {

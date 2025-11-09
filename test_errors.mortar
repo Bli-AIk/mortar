@@ -1,0 +1,31 @@
+// Test file with various errors and warnings
+
+// Warning: function should use snake_case
+fn PlaySound(file_name: String);
+
+// Warning: node should use PascalCase  
+node startNode {
+    text: "Hello world"
+    
+    events: [
+        // Error: function not declared
+        0, unknown_function("test.wav")
+        // Error: wrong number of arguments
+        5, PlaySound("file1.wav", "extra_arg")
+    ]
+    
+    choice: [
+        "Go to forest" -> forest_scene;  // Error: node not declared
+        "Stay here" -> return;
+    ]
+}
+
+// Warning: function declared but never used
+fn unused_helper() -> String;
+
+// Correct function (no warnings/errors)
+fn get_player_name() -> String;
+
+node CorrectNode {
+    text: "This is correct: {get_player_name()}"
+} -> startNode

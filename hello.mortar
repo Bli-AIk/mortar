@@ -81,3 +81,9 @@ fn get_name() -> String;
 function has_map() -> Bool;
 
 fn has_backpack() -> Boolean;
+
+node test_warning{
+
+}
+
+fn test_warning2();

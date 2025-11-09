@@ -1,0 +1,33 @@
+// 正确的 mortar 文件示例
+
+// 正确的蛇形命名函数
+fn play_sound(file_name: String);
+fn set_animation(anim_name: String);
+fn get_player_name() -> String;
+fn has_inventory() -> Bool;
+
+// 正确的大驼峰命名节点
+node StartNode {
+    text: "你好，{get_player_name()}！欢迎来到这个互动故事。"
+    
+    events: [
+        0, play_sound("greeting.wav")
+        6, set_animation("wave")
+    ]
+    
+    text: "你想做什么？"
+} -> ChoiceNode
+
+node ChoiceNode {
+    text: "选择你的行动："
+    
+    choice: [
+        "查看背包" when has_inventory() -> InventoryNode;
+        "继续探险" -> StartNode;
+        "退出游戏" -> return;
+    ]
+}
+
+node InventoryNode {
+    text: "这是你的背包。"
+} -> ChoiceNode

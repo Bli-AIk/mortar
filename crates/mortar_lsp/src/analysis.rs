@@ -82,7 +82,7 @@ fn validate_node_references(
     errors: &mut Vec<(String, usize)>,
 ) {
     if let Some(jump) = &node.jump
-        && let NodeJump::Identifier(target) = jump
+        && let NodeJump::Identifier(target, _) = jump
         && !available_nodes.contains(target)
     {
         errors.push((
@@ -112,7 +112,7 @@ fn validate_choice_target(
     errors: &mut Vec<(String, usize)>,
 ) {
     match target {
-        ChoiceDest::Identifier(target_name) => {
+        ChoiceDest::Identifier(target_name, _) => {
             if !available_nodes.contains(target_name) {
                 errors.push((
                     format!(
