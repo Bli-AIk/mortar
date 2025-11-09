@@ -53,7 +53,7 @@ fn create_test_program() -> Program {
 #[test]
 fn test_serialize_program() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     assert_eq!(json["metadata"]["version"], "0.1.0");
@@ -66,7 +66,7 @@ fn test_serialize_program() {
 #[test]
 fn test_serialize_function_decl() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     let function = &json["functions"][0];
@@ -79,7 +79,7 @@ fn test_serialize_function_decl() {
 #[test]
 fn test_serialize_node_def() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     let node = &json["nodes"][0];
@@ -92,7 +92,7 @@ fn test_serialize_node_def() {
 #[test]
 fn test_serialize_text_and_events() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     let node = &json["nodes"][0];
@@ -110,7 +110,7 @@ fn test_serialize_text_and_events() {
 #[test]
 fn test_serialize_choices() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     let node = &json["nodes"][0];

@@ -154,15 +154,20 @@ fn has_backpack() -> Boolean
 Compile the Mortar file:
 
 ```bash
-# Basic compilation (outputs hello.mortared)
-mortarc hello.mortar
+# Basic compilation (outputs compressed JSON by default)
+mortar hello.mortar
+
+# Generate formatted JSON with indentation  
+mortar hello.mortar --pretty
 
 # Specify output file
-mortarc hello.mortar -o hello.json
+mortar hello.mortar -o output_file
 
-# Enable verbose output
-mortarc hello.mortar --verbose
+# Combine options
+mortar hello.mortar -o custom.json --pretty
 ```
+
+The compiler now generates compressed JSON by default for optimal file size and performance. Use the `--pretty` flag when you need human-readable formatted output for debugging or review.
 
 ## Applicable Scenarios
 

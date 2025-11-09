@@ -88,14 +88,18 @@ struct JsonParam {
 pub struct Serializer;
 
 impl Serializer {
-    pub fn serialize_to_json(program: &Program) -> Result<String, String> {
+    pub fn serialize_to_json(program: &Program, pretty: bool) -> Result<String, String> {
         let mortared = Self::convert_program_to_mortared(program)?;
-        serde_json::to_string_pretty(&mortared).map_err(|e| format!("Serialization error: {}", e))
+        if pretty {
+            serde_json::to_string_pretty(&mortared).map_err(|e| format!("Serialization error: {}", e))
+        } else {
+            serde_json::to_string(&mortared).map_err(|e| format!("Serialization error: {}", e))
+        }
     }
 
-    pub fn save_to_file(program: &Program, input_path: &str) -> Result<(), String> {
+    pub fn save_to_file(program: &Program, input_path: &str, pretty: bool) -> Result<(), String> {
         let input_path = Path::new(input_path);
-        let json_content = Self::serialize_to_json(program)?;
+        let json_content = Self::serialize_to_json(program, pretty)?;
 
         let output_path = input_path.with_extension("mortared");
         std::fs::write(&output_path, json_content)

@@ -3,7 +3,7 @@ mod separator_tests {
     use crate::parser::{Arg, ChoiceDest, NodeStmt, ParseHandler, Program, TopLevel};
 
     fn parse_source(source: &str) -> Result<Program, String> {
-        ParseHandler::parse_source_code(source)
+        ParseHandler::parse_source_code(source, false)
     }
 
     #[test]

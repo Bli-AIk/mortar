@@ -144,15 +144,20 @@ fn has_backpack() -> Boolean
 编译该 Mortar 文件：
 
 ```bash
-# 基础编译（输出 hello.mortared）
-mortarc hello.mortar
+# 基础编译（默认输出压缩格式的 JSON）
+mortar hello.mortar
+
+# 生成带缩进的格式化 JSON
+mortar hello.mortar --pretty
 
 # 指定输出文件
-mortarc hello.mortar -o hello.json
+mortar hello.mortar -o output_file
 
-# 启用详细输出
-mortarc hello.mortar --verbose
+# 组合选项
+mortar hello.mortar -o custom.json --pretty
 ```
+
+编译器现在默认生成压缩格式的 JSON 以获得最优的文件大小和性能表现。当需要人类可读的格式化输出用于调试或查看时，请使用 `--pretty` 标志。
 
 ## 适用场景
 

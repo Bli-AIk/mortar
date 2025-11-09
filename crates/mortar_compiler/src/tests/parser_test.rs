@@ -4,14 +4,14 @@ use crate::parser::{
 };
 
 fn check_parsing(source: &str, expected_program: Program) {
-    let program = ParseHandler::parse_source_code(source).unwrap();
+    let program = ParseHandler::parse_source_code(source, false).unwrap();
     assert_eq!(program, expected_program);
 }
 
 #[test]
 fn test_parse_empty_source() {
     let source = "";
-    let program = ParseHandler::parse_source_code(source).unwrap();
+    let program = ParseHandler::parse_source_code(source, false).unwrap();
     assert_eq!(program.body.len(), 0);
 }
 
@@ -160,7 +160,7 @@ fn test_parse_multiple_top_level() {
         fn func2()
         node node2 {}
     "#;
-    let program = ParseHandler::parse_source_code(source).unwrap();
+    let program = ParseHandler::parse_source_code(source, false).unwrap();
     assert_eq!(program.body.len(), 4);
     assert!(matches!(program.body[0], TopLevel::FunctionDecl(_)));
     assert!(matches!(program.body[1], TopLevel::NodeDef(_)));

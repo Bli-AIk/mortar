@@ -205,3 +205,21 @@ pub(crate) fn lex_with_output(input: &str) -> Vec<Token<'_>> {
     println!("\n");
     tokens
 }
+
+pub(crate) fn lex_silent(input: &str) -> Vec<Token<'_>> {
+    let lex = Token::lexer(input);
+    let mut tokens = Vec::new();
+
+    for result in lex {
+        match result {
+            Ok(token) => {
+                tokens.push(token);
+            }
+            Err(_) => {
+                break;
+            }
+        }
+    }
+
+    tokens
+}

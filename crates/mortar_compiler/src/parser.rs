@@ -95,8 +95,12 @@ pub enum Arg {
 pub struct ParseHandler;
 
 impl ParseHandler {
-    pub fn parse_source_code(content: &str) -> Result<Program, String> {
-        let tokens = crate::token::lex_with_output(content);
+    pub fn parse_source_code(content: &str, verbose_lexer: bool) -> Result<Program, String> {
+        let tokens = if verbose_lexer {
+            crate::token::lex_with_output(content)
+        } else {
+            crate::token::lex_silent(content)
+        };
         let mut parser = Parser::new(tokens);
         parser.parse_program()
     }

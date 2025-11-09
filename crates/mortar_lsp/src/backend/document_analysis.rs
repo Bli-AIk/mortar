@@ -12,7 +12,7 @@ impl Backend {
         let mut symbol_table = SymbolTable::new();
 
         let content_owned = content.to_string();
-        match tokio::task::spawn_blocking(move || ParseHandler::parse_source_code(&content_owned))
+        match tokio::task::spawn_blocking(move || ParseHandler::parse_source_code(&content_owned, false))
             .await
         {
             Ok(Ok(program)) => {

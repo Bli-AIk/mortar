@@ -103,7 +103,7 @@ fn get_score() -> Number
     let start = Instant::now();
     let mut success_count = 0;
     for i in 0..100 {
-        match mortar_compiler::ParseHandler::parse_source_code(simple_content) {
+        match mortar_compiler::ParseHandler::parse_source_code(simple_content, false) {
             Ok(_) => success_count += 1,
             Err(e) => println!("Simple parsing failed {}: {}", i, e),
         }
@@ -119,7 +119,7 @@ fn get_score() -> Number
     let start = Instant::now();
     let mut success_count = 0;
     for i in 0..50 {
-        match mortar_compiler::ParseHandler::parse_source_code(complex_content) {
+        match mortar_compiler::ParseHandler::parse_source_code(complex_content, false) {
             Ok(_) => success_count += 1,
             Err(e) => println!("Complex parsing failed {}: {}", i, e),
         }
@@ -182,7 +182,7 @@ fn event_{}() -> String
             .replace("{}", &i.to_string())
             .replace("node_{}", &format!("node_{}", (i + 1) % 50)); // Circular reference to avoid infinite growth
 
-        match mortar_compiler::ParseHandler::parse_source_code(&content) {
+        match mortar_compiler::ParseHandler::parse_source_code(&content, false) {
             Ok(program) => {
                 parse_results.push(program);
             }
@@ -252,7 +252,7 @@ fn concurrent_test(id: Number) -> String
             // Each task parses multiple times
             let mut results = Vec::new();
             for _ in 0..20 {
-                if let Ok(program) = mortar_compiler::ParseHandler::parse_source_code(&content_copy)
+                if let Ok(program) = mortar_compiler::ParseHandler::parse_source_code(&content_copy, false)
                 {
                     results.push(program);
                 }

@@ -19,9 +19,33 @@ fn main() {
                 .value_name("FILE")
                 .help("Output file path"),
         )
+        .arg(
+            Arg::new("pretty")
+                .short('p')
+                .long("pretty")
+                .action(clap::ArgAction::SetTrue)
+                .help("Generate formatted JSON with indentation"),
+        )
+        .arg(
+            Arg::new("verbose-lexer")
+                .short('v')
+                .long("verbose-lexer")
+                .action(clap::ArgAction::SetTrue)
+                .help("Show verbose lexer output"),
+        )
+        .arg(
+            Arg::new("show-source")
+                .short('s')
+                .long("show-source")
+                .action(clap::ArgAction::SetTrue)
+                .help("Show original source text"),
+        )
         .get_matches();
 
     let input_path = matches.get_one::<String>("input").unwrap();
+    let pretty = matches.get_flag("pretty");
+    let verbose_lexer = matches.get_flag("verbose-lexer");
+    let show_source = matches.get_flag("show-source");
 
     // Read source file
     let content = match FileHandler::read_source_file(input_path) {
@@ -32,9 +56,14 @@ fn main() {
         }
     };
 
-    println!("{}", content);
+    if show_source {
+        println!("--- Original Source ---");
+        println!("{}", content);
+        println!("--- End Source ---");
+        println!();
+    }
 
-    let program = match ParseHandler::parse_source_code(&content) {
+    let program = match ParseHandler::parse_source_code(&content, verbose_lexer) {
         Ok(program) => program,
         Err(err) => {
             eprintln!("Parse error: {}", err);
@@ -50,7 +79,7 @@ fn main() {
         .map(|s| s.as_str())
         .unwrap_or(input_path);
 
-    match Serializer::save_to_file(&program, output_path) {
+    match Serializer::save_to_file(&program, output_path, pretty) {
         Ok(()) => println!("Successfully generated .mortared file"),
         Err(err) => eprintln!("Failed to generate .mortared file: {}", err),
     }
