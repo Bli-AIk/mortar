@@ -2,14 +2,17 @@ use clap::{Arg, Command};
 use mortar_compiler::{FileHandler, ParseHandler, Serializer};
 use std::process;
 
-fn main() {
-    let matches = Command::new("mortar")
+mod i18n;
+use i18n::{get_text, Language};
+
+fn build_command(language: Language) -> Command {
+    Command::new("mortar")
         .version("0.1.0")
         .author("Bli-AIk <haikun2333@gmail.com>")
-        .about("Mortar language compiler")
+        .about(get_text("app_about", language))
         .arg(
             Arg::new("input")
-                .help("Input .mortar file")
+                .help(get_text("input_help", language))
                 .required(true)
                 .index(1),
         )
@@ -18,37 +21,59 @@ fn main() {
                 .short('o')
                 .long("output")
                 .value_name("FILE")
-                .help("Output file path"),
+                .help(get_text("output_help", language)),
         )
         .arg(
             Arg::new("pretty")
                 .short('p')
                 .long("pretty")
                 .action(clap::ArgAction::SetTrue)
-                .help("Generate formatted JSON with indentation"),
+                .help(get_text("pretty_help", language)),
         )
         .arg(
             Arg::new("verbose-lexer")
                 .short('v')
                 .long("verbose-lexer")
                 .action(clap::ArgAction::SetTrue)
-                .help("Show verbose lexer output"),
+                .help(get_text("verbose_lexer_help", language)),
         )
         .arg(
             Arg::new("show-source")
                 .short('s')
                 .long("show-source")
                 .action(clap::ArgAction::SetTrue)
-                .help("Show original source text"),
+                .help(get_text("show_source_help", language)),
         )
         .arg(
             Arg::new("check-only")
                 .short('c')
                 .long("check")
                 .action(clap::ArgAction::SetTrue)
-                .help("Only check for errors and warnings without generating output"),
+                .help(get_text("check_only_help", language)),
         )
-        .get_matches();
+        .arg(
+            Arg::new("lang")
+                .short('L')
+                .long("lang")
+                .value_name("LANGUAGE")
+                .help(get_text("language_help", language)),
+        )
+}
+
+fn main() {
+    // 首先用简单的解析器获取语言设置
+    let args: Vec<String> = std::env::args().collect();
+    let language = if let Some(pos) = args.iter().position(|arg| arg == "--lang" || arg == "-L") {
+        if let Some(lang_str) = args.get(pos + 1) {
+            Language::from_str(lang_str).unwrap_or(Language::from_env())
+        } else {
+            Language::from_env()
+        }
+    } else {
+        Language::from_env()
+    };
+    
+    let matches = build_command(language).get_matches();
 
     let input_path = matches.get_one::<String>("input").unwrap();
     let pretty = matches.get_flag("pretty");
@@ -60,15 +85,15 @@ fn main() {
     let content = match FileHandler::read_source_file(input_path) {
         Ok(content) => content,
         Err(err) => {
-            eprintln!("Error reading file: {}", err);
+            eprintln!("{} {}", get_text("error_reading_file", language), err);
             process::exit(1);
         }
     };
 
     if show_source {
-        println!("--- Original Source ---");
+        println!("{}", get_text("original_source", language));
         println!("{}", content);
-        println!("--- End Source ---");
+        println!("{}", get_text("end_source", language));
         println!();
     }
 
@@ -84,7 +109,7 @@ fn main() {
 
     // Check for errors (including parse errors)
     if diagnostics.has_errors() {
-        eprintln!("\nCompilation failed due to errors.");
+        eprintln!("\n{}", get_text("compilation_failed", language));
         process::exit(1);
     }
 
@@ -96,7 +121,7 @@ fn main() {
         }
     };
 
-    println!("Parsed successfully!");
+    println!("{}", get_text("parsed_successfully", language));
 
     // Only generate output if not in check-only mode
     if !check_only {
@@ -107,9 +132,9 @@ fn main() {
             .unwrap_or(input_path);
 
         match Serializer::save_to_file(&program, output_path, pretty) {
-            Ok(()) => println!("Successfully generated .mortared file"),
+            Ok(()) => println!("{}", get_text("generated_successfully", language)),
             Err(err) => {
-                eprintln!("Failed to generate .mortared file: {}", err);
+                eprintln!("{} {}", get_text("failed_to_generate", language), err);
                 process::exit(1);
             }
         }
