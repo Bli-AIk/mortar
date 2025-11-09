@@ -236,8 +236,15 @@ jobs:
     - name: Set artifact path for Linux/Windows
       if: matrix.os != 'macos-latest'
       run: |
-        echo "FINAL_ARTIFACT_PATH=target/${{ matrix.target }}/release/${{ matrix.binary }}${{ matrix.binary_suffix }}" >> $GITHUB_ENV
-        echo "FINAL_ARTIFACT_NAME=${{ matrix.binary }}-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'windows' }}-x86_64${{ matrix.binary_suffix }}" >> $GITHUB_ENV
+        BINARY_PATH="target/${{ matrix.target }}/release/${{ matrix.binary }}${{ matrix.binary_suffix }}"
+        if [ "${{ matrix.binary }}" = "mortar" ]; then
+          FINAL_NAME="mortar-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'windows' }}-x86_64${{ matrix.binary_suffix }}"
+        else
+          FINAL_NAME="${{ matrix.binary }}-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'windows' }}-x86_64${{ matrix.binary_suffix }}"
+        fi
+        cp "$BINARY_PATH" "$FINAL_NAME"
+        echo "FINAL_ARTIFACT_PATH=$FINAL_NAME" >> $GITHUB_ENV
+        echo "FINAL_ARTIFACT_NAME=$FINAL_NAME" >> $GITHUB_ENV
       
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v2
@@ -246,7 +253,6 @@ jobs:
       with:
         tag_name: ${{ github.ref_name }}
         files: ${{ env.FINAL_ARTIFACT_PATH }}
-        asset_name: ${{ env.FINAL_ARTIFACT_NAME }}
 
   publish-crates:
     name: Publish crates to crates.io
