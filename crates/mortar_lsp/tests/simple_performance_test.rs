@@ -30,7 +30,7 @@ node game {
     
     choice: [
         "进入战斗" -> battle,
-        "查看背包" -> inventory,
+        "查看背包" -> Inventory,
         "返回主界面" -> start
     ]
 }
@@ -54,7 +54,7 @@ node battle_result {
     ]
 }
 
-node inventory {
+node Inventory {
     text: "这是你的背包"
     
     choice: [

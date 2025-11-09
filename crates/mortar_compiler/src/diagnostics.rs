@@ -77,7 +77,18 @@ impl DiagnosticCollector {
 
         println!("Checking file: {}", self.file_name.cyan());
         
-        for diagnostic in &self.diagnostics {
+        // Sort diagnostics: errors first, then warnings
+        let mut sorted_diagnostics = self.diagnostics.clone();
+        sorted_diagnostics.sort_by(|a, b| {
+            use Severity::*;
+            match (&a.severity, &b.severity) {
+                (Error, Warning) => std::cmp::Ordering::Less,
+                (Warning, Error) => std::cmp::Ordering::Greater,
+                _ => std::cmp::Ordering::Equal,
+            }
+        });
+        
+        for diagnostic in &sorted_diagnostics {
             let severity_str = match diagnostic.severity {
                 Severity::Error => "error",
                 Severity::Warning => "warning",

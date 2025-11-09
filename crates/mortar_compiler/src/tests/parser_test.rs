@@ -25,8 +25,9 @@ fn test_parse_node_def() {
     let expected = Program {
         body: vec![TopLevel::NodeDef(NodeDef {
             name: "start_node".to_string(),
+            name_span: Some((14, 24)), // Approximate span for "start_node"
             body: vec![NodeStmt::Text("Hello, world!".to_string())],
-            jump: Some(NodeJump::Identifier("next_node".to_string())),
+            jump: Some(NodeJump::Identifier("next_node".to_string(), Some((74, 83)))), // Updated to actual span
         })],
     };
     check_parsing(source, expected);
@@ -40,6 +41,7 @@ fn test_parse_function_decl() {
     let expected = Program {
         body: vec![TopLevel::FunctionDecl(FunctionDecl {
             name: "my_function".to_string(),
+            name_span: Some((12, 23)), // Updated to actual span for "my_function"
             params: vec![
                 Param {
                     name: "param1".to_string(),
@@ -69,12 +71,14 @@ fn test_parse_node_with_events() {
     let expected = Program {
         body: vec![TopLevel::NodeDef(NodeDef {
             name: "event_node".to_string(),
+            name_span: Some((14, 24)), // Approximate span
             body: vec![NodeStmt::Events(vec![
                 Event {
                     index: 0.0,
                     action: EventAction {
                         call: FuncCall {
                             name: "say".to_string(),
+                            name_span: Some((68, 71)), // Updated to actual span
                             args: vec![Arg::String("hello".to_string())],
                         },
                         chains: vec![],
@@ -85,10 +89,12 @@ fn test_parse_node_with_events() {
                     action: EventAction {
                         call: FuncCall {
                             name: "say".to_string(),
+                            name_span: Some((102, 105)), // Updated to actual span
                             args: vec![Arg::String("world".to_string())],
                         },
                         chains: vec![FuncCall {
                             name: "wait".to_string(),
+                            name_span: Some((115, 119)), // Updated to actual span
                             args: vec![Arg::Number(1.0)],
                         }],
                     },
@@ -117,11 +123,12 @@ fn test_parse_node_with_choices() {
     let expected = Program {
         body: vec![TopLevel::NodeDef(NodeDef {
             name: "choice_node".to_string(),
+            name_span: Some((14, 25)), // Approximate span
             body: vec![NodeStmt::Choice(vec![
                 ChoiceItem {
                     text: "Choice 1".to_string(),
                     condition: None,
-                    target: ChoiceDest::Identifier("next_node".to_string()),
+                    target: ChoiceDest::Identifier("next_node".to_string(), Some((80, 89))),
                 },
                 ChoiceItem {
                     text: "Choice 2".to_string(),
@@ -132,6 +139,7 @@ fn test_parse_node_with_choices() {
                     text: "Choice 3".to_string(),
                     condition: Some(Condition::FuncCall(FuncCall {
                         name: "check".to_string(),
+                        name_span: Some((178, 183)), // Updated to actual span
                         args: vec![Arg::Identifier("arg1".to_string())],
                     })),
                     target: ChoiceDest::Break,
@@ -142,7 +150,7 @@ fn test_parse_node_with_choices() {
                     target: ChoiceDest::NestedChoices(vec![ChoiceItem {
                         text: "Nested 1".to_string(),
                         condition: None,
-                        target: ChoiceDest::Identifier("nested_node".to_string()),
+                        target: ChoiceDest::Identifier("nested_node".to_string(), Some((267, 278))),
                     }]),
                 },
             ])],

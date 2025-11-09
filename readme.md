@@ -106,17 +106,17 @@ node ChoicePoint {
     // By choice field, we can also jump to different nodes.
     choice: [
         // This option does not have any conditional judgment. Logically speaking, you can always choose it.
-        "Explore the forest" -> forest_scene,
+        "Explore the forest" -> ForestScene,
         
         // These two options have the when keyword, which means they have conditional judgment!
         // The when keyword supports chain writing and functional writing.
-        ("Stay in town").when(has_map) -> town_scene,
-        "Check inventory" when has_backpack  -> inventory,
+        ("Stay in town").when(has_map) -> TownScene,
+        "Check Inventory" when has_backpack  -> Inventory,
         
         // A selection field can also be nested within a selection field. You can nest as many levels as you want!
         "Have something to eat" -> [
-            "Apple" -> eat_apple,
-            "Bread" -> eat_bread
+            "Apple" -> EatApple,
+            "Bread" -> EatBread
         ]
         
         // Use the return keyword to exit the current node.

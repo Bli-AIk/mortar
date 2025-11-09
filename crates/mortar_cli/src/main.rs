@@ -82,7 +82,7 @@ fn main() {
     // Print diagnostics
     diagnostics.print_diagnostics(&content);
 
-    // Check for errors
+    // Check for errors (including parse errors)
     if diagnostics.has_errors() {
         eprintln!("\nCompilation failed due to errors.");
         process::exit(1);
@@ -90,8 +90,8 @@ fn main() {
 
     let program = match parse_result {
         Ok(program) => program,
-        Err(err) => {
-            eprintln!("Parse error: {}", err);
+        Err(_) => {
+            // Parse error was already reported through diagnostics
             process::exit(1);
         }
     };

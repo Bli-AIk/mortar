@@ -10,6 +10,7 @@ fn create_test_program() -> Program {
         body: vec![
             TopLevel::FunctionDecl(FunctionDecl {
                 name: "my_function".to_string(),
+                name_span: Some((0, 11)), // Approximate span
                 params: vec![Param {
                     name: "p1".to_string(),
                     type_name: "String".to_string(),
@@ -18,6 +19,7 @@ fn create_test_program() -> Program {
             }),
             TopLevel::NodeDef(NodeDef {
                 name: "start_node".to_string(),
+                name_span: Some((0, 10)), // Approximate span
                 body: vec![
                     NodeStmt::Text("This is the first line.".to_string()),
                     NodeStmt::Events(vec![Event {
@@ -25,6 +27,7 @@ fn create_test_program() -> Program {
                         action: EventAction {
                             call: FuncCall {
                                 name: "play_sound".to_string(),
+                                name_span: Some((0, 10)), // Approximate span
                                 args: vec![Arg::String("music.mp3".to_string())],
                             },
                             chains: vec![],
@@ -35,7 +38,7 @@ fn create_test_program() -> Program {
                         ChoiceItem {
                             text: "Go to next".to_string(),
                             condition: None,
-                            target: ChoiceDest::Identifier("next_node".to_string()),
+                            target: ChoiceDest::Identifier("next_node".to_string(), Some((0, 9))),
                         },
                         ChoiceItem {
                             text: "Stay here".to_string(),
@@ -44,7 +47,7 @@ fn create_test_program() -> Program {
                         },
                     ]),
                 ],
-                jump: Some(NodeJump::Identifier("default_next".to_string())),
+                jump: Some(NodeJump::Identifier("default_next".to_string(), Some((0, 12)))),
             }),
         ],
     }

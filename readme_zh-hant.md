@@ -98,17 +98,17 @@ node ChoicePoint {
     // 通过选择字段，我们也可以跳转到不同的节点。
     choice: [
         // 这个选项没有任何条件判断。按理来说，你始终可以选择它。
-        "探索森林" -> forest_scene,
+        "探索森林" -> ForestScene,
 
         // 这两个选项带有 when 关键字，这说明它们带有条件判断！
         // when 关键字支持 链式写法 和 函数式写法。
-        ("留在城里").when(has_map) -> town_scene,
-        "查看背包" when has_backpack  -> inventory,
+        ("留在城里").when(has_map) -> TownScene,
+        "查看背包" when has_backpack  -> Inventory,
 
         // 选择字段也可以嵌套一个选择字段。你想嵌套多少层都行！
         "吃点什么" -> [
-            "Apple" -> eat_apple,
-            "Bread" -> eat_bread
+            "Apple" -> EatApple,
+            "Bread" -> EatBread
         ]
 
         // 使用 return 关键字 退出当前节点。

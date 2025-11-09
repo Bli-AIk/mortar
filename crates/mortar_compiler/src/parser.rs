@@ -1,5 +1,5 @@
 use crate::token::{Token, TokenInfo};
-use crate::diagnostics::DiagnosticCollector;
+use crate::diagnostics::{DiagnosticCollector, Diagnostic, DiagnosticKind, Severity};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
@@ -144,6 +144,19 @@ impl ParseHandler {
         
         let result = parser.parse_program();
         
+        // If parsing failed, add parse error to diagnostics
+        if let Err(ref parse_error) = result {
+            let current_span = parser.get_current_span();
+            diagnostics.add_diagnostic(Diagnostic {
+                kind: DiagnosticKind::SyntaxError {
+                    message: parse_error.clone(),
+                },
+                severity: Severity::Error,
+                span: current_span,
+                message: parse_error.clone(),
+            });
+        }
+        
         // If parsing succeeded, run semantic analysis
         if let Ok(ref program) = result {
             diagnostics.analyze_program(program);
@@ -176,6 +189,18 @@ impl<'a> Parser<'a> {
             self.current += 1;
         }
         self.tokens.get(self.current - 1)
+    }
+
+    fn get_current_span(&self) -> Option<(usize, usize)> {
+        if let Some(token_info) = self.peek() {
+            Some((token_info.start, token_info.end))
+        } else if self.current > 0 {
+            // If we're at the end, use the last token's position
+            self.tokens.get(self.current - 1)
+                .map(|token_info| (token_info.start, token_info.end))
+        } else {
+            None
+        }
     }
 
     fn check(&self, token: &Token) -> bool {
