@@ -1,9 +1,6 @@
 [package]
 name = "mortar_language"
 version = "0.2.0"
-
-[package.metadata.workspaces]
-independent = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -23,3 +20,6 @@ mortar_lsp.workspace = true
 [lib]
 name = "mortar_language"
 path = "src/lib.rs"
+
+[package.metadata.workspaces]
+independent = true
