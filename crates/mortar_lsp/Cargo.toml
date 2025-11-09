@@ -1,9 +1,6 @@
 [package]
 name = "mortar_lsp"
 version = "0.1.0"
-
-[package.metadata.workspaces]
-independent = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -30,3 +27,6 @@ tracing-appender = "0.2"
 [[bin]]
 name = "mortar_lsp"
 path = "src/main.rs"
+
+[package.metadata.workspaces]
+independent = true
