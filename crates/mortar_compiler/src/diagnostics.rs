@@ -34,6 +34,9 @@ pub enum DiagnosticKind {
     FunctionNotFound { function_name: String },
     SyntaxError { message: String },
     TypeError { message: String },
+    ArgumentCountMismatch { function_name: String, expected: usize, actual: usize },
+    ArgumentTypeMismatch { function_name: String, parameter: String, expected: String, actual: String },
+    ConditionTypeMismatch { expected: String, actual: String },
     
     // Warnings
     NonSnakeCaseFunction { function_name: String },
@@ -149,6 +152,10 @@ impl DiagnosticCollector {
             }
             println!();
         }
+    }
+
+    pub fn get_diagnostics(&self) -> &Vec<Diagnostic> {
+        &self.diagnostics
     }
 
     pub fn analyze_program(&mut self, program: &Program) {
@@ -293,9 +300,31 @@ impl DiagnosticCollector {
                 match condition {
                     Condition::Identifier(_) => {
                         // TODO: Check if identifier is valid in scope
+                        // For now, we assume identifiers are boolean
                     }
                     Condition::FuncCall(func_call) => {
                         self.analyze_func_call(func_call, declared_functions, used_functions);
+                        
+                        // Check that the function returns a boolean type
+                        if let Some(func_decl) = declared_functions.get(&func_call.name) {
+                            if let Some(return_type) = &func_decl.return_type {
+                                if !self.is_boolean_type(return_type) {
+                                    self.add_diagnostic(Diagnostic {
+                                        kind: DiagnosticKind::ConditionTypeMismatch {
+                                            expected: "Boolean".to_string(),
+                                            actual: return_type.clone(),
+                                        },
+                                        severity: Severity::Error,
+                                        span: func_call.name_span,
+                                        message: format!(
+                                            "Condition function '{}' must return a boolean type, but returns '{}'",
+                                            func_call.name,
+                                            return_type
+                                        ),
+                                    });
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -362,16 +391,13 @@ impl DiagnosticCollector {
 
         let func_decl = declared_functions[&func_call.name];
 
-        // Check argument count and types
+        // Check argument count
         if func_call.args.len() != func_decl.params.len() {
             self.add_diagnostic(Diagnostic {
-                kind: DiagnosticKind::TypeError {
-                    message: format!(
-                        "Function '{}' expects {} arguments, but {} were provided",
-                        func_call.name,
-                        func_decl.params.len(),
-                        func_call.args.len()
-                    ),
+                kind: DiagnosticKind::ArgumentCountMismatch {
+                    function_name: func_call.name.clone(),
+                    expected: func_decl.params.len(),
+                    actual: func_call.args.len(),
                 },
                 severity: Severity::Error,
                 span: func_call.name_span,
@@ -382,6 +408,30 @@ impl DiagnosticCollector {
                     func_call.args.len()
                 ),
             });
+        } else {
+            // Check argument types if count matches
+            for (arg, param) in func_call.args.iter().zip(func_decl.params.iter()) {
+                let arg_type = self.infer_argument_type(arg, declared_functions);
+                if !self.is_type_compatible(&arg_type, &param.type_name) {
+                    self.add_diagnostic(Diagnostic {
+                        kind: DiagnosticKind::ArgumentTypeMismatch {
+                            function_name: func_call.name.clone(),
+                            parameter: param.name.clone(),
+                            expected: param.type_name.clone(),
+                            actual: arg_type,
+                        },
+                        severity: Severity::Error,
+                        span: func_call.name_span,
+                        message: format!(
+                            "Function '{}' parameter '{}' expects type '{}', but '{}' was provided",
+                            func_call.name,
+                            param.name,
+                            param.type_name,
+                            self.infer_argument_type(arg, declared_functions)
+                        ),
+                    });
+                }
+            }
         }
 
         // Analyze nested function calls in arguments
@@ -389,6 +439,38 @@ impl DiagnosticCollector {
             if let Arg::FuncCall(nested_call) = arg {
                 self.analyze_func_call(nested_call, declared_functions, used_functions);
             }
+        }
+    }
+
+    fn infer_argument_type(&self, arg: &Arg, declared_functions: &HashMap<String, &FunctionDecl>) -> String {
+        match arg {
+            Arg::String(_) => "String".to_string(),
+            Arg::Number(_) => "Number".to_string(),
+            Arg::Identifier(_) => "Unknown".to_string(), // Could be enhanced with variable tracking
+            Arg::FuncCall(func_call) => {
+                if let Some(func_decl) = declared_functions.get(&func_call.name) {
+                    func_decl.return_type.clone().unwrap_or("Unknown".to_string())
+                } else {
+                    "Unknown".to_string()
+                }
+            }
+        }
+    }
+
+    fn is_boolean_type(&self, type_name: &str) -> bool {
+        matches!(type_name, "Boolean" | "Bool")
+    }
+
+    fn is_type_compatible(&self, actual: &str, expected: &str) -> bool {
+        match (expected, actual) {
+            // Exact matches
+            ("String", "String") | ("Number", "Number") => true,
+            // Boolean type aliases
+            ("Boolean", "Bool") | ("Bool", "Boolean") | ("Boolean", "Boolean") | ("Bool", "Bool") => true,
+            // Unknown types are compatible for now (could be enhanced)
+            (_, "Unknown") | ("Unknown", _) => true,
+            // Everything else is incompatible
+            _ => false,
         }
     }
 
