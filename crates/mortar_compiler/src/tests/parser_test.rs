@@ -27,7 +27,10 @@ fn test_parse_node_def() {
             name: "start_node".to_string(),
             name_span: Some((14, 24)), // Approximate span for "start_node"
             body: vec![NodeStmt::Text("Hello, world!".to_string())],
-            jump: Some(NodeJump::Identifier("next_node".to_string(), Some((74, 83)))), // Updated to actual span
+            jump: Some(NodeJump::Identifier(
+                "next_node".to_string(),
+                Some((74, 83)),
+            )), // Updated to actual span
         })],
     };
     check_parsing(source, expected);

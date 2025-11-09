@@ -1,11 +1,14 @@
-use std::collections::{HashMap, HashSet};
-use crate::parser::{Program, TopLevel, NodeDef, FunctionDecl, NodeStmt, FuncCall, Arg, ChoiceItem, ChoiceDest, Condition, EventAction, NodeJump, InterpolatedString, StringPart};
+use crate::parser::{
+    Arg, ChoiceDest, ChoiceItem, Condition, EventAction, FuncCall, FunctionDecl,
+    InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TopLevel,
+};
 use owo_colors::OwoColorize;
+use std::collections::{HashMap, HashSet};
 
 fn get_line_col(source: &str, pos: usize) -> (usize, usize) {
     let mut line = 1;
     let mut col = 1;
-    
+
     for (i, ch) in source.char_indices() {
         if i >= pos {
             break;
@@ -17,7 +20,7 @@ fn get_line_col(source: &str, pos: usize) -> (usize, usize) {
             col += 1;
         }
     }
-    
+
     (line, col)
 }
 
@@ -30,18 +33,44 @@ pub enum Severity {
 #[derive(Debug, Clone)]
 pub enum DiagnosticKind {
     // Errors
-    NodeNotFound { node_name: String },
-    FunctionNotFound { function_name: String },
-    SyntaxError { message: String },
-    TypeError { message: String },
-    ArgumentCountMismatch { function_name: String, expected: usize, actual: usize },
-    ArgumentTypeMismatch { function_name: String, parameter: String, expected: String, actual: String },
-    ConditionTypeMismatch { expected: String, actual: String },
-    
+    NodeNotFound {
+        node_name: String,
+    },
+    FunctionNotFound {
+        function_name: String,
+    },
+    SyntaxError {
+        message: String,
+    },
+    TypeError {
+        message: String,
+    },
+    ArgumentCountMismatch {
+        function_name: String,
+        expected: usize,
+        actual: usize,
+    },
+    ArgumentTypeMismatch {
+        function_name: String,
+        parameter: String,
+        expected: String,
+        actual: String,
+    },
+    ConditionTypeMismatch {
+        expected: String,
+        actual: String,
+    },
+
     // Warnings
-    NonSnakeCaseFunction { function_name: String },
-    NonPascalCaseNode { node_name: String },
-    UnusedFunction { function_name: String },
+    NonSnakeCaseFunction {
+        function_name: String,
+    },
+    NonPascalCaseNode {
+        node_name: String,
+    },
+    UnusedFunction {
+        function_name: String,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -70,7 +99,9 @@ impl DiagnosticCollector {
     }
 
     pub fn has_errors(&self) -> bool {
-        self.diagnostics.iter().any(|d| matches!(d.severity, Severity::Error))
+        self.diagnostics
+            .iter()
+            .any(|d| matches!(d.severity, Severity::Error))
     }
 
     pub fn print_diagnostics(&self, source: &str) {
@@ -79,7 +110,7 @@ impl DiagnosticCollector {
         }
 
         println!("Checking file: {}", self.file_name.cyan());
-        
+
         // Sort diagnostics: errors first, then warnings
         let mut sorted_diagnostics = self.diagnostics.clone();
         sorted_diagnostics.sort_by(|a, b| {
@@ -90,7 +121,7 @@ impl DiagnosticCollector {
                 _ => std::cmp::Ordering::Equal,
             }
         });
-        
+
         for diagnostic in &sorted_diagnostics {
             let severity_str = match diagnostic.severity {
                 Severity::Error => "error",
@@ -100,29 +131,30 @@ impl DiagnosticCollector {
             if let Some((start, _end)) = diagnostic.span {
                 // 计算行号和列号
                 let (line, col) = get_line_col(source, start);
-                
+
                 // 打印错误信息头部，使用彩色
                 let header = format!(
                     "{}: {}:{}:{}: {}",
-                    severity_str,
-                    self.file_name,
-                    line,
-                    col,
-                    diagnostic.message
+                    severity_str, self.file_name, line, col, diagnostic.message
                 );
-                
+
                 match severity_str {
                     "error" => println!("{}", header.red()),
                     "warning" => println!("{}", header.yellow()),
                     _ => println!("{}", header),
                 }
-                
+
                 // 显示源代码片段
                 let lines: Vec<&str> = source.lines().collect();
                 if line > 0 && (line - 1) < lines.len() {
                     let source_line = lines[line - 1];
-                    println!("{:3} {} {}", line.to_string().bright_blue(), "|".bright_blue(), source_line);
-                    
+                    println!(
+                        "{:3} {} {}",
+                        line.to_string().bright_blue(),
+                        "|".bright_blue(),
+                        source_line
+                    );
+
                     // 计算错误范围内的字符数量来生成等长的指示符
                     let error_length = if let Some((span_start, span_end)) = diagnostic.span {
                         // 直接使用字节长度，转换为字符长度
@@ -131,19 +163,29 @@ impl DiagnosticCollector {
                     } else {
                         1
                     };
-                    
+
                     // 创建指示符，使用等长的 ^ 字符
                     let padding = " ".repeat(col - 1); // col已经是1-based，减1得到正确的位置
                     let pointer_str = "^".repeat(error_length);
                     let pointer = match severity_str {
-                        "error" => format!("    {} {}{}", "|".bright_blue(), padding, pointer_str.red()),
-                        "warning" => format!("    {} {}{}", "|".bright_blue(), padding, pointer_str.yellow()),
+                        "error" => {
+                            format!("    {} {}{}", "|".bright_blue(), padding, pointer_str.red())
+                        }
+                        "warning" => format!(
+                            "    {} {}{}",
+                            "|".bright_blue(),
+                            padding,
+                            pointer_str.yellow()
+                        ),
                         _ => format!("    {} {}{}", "|".bright_blue(), padding, pointer_str),
                     };
                     println!("{}", pointer);
                 }
             } else {
-                let header = format!("{}: {}: {}", severity_str, self.file_name, diagnostic.message);
+                let header = format!(
+                    "{}: {}: {}",
+                    severity_str, self.file_name, diagnostic.message
+                );
                 match severity_str {
                     "error" => println!("{}", header.red()),
                     "warning" => println!("{}", header.yellow()),
@@ -177,7 +219,10 @@ impl DiagnosticCollector {
                             },
                             severity: Severity::Warning,
                             span: func.name_span,
-                            message: format!("Function '{}' should use snake_case naming", func.name),
+                            message: format!(
+                                "Function '{}' should use snake_case naming",
+                                func.name
+                            ),
                         });
                     }
 
@@ -205,8 +250,13 @@ impl DiagnosticCollector {
         for item in &program.body {
             match item {
                 TopLevel::NodeDef(node) => {
-                    self.analyze_node_usage(node, &declared_functions, &declared_nodes, 
-                                           &mut used_functions, &mut used_nodes);
+                    self.analyze_node_usage(
+                        node,
+                        &declared_functions,
+                        &declared_nodes,
+                        &mut used_functions,
+                        &mut used_nodes,
+                    );
                 }
                 _ => {}
             }
@@ -245,12 +295,21 @@ impl DiagnosticCollector {
             match stmt {
                 NodeStmt::Events(events) => {
                     for event in events {
-                        self.analyze_event_action(&event.action, declared_functions, used_functions);
+                        self.analyze_event_action(
+                            &event.action,
+                            declared_functions,
+                            used_functions,
+                        );
                     }
                 }
                 NodeStmt::Choice(choices) => {
-                    self.analyze_choices(choices, declared_functions, declared_nodes, 
-                                       used_functions, used_nodes);
+                    self.analyze_choices(
+                        choices,
+                        declared_functions,
+                        declared_nodes,
+                        used_functions,
+                        used_nodes,
+                    );
                 }
                 NodeStmt::Text(text) => {
                     // Check for function calls in text interpolation (old format)
@@ -258,7 +317,11 @@ impl DiagnosticCollector {
                 }
                 NodeStmt::InterpolatedText(interpolated) => {
                     // Check function calls in interpolated string
-                    self.analyze_interpolated_string(interpolated, declared_functions, used_functions);
+                    self.analyze_interpolated_string(
+                        interpolated,
+                        declared_functions,
+                        used_functions,
+                    );
                 }
             }
         }
@@ -308,7 +371,7 @@ impl DiagnosticCollector {
                     }
                     Condition::FuncCall(func_call) => {
                         self.analyze_func_call(func_call, declared_functions, used_functions);
-                        
+
                         // Check that the function returns a boolean type
                         if let Some(func_decl) = declared_functions.get(&func_call.name) {
                             if let Some(return_type) = &func_decl.return_type {
@@ -349,8 +412,13 @@ impl DiagnosticCollector {
                     }
                 }
                 ChoiceDest::NestedChoices(nested) => {
-                    self.analyze_choices(nested, declared_functions, declared_nodes, 
-                                       used_functions, used_nodes);
+                    self.analyze_choices(
+                        nested,
+                        declared_functions,
+                        declared_nodes,
+                        used_functions,
+                        used_nodes,
+                    );
                 }
                 ChoiceDest::Return | ChoiceDest::Break => {
                     // These are always valid
@@ -366,7 +434,7 @@ impl DiagnosticCollector {
         used_functions: &mut HashSet<String>,
     ) {
         self.analyze_func_call(&action.call, declared_functions, used_functions);
-        
+
         for chain in &action.chains {
             self.analyze_func_call(chain, declared_functions, used_functions);
         }
@@ -446,14 +514,21 @@ impl DiagnosticCollector {
         }
     }
 
-    fn infer_argument_type(&self, arg: &Arg, declared_functions: &HashMap<String, &FunctionDecl>) -> String {
+    fn infer_argument_type(
+        &self,
+        arg: &Arg,
+        declared_functions: &HashMap<String, &FunctionDecl>,
+    ) -> String {
         match arg {
             Arg::String(_) => "String".to_string(),
             Arg::Number(_) => "Number".to_string(),
             Arg::Identifier(_) => "Unknown".to_string(), // Could be enhanced with variable tracking
             Arg::FuncCall(func_call) => {
                 if let Some(func_decl) = declared_functions.get(&func_call.name) {
-                    func_decl.return_type.clone().unwrap_or("Unknown".to_string())
+                    func_decl
+                        .return_type
+                        .clone()
+                        .unwrap_or("Unknown".to_string())
                 } else {
                     "Unknown".to_string()
                 }
@@ -470,9 +545,12 @@ impl DiagnosticCollector {
             // Exact matches
             ("String", "String") | ("Number", "Number") => true,
             // Boolean type aliases
-            ("Boolean", "Bool") | ("Bool", "Boolean") | ("Boolean", "Boolean") | ("Bool", "Bool") => true,
+            ("Boolean", "Bool")
+            | ("Bool", "Boolean")
+            | ("Boolean", "Boolean")
+            | ("Bool", "Bool") => true,
             // Unknown types are compatible for now (could be enhanced)
-            (_, "Unknown") | ("Unknown", _) => true,
+            (_, "Unknown") => true,
             // Everything else is incompatible
             _ => false,
         }
@@ -487,7 +565,7 @@ impl DiagnosticCollector {
         for part in &interpolated.parts {
             if let StringPart::Expression(func_call) = part {
                 self.analyze_func_call(func_call, declared_functions, used_functions);
-                
+
                 // Also check that the function returns a type that can be converted to string
                 // All types can be converted to string for interpolation, so no error needed
                 // This is where we could add more specific checks if needed
@@ -514,7 +592,7 @@ impl DiagnosticCollector {
                     }
                     func_call.push(chars.next().unwrap());
                 }
-                
+
                 // Check if it looks like a function call
                 if let Some(paren_pos) = func_call.find('(') {
                     let func_name = func_call[..paren_pos].trim().to_string();
@@ -539,7 +617,8 @@ fn is_snake_case(s: &str) -> bool {
     }
 
     // Should contain only lowercase letters, digits, and underscores
-    s.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+    s.chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
 }
 
 fn is_pascal_case(s: &str) -> bool {
@@ -554,7 +633,8 @@ fn is_pascal_case(s: &str) -> bool {
     }
 
     // Should contain only letters and digits
-    s.chars().all(|c| c.is_ascii_alphabetic() || c.is_ascii_digit())
+    s.chars()
+        .all(|c| c.is_ascii_alphabetic() || c.is_ascii_digit())
 }
 
 #[cfg(test)]
@@ -567,7 +647,7 @@ mod tests {
         assert!(is_snake_case("hello_world"));
         assert!(is_snake_case("get_name"));
         assert!(is_snake_case("_private"));
-        
+
         assert!(!is_snake_case("Hello"));
         assert!(!is_snake_case("HelloWorld"));
         assert!(!is_snake_case("hello-world"));
@@ -580,7 +660,7 @@ mod tests {
         assert!(is_pascal_case("HelloWorld"));
         assert!(is_pascal_case("Start"));
         assert!(is_pascal_case("ChoicePoint"));
-        
+
         assert!(!is_pascal_case("hello"));
         assert!(!is_pascal_case("helloWorld"));
         assert!(!is_pascal_case("hello_world"));

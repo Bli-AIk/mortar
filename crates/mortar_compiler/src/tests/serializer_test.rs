@@ -47,7 +47,10 @@ fn create_test_program() -> Program {
                         },
                     ]),
                 ],
-                jump: Some(NodeJump::Identifier("default_next".to_string(), Some((0, 12)))),
+                jump: Some(NodeJump::Identifier(
+                    "default_next".to_string(),
+                    Some((0, 12)),
+                )),
             }),
         ],
     }

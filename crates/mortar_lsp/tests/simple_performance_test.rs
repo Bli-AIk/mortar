@@ -252,7 +252,8 @@ fn concurrent_test(id: Number) -> String
             // Each task parses multiple times
             let mut results = Vec::new();
             for _ in 0..20 {
-                if let Ok(program) = mortar_compiler::ParseHandler::parse_source_code(&content_copy, false)
+                if let Ok(program) =
+                    mortar_compiler::ParseHandler::parse_source_code(&content_copy, false)
                 {
                     results.push(program);
                 }

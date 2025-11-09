@@ -502,7 +502,10 @@ mod tests {
         let tokens = tokenize(input);
 
         assert_eq!(tokens.len(), 1);
-        assert!(matches!(tokens[0].token, Token::InterpolatedString("Hello, {get_name()}!")));
+        assert!(matches!(
+            tokens[0].token,
+            Token::InterpolatedString("Hello, {get_name()}!")
+        ));
     }
 
     #[test]
@@ -517,7 +520,10 @@ mod tests {
         assert!(matches!(tokens[2].token, Token::String("regular")));
         assert!(matches!(tokens[3].token, Token::Text));
         assert!(matches!(tokens[4].token, Token::Colon));
-        assert!(matches!(tokens[5].token, Token::InterpolatedString("interpolated {func()}")));
+        assert!(matches!(
+            tokens[5].token,
+            Token::InterpolatedString("interpolated {func()}")
+        ));
     }
 
     #[test]
@@ -526,6 +532,11 @@ mod tests {
         let tokens = tokenize(input);
 
         assert_eq!(tokens.len(), 1);
-        assert!(matches!(tokens[0].token, Token::InterpolatedString("User {get_name()} has {get_score()} points and {get_status()}!")));
+        assert!(matches!(
+            tokens[0].token,
+            Token::InterpolatedString(
+                "User {get_name()} has {get_score()} points and {get_status()}!"
+            )
+        ));
     }
 }

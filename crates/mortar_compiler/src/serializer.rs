@@ -104,7 +104,8 @@ impl Serializer {
     pub fn serialize_to_json(program: &Program, pretty: bool) -> Result<String, String> {
         let mortared = Self::convert_program_to_mortared(program)?;
         if pretty {
-            serde_json::to_string_pretty(&mortared).map_err(|e| format!("Serialization error: {}", e))
+            serde_json::to_string_pretty(&mortared)
+                .map_err(|e| format!("Serialization error: {}", e))
         } else {
             serde_json::to_string(&mortared).map_err(|e| format!("Serialization error: {}", e))
         }
@@ -189,7 +190,7 @@ impl Serializer {
                         });
                         current_events.clear();
                     }
-                    
+
                     // Convert interpolated string
                     let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
                     texts.push(JsonText {
@@ -357,10 +358,12 @@ impl Serializer {
         }
     }
 
-    fn convert_interpolated_string(interpolated: &InterpolatedString) -> Result<(String, Vec<JsonStringPart>), String> {
+    fn convert_interpolated_string(
+        interpolated: &InterpolatedString,
+    ) -> Result<(String, Vec<JsonStringPart>), String> {
         let mut rendered_text = String::new();
         let mut parts = Vec::new();
-        
+
         for part in &interpolated.parts {
             match part {
                 StringPart::Text(text) => {
@@ -376,17 +379,21 @@ impl Serializer {
                     // For rendering, we'll use a placeholder
                     let placeholder = format!("{{{}}}", func_call.name);
                     rendered_text.push_str(&placeholder);
-                    
+
                     // Convert arguments to strings
-                    let args: Vec<String> = func_call.args.iter().map(|arg| {
-                        match arg {
-                            Arg::String(s) => format!("\"{}\"", s),
-                            Arg::Number(n) => n.to_string(),
-                            Arg::Identifier(id) => id.clone(),
-                            Arg::FuncCall(nested) => format!("{}()", nested.name), // Simplified
-                        }
-                    }).collect();
-                    
+                    let args: Vec<String> = func_call
+                        .args
+                        .iter()
+                        .map(|arg| {
+                            match arg {
+                                Arg::String(s) => format!("\"{}\"", s),
+                                Arg::Number(n) => n.to_string(),
+                                Arg::Identifier(id) => id.clone(),
+                                Arg::FuncCall(nested) => format!("{}()", nested.name), // Simplified
+                            }
+                        })
+                        .collect();
+
                     parts.push(JsonStringPart {
                         part_type: "expression".to_string(),
                         content: placeholder.clone(),
@@ -396,7 +403,7 @@ impl Serializer {
                 }
             }
         }
-        
+
         Ok((rendered_text, parts))
     }
 }

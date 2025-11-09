@@ -13,7 +13,11 @@ pub mod cli {
     }
 
     /// Compile a mortar file programmatically with format option
-    pub fn compile_file_with_format(input_path: &str, output_path: Option<&str>, pretty: bool) -> Result<(), String> {
+    pub fn compile_file_with_format(
+        input_path: &str,
+        output_path: Option<&str>,
+        pretty: bool,
+    ) -> Result<(), String> {
         // Read source file
         let content = FileHandler::read_source_file(input_path)
             .map_err(|err| format!("Failed to read input file: {}", err))?;

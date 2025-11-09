@@ -1,5 +1,5 @@
+use crate::diagnostics::{Diagnostic, DiagnosticCollector, DiagnosticKind, Severity};
 use crate::token::{Token, TokenInfo};
-use crate::diagnostics::{DiagnosticCollector, Diagnostic, DiagnosticKind, Severity};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
@@ -126,15 +126,15 @@ impl ParseHandler {
         } else {
             crate::token::tokenize(content)
         };
-        
+
         let mut parser = Parser::new(tokens);
         parser.parse_program()
     }
-    
+
     pub fn parse_source_code_with_diagnostics(
-        content: &str, 
-        file_name: String, 
-        verbose_lexer: bool
+        content: &str,
+        file_name: String,
+        verbose_lexer: bool,
     ) -> (Result<Program, String>, DiagnosticCollector) {
         let tokens = if verbose_lexer {
             crate::token::lex_with_output(content)
@@ -150,12 +150,12 @@ impl ParseHandler {
         } else {
             crate::token::tokenize(content)
         };
-        
+
         let mut parser = Parser::new(tokens);
         let mut diagnostics = DiagnosticCollector::new(file_name);
-        
+
         let result = parser.parse_program();
-        
+
         // If parsing failed, add parse error to diagnostics
         if let Err(ref parse_error) = result {
             let current_span = parser.get_current_span();
@@ -168,12 +168,12 @@ impl ParseHandler {
                 message: parse_error.clone(),
             });
         }
-        
+
         // If parsing succeeded, run semantic analysis
         if let Ok(ref program) = result {
             diagnostics.analyze_program(program);
         }
-        
+
         (result, diagnostics)
     }
 }
@@ -208,7 +208,8 @@ impl<'a> Parser<'a> {
             Some((token_info.start, token_info.end))
         } else if self.current > 0 {
             // If we're at the end, use the last token's position
-            self.tokens.get(self.current - 1)
+            self.tokens
+                .get(self.current - 1)
                 .map(|token_info| (token_info.start, token_info.end))
         } else {
             None
@@ -301,7 +302,10 @@ impl<'a> Parser<'a> {
         match self.peek().map(|t| &t.token) {
             Some(Token::Node) => Ok(TopLevel::NodeDef(self.parse_node_def()?)),
             Some(Token::Fn) => Ok(TopLevel::FunctionDecl(self.parse_function_decl()?)),
-            _ => Err(format!("Expected 'node' or 'fn', found {:?}", self.peek().map(|t| &t.token))),
+            _ => Err(format!(
+                "Expected 'node' or 'fn', found {:?}",
+                self.peek().map(|t| &t.token)
+            )),
         }
     }
 
@@ -338,7 +342,12 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Ok(NodeDef { name, name_span, body, jump })
+        Ok(NodeDef {
+            name,
+            name_span,
+            body,
+            jump,
+        })
     }
 
     fn parse_node_stmt(&mut self) -> Result<NodeStmt, String> {
@@ -365,7 +374,7 @@ impl<'a> Parser<'a> {
                     let interpolated = self.parse_interpolated_string(&text_copy)?;
                     Ok(NodeStmt::InterpolatedText(interpolated))
                 }
-                _ => Err("Expected string or interpolated string after 'text:'".to_string())
+                _ => Err("Expected string or interpolated string after 'text:'".to_string()),
             }
         } else {
             Err("Expected string or interpolated string after 'text:'".to_string())
@@ -376,7 +385,7 @@ impl<'a> Parser<'a> {
         let mut parts = Vec::new();
         let mut chars = text.chars().peekable();
         let mut current_text = String::new();
-        
+
         while let Some(ch) = chars.next() {
             if ch == '{' {
                 // Save any accumulated text
@@ -384,11 +393,11 @@ impl<'a> Parser<'a> {
                     parts.push(StringPart::Text(current_text.clone()));
                     current_text.clear();
                 }
-                
+
                 // Parse expression until '}'
                 let mut expr_text = String::new();
                 let mut brace_count = 1;
-                
+
                 while let Some(expr_ch) = chars.next() {
                     if expr_ch == '{' {
                         brace_count += 1;
@@ -403,11 +412,11 @@ impl<'a> Parser<'a> {
                         expr_text.push(expr_ch);
                     }
                 }
-                
+
                 if brace_count != 0 {
                     return Err("Unmatched '{' in interpolated string".to_string());
                 }
-                
+
                 // Parse the expression as a function call
                 let func_call = self.parse_expression_from_string(&expr_text)?;
                 parts.push(StringPart::Expression(func_call));
@@ -415,35 +424,35 @@ impl<'a> Parser<'a> {
                 current_text.push(ch);
             }
         }
-        
+
         // Save any remaining text
         if !current_text.is_empty() {
             parts.push(StringPart::Text(current_text));
         }
-        
+
         Ok(InterpolatedString { parts })
     }
 
     fn parse_expression_from_string(&mut self, expr_text: &str) -> Result<FuncCall, String> {
         // Simple parsing of "function_name()" or "function_name(args)"
         let expr_text = expr_text.trim();
-        
+
         if let Some(paren_pos) = expr_text.find('(') {
             let func_name = expr_text[..paren_pos].trim();
-            let args_part = &expr_text[paren_pos+1..];
-            
+            let args_part = &expr_text[paren_pos + 1..];
+
             if !args_part.ends_with(')') {
                 return Err("Expected ')' at end of function call".to_string());
             }
-            
-            let args_part = &args_part[..args_part.len()-1].trim();
+
+            let args_part = &args_part[..args_part.len() - 1].trim();
             let args = if args_part.is_empty() {
                 Vec::new()
             } else {
                 // For now, only support simple arguments (this could be expanded)
                 self.parse_simple_args(args_part)?
             };
-            
+
             Ok(FuncCall {
                 name: func_name.to_string(),
                 name_span: None, // We don't have precise span info from string parsing
@@ -456,11 +465,11 @@ impl<'a> Parser<'a> {
 
     fn parse_simple_args(&mut self, args_text: &str) -> Result<Vec<Arg>, String> {
         let mut args = Vec::new();
-        
+
         for arg in args_text.split(',') {
             let arg = arg.trim();
             if arg.starts_with('"') && arg.ends_with('"') {
-                args.push(Arg::String(arg[1..arg.len()-1].to_string()));
+                args.push(Arg::String(arg[1..arg.len() - 1].to_string()));
             } else if arg.chars().all(|c| c.is_ascii_digit() || c == '.') {
                 if let Ok(num) = arg.parse::<f64>() {
                     args.push(Arg::Number(num));
@@ -471,7 +480,7 @@ impl<'a> Parser<'a> {
                 args.push(Arg::Identifier(arg.to_string()));
             }
         }
-        
+
         Ok(args)
     }
 
@@ -573,7 +582,8 @@ impl<'a> Parser<'a> {
 
         // Parse optional condition
         let condition = if self.check(&Token::When)
-            || (self.check(&Token::Dot) && self.tokens.get(self.current + 1).map(|t| &t.token) == Some(&Token::When))
+            || (self.check(&Token::Dot)
+                && self.tokens.get(self.current + 1).map(|t| &t.token) == Some(&Token::When))
         {
             Some(self.parse_choice_cond()?)
         } else {
@@ -794,7 +804,11 @@ impl<'a> Parser<'a> {
 
         self.consume(&Token::RightParen, "Expected ')'")?;
 
-        Ok(FuncCall { name, name_span, args })
+        Ok(FuncCall {
+            name,
+            name_span,
+            args,
+        })
     }
 
     fn parse_arg(&mut self) -> Result<Arg, String> {
@@ -819,7 +833,10 @@ impl<'a> Parser<'a> {
                     Ok(Arg::Identifier(name))
                 }
             }
-            _ => Err(format!("Expected argument, found {:?}", self.peek().map(|t| &t.token))),
+            _ => Err(format!(
+                "Expected argument, found {:?}",
+                self.peek().map(|t| &t.token)
+            )),
         }
     }
 }

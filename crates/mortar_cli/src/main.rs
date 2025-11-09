@@ -74,9 +74,9 @@ fn main() {
 
     // Parse with diagnostics
     let (parse_result, diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        &content, 
-        input_path.clone(), 
-        verbose_lexer
+        &content,
+        input_path.clone(),
+        verbose_lexer,
     );
 
     // Print diagnostics
