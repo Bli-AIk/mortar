@@ -107,7 +107,7 @@ impl DiagnosticCollector {
                 let lines: Vec<&str> = source.lines().collect();
                 if line > 0 && (line - 1) < lines.len() {
                     let source_line = lines[line - 1];
-                    println!("   {} {}", "|".bright_blue(), source_line);
+                    println!("{:3} {} {}", line.to_string().bright_blue(), "|".bright_blue(), source_line);
                     
                     // 计算错误范围内的字符数量来生成等长的指示符
                     let error_length = if let Some((span_start, span_end)) = diagnostic.span {
@@ -122,9 +122,9 @@ impl DiagnosticCollector {
                     let padding = " ".repeat(col - 1); // col已经是1-based，减1得到正确的位置
                     let pointer_str = "^".repeat(error_length);
                     let pointer = match severity_str {
-                        "error" => format!("   {} {}{}", "|".bright_blue(), padding, pointer_str.red()),
-                        "warning" => format!("   {} {}{}", "|".bright_blue(), padding, pointer_str.yellow()),
-                        _ => format!("   {} {}{}", "|".bright_blue(), padding, pointer_str),
+                        "error" => format!("    {} {}{}", "|".bright_blue(), padding, pointer_str.red()),
+                        "warning" => format!("    {} {}{}", "|".bright_blue(), padding, pointer_str.yellow()),
+                        _ => format!("    {} {}{}", "|".bright_blue(), padding, pointer_str),
                     };
                     println!("{}", pointer);
                 }
