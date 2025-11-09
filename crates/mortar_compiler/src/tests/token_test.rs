@@ -495,4 +495,37 @@ mod tests {
         assert_eq!(tokens1, expected);
         assert_eq!(tokens2, expected);
     }
+
+    #[test]
+    fn test_interpolated_string_tokens() {
+        let input = r#"$"Hello, {get_name()}!""#;
+        let tokens = tokenize(input);
+
+        assert_eq!(tokens.len(), 1);
+        assert!(matches!(tokens[0].token, Token::InterpolatedString("Hello, {get_name()}!")));
+    }
+
+    #[test]
+    fn test_regular_vs_interpolated_strings() {
+        let input = r#"text: "regular" text: $"interpolated {func()}""#;
+        let tokens = tokenize(input);
+
+        // Should have: text, :, "regular", text, :, $"interpolated {func()}"
+        assert_eq!(tokens.len(), 6);
+        assert!(matches!(tokens[0].token, Token::Text));
+        assert!(matches!(tokens[1].token, Token::Colon));
+        assert!(matches!(tokens[2].token, Token::String("regular")));
+        assert!(matches!(tokens[3].token, Token::Text));
+        assert!(matches!(tokens[4].token, Token::Colon));
+        assert!(matches!(tokens[5].token, Token::InterpolatedString("interpolated {func()}")));
+    }
+
+    #[test]
+    fn test_complex_interpolated_string() {
+        let input = r#"$"User {get_name()} has {get_score()} points and {get_status()}!""#;
+        let tokens = tokenize(input);
+
+        assert_eq!(tokens.len(), 1);
+        assert!(matches!(tokens[0].token, Token::InterpolatedString("User {get_name()} has {get_score()} points and {get_status()}!")));
+    }
 }

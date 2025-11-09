@@ -30,7 +30,20 @@ struct JsonNode {
 struct JsonText {
     text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    interpolated_parts: Option<Vec<JsonStringPart>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     events: Option<Vec<JsonEvent>>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonStringPart {
+    #[serde(rename = "type")]
+    part_type: String, // "text" or "expression"
+    content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    function_name: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    args: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -151,6 +164,7 @@ impl Serializer {
                     if let Some(text_content) = current_text.take() {
                         texts.push(JsonText {
                             text: text_content,
+                            interpolated_parts: None,
                             events: if current_events.is_empty() {
                                 None
                             } else {
@@ -160,6 +174,34 @@ impl Serializer {
                         current_events.clear();
                     }
                     current_text = Some(text.clone());
+                }
+                NodeStmt::InterpolatedText(interpolated) => {
+                    // If we have a current text, save it first
+                    if let Some(text_content) = current_text.take() {
+                        texts.push(JsonText {
+                            text: text_content,
+                            interpolated_parts: None,
+                            events: if current_events.is_empty() {
+                                None
+                            } else {
+                                Some(current_events.clone())
+                            },
+                        });
+                        current_events.clear();
+                    }
+                    
+                    // Convert interpolated string
+                    let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
+                    texts.push(JsonText {
+                        text: rendered_text,
+                        interpolated_parts: Some(parts),
+                        events: if current_events.is_empty() {
+                            None
+                        } else {
+                            Some(current_events.clone())
+                        },
+                    });
+                    current_events.clear();
                 }
                 NodeStmt::Events(events) => {
                     // Convert events and associate with current text
@@ -172,6 +214,7 @@ impl Serializer {
                     if let Some(text_content) = current_text.take() {
                         texts.push(JsonText {
                             text: text_content,
+                            interpolated_parts: None,
                             events: if current_events.is_empty() {
                                 None
                             } else {
@@ -194,6 +237,7 @@ impl Serializer {
         if let Some(text_content) = current_text {
             texts.push(JsonText {
                 text: text_content,
+                interpolated_parts: None,
                 events: if current_events.is_empty() {
                     None
                 } else {
@@ -311,5 +355,48 @@ impl Serializer {
             params,
             return_type: func_decl.return_type.clone(),
         }
+    }
+
+    fn convert_interpolated_string(interpolated: &InterpolatedString) -> Result<(String, Vec<JsonStringPart>), String> {
+        let mut rendered_text = String::new();
+        let mut parts = Vec::new();
+        
+        for part in &interpolated.parts {
+            match part {
+                StringPart::Text(text) => {
+                    rendered_text.push_str(text);
+                    parts.push(JsonStringPart {
+                        part_type: "text".to_string(),
+                        content: text.clone(),
+                        function_name: None,
+                        args: Vec::new(),
+                    });
+                }
+                StringPart::Expression(func_call) => {
+                    // For rendering, we'll use a placeholder
+                    let placeholder = format!("{{{}}}", func_call.name);
+                    rendered_text.push_str(&placeholder);
+                    
+                    // Convert arguments to strings
+                    let args: Vec<String> = func_call.args.iter().map(|arg| {
+                        match arg {
+                            Arg::String(s) => format!("\"{}\"", s),
+                            Arg::Number(n) => n.to_string(),
+                            Arg::Identifier(id) => id.clone(),
+                            Arg::FuncCall(nested) => format!("{}()", nested.name), // Simplified
+                        }
+                    }).collect();
+                    
+                    parts.push(JsonStringPart {
+                        part_type: "expression".to_string(),
+                        content: placeholder.clone(),
+                        function_name: Some(func_call.name.clone()),
+                        args,
+                    });
+                }
+            }
+        }
+        
+        Ok((rendered_text, parts))
     }
 }

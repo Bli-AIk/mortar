@@ -134,7 +134,7 @@ impl Backend {
             | Token::True
             | Token::False => KEYWORD,
 
-            Token::String(_) => STRING,
+            Token::String(_) | Token::InterpolatedString(_) => STRING,
 
             Token::Number(_) => NUMBER,
 

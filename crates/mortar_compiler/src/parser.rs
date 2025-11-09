@@ -23,8 +23,20 @@ pub struct NodeDef {
 #[derive(Debug, Clone, PartialEq)]
 pub enum NodeStmt {
     Text(String),
+    InterpolatedText(InterpolatedString),
     Events(Vec<Event>),
     Choice(Vec<ChoiceItem>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct InterpolatedString {
+    pub parts: Vec<StringPart>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum StringPart {
+    Text(String),
+    Expression(FuncCall),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -331,7 +343,7 @@ impl<'a> Parser<'a> {
 
     fn parse_node_stmt(&mut self) -> Result<NodeStmt, String> {
         match self.peek().map(|t| &t.token) {
-            Some(Token::Text) => Ok(NodeStmt::Text(self.parse_text_stmt()?)),
+            Some(Token::Text) => Ok(self.parse_text_stmt()?),
             Some(Token::Events) => Ok(NodeStmt::Events(self.parse_events_stmt()?)),
             Some(Token::Choice) => Ok(NodeStmt::Choice(self.parse_choice_stmt()?)),
             _ => Err(format!(
@@ -341,19 +353,126 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_text_stmt(&mut self) -> Result<String, String> {
+    fn parse_text_stmt(&mut self) -> Result<NodeStmt, String> {
         self.consume(&Token::Text, "Expected 'text'")?;
         self.consume(&Token::Colon, "Expected ':'")?;
 
         if let Some(token_info) = self.advance() {
-            if let Token::String(text) = &token_info.token {
-                Ok(text.to_string())
-            } else {
-                Err("Expected string after 'text:'".to_string())
+            match &token_info.token {
+                Token::String(text) => Ok(NodeStmt::Text(text.to_string())),
+                Token::InterpolatedString(text) => {
+                    let text_copy = text.to_string(); // Make a copy to avoid borrow issues
+                    let interpolated = self.parse_interpolated_string(&text_copy)?;
+                    Ok(NodeStmt::InterpolatedText(interpolated))
+                }
+                _ => Err("Expected string or interpolated string after 'text:'".to_string())
             }
         } else {
-            Err("Expected string after 'text:'".to_string())
+            Err("Expected string or interpolated string after 'text:'".to_string())
         }
+    }
+
+    fn parse_interpolated_string(&mut self, text: &str) -> Result<InterpolatedString, String> {
+        let mut parts = Vec::new();
+        let mut chars = text.chars().peekable();
+        let mut current_text = String::new();
+        
+        while let Some(ch) = chars.next() {
+            if ch == '{' {
+                // Save any accumulated text
+                if !current_text.is_empty() {
+                    parts.push(StringPart::Text(current_text.clone()));
+                    current_text.clear();
+                }
+                
+                // Parse expression until '}'
+                let mut expr_text = String::new();
+                let mut brace_count = 1;
+                
+                while let Some(expr_ch) = chars.next() {
+                    if expr_ch == '{' {
+                        brace_count += 1;
+                        expr_text.push(expr_ch);
+                    } else if expr_ch == '}' {
+                        brace_count -= 1;
+                        if brace_count == 0 {
+                            break;
+                        }
+                        expr_text.push(expr_ch);
+                    } else {
+                        expr_text.push(expr_ch);
+                    }
+                }
+                
+                if brace_count != 0 {
+                    return Err("Unmatched '{' in interpolated string".to_string());
+                }
+                
+                // Parse the expression as a function call
+                let func_call = self.parse_expression_from_string(&expr_text)?;
+                parts.push(StringPart::Expression(func_call));
+            } else {
+                current_text.push(ch);
+            }
+        }
+        
+        // Save any remaining text
+        if !current_text.is_empty() {
+            parts.push(StringPart::Text(current_text));
+        }
+        
+        Ok(InterpolatedString { parts })
+    }
+
+    fn parse_expression_from_string(&mut self, expr_text: &str) -> Result<FuncCall, String> {
+        // Simple parsing of "function_name()" or "function_name(args)"
+        let expr_text = expr_text.trim();
+        
+        if let Some(paren_pos) = expr_text.find('(') {
+            let func_name = expr_text[..paren_pos].trim();
+            let args_part = &expr_text[paren_pos+1..];
+            
+            if !args_part.ends_with(')') {
+                return Err("Expected ')' at end of function call".to_string());
+            }
+            
+            let args_part = &args_part[..args_part.len()-1].trim();
+            let args = if args_part.is_empty() {
+                Vec::new()
+            } else {
+                // For now, only support simple arguments (this could be expanded)
+                self.parse_simple_args(args_part)?
+            };
+            
+            Ok(FuncCall {
+                name: func_name.to_string(),
+                name_span: None, // We don't have precise span info from string parsing
+                args,
+            })
+        } else {
+            Err("Expression in interpolated string must be a function call".to_string())
+        }
+    }
+
+    fn parse_simple_args(&mut self, args_text: &str) -> Result<Vec<Arg>, String> {
+        let mut args = Vec::new();
+        
+        for arg in args_text.split(',') {
+            let arg = arg.trim();
+            if arg.starts_with('"') && arg.ends_with('"') {
+                args.push(Arg::String(arg[1..arg.len()-1].to_string()));
+            } else if arg.chars().all(|c| c.is_ascii_digit() || c == '.') {
+                if let Ok(num) = arg.parse::<f64>() {
+                    args.push(Arg::Number(num));
+                } else {
+                    return Err(format!("Invalid number: {}", arg));
+                }
+            } else {
+                args.push(Arg::Identifier(arg.to_string()));
+            }
+        }
+        
+        Ok(args)
     }
 
     fn parse_events_stmt(&mut self) -> Result<Vec<Event>, String> {

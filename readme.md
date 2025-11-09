@@ -81,7 +81,7 @@ node Start {
     ]
     // When we use the text field again, it means that this is another text block for the same node.
     // You can write several text blocks and they will be played sequentially.
-    text: "I think your name is {get_name()}, right?"
+    text: $"I think your name is {get_name()}, right?"
     events: [
         // The index can be a floating point number! 
         // Generally speaking, decimal points are used for voice synchronization. And typewriters are integers.

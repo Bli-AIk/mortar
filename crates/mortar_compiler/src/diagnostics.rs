@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use crate::parser::{Program, TopLevel, NodeDef, FunctionDecl, NodeStmt, FuncCall, Arg, ChoiceItem, ChoiceDest, Condition, EventAction, NodeJump};
+use crate::parser::{Program, TopLevel, NodeDef, FunctionDecl, NodeStmt, FuncCall, Arg, ChoiceItem, ChoiceDest, Condition, EventAction, NodeJump, InterpolatedString, StringPart};
 use owo_colors::OwoColorize;
 
 fn get_line_col(source: &str, pos: usize) -> (usize, usize) {
@@ -253,8 +253,12 @@ impl DiagnosticCollector {
                                        used_functions, used_nodes);
                 }
                 NodeStmt::Text(text) => {
-                    // Check for function calls in text interpolation
+                    // Check for function calls in text interpolation (old format)
                     self.analyze_text_interpolation(text, declared_functions, used_functions);
+                }
+                NodeStmt::InterpolatedText(interpolated) => {
+                    // Check function calls in interpolated string
+                    self.analyze_interpolated_string(interpolated, declared_functions, used_functions);
                 }
             }
         }
@@ -471,6 +475,23 @@ impl DiagnosticCollector {
             (_, "Unknown") | ("Unknown", _) => true,
             // Everything else is incompatible
             _ => false,
+        }
+    }
+
+    fn analyze_interpolated_string(
+        &mut self,
+        interpolated: &InterpolatedString,
+        declared_functions: &HashMap<String, &FunctionDecl>,
+        used_functions: &mut HashSet<String>,
+    ) {
+        for part in &interpolated.parts {
+            if let StringPart::Expression(func_call) = part {
+                self.analyze_func_call(func_call, declared_functions, used_functions);
+                
+                // Also check that the function returns a type that can be converted to string
+                // All types can be converted to string for interpolation, so no error needed
+                // This is where we could add more specific checks if needed
+            }
         }
     }
 
