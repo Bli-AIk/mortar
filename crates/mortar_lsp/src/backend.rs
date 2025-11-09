@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use dashmap::DashMap;
+use mortar_compiler::Language;
 use ropey::Rope;
 use tokio::sync::RwLock;
 use tower_lsp_server::Client;
@@ -17,6 +18,7 @@ pub struct Backend {
     pub documents: Arc<DashMap<Uri, (Rope, Option<i32>)>>,
     pub diagnostics: Arc<DashMap<Uri, Vec<Diagnostic>>>,
     pub symbol_tables: Arc<DashMap<Uri, SymbolTable>>,
+    pub language: Arc<RwLock<Language>>,
 }
 
 impl Backend {
@@ -27,7 +29,19 @@ impl Backend {
             documents: Arc::new(DashMap::new()),
             diagnostics: Arc::new(DashMap::new()),
             symbol_tables: Arc::new(DashMap::new()),
+            language: Arc::new(RwLock::new(Language::English)), // Default to English
         }
+    }
+
+    /// Set the language for diagnostics
+    pub async fn set_language(&self, language: Language) {
+        let mut lang = self.language.write().await;
+        *lang = language;
+    }
+
+    /// Get the current language
+    pub async fn get_language(&self) -> Language {
+        *self.language.read().await
     }
 
     /// Clear all cached data
@@ -124,7 +138,9 @@ impl Backend {
     }
 }
 
-// Re-export the modules from backend/ directory
+#[path = "backend/diagnostics.rs"]
+pub mod diagnostics;
+
 #[path = "backend/completion.rs"]
 mod completion;
 
@@ -138,3 +154,4 @@ mod document_analysis;
 mod lsp_handlers;
 
 pub use completion::CompletionContext;
+pub use diagnostics::{convert_diagnostics_to_lsp, parse_with_diagnostics};
