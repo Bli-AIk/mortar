@@ -1,6 +1,15 @@
 # Mortar Compiler
 
+[![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue)]()
+[![Crates.io](https://img.shields.io/crates/v/mortar_compiler.svg)](https://crates.io/crates/mortar_compiler)
+[![Documentation](https://docs.rs/mortar_compiler/badge.svg)](https://docs.rs/mortar_compiler)
+[![codecov](https://codecov.io/gh/Bli-AIk/mortar_language/graph/badge.svg?token=)](https://codecov.io/gh/Bli-AIk/mortar_language)
+
+<img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
+
 > **当前状态**：🚧 早期开发中（初始版本正在开发）
+
+![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar Compiler** 是 Mortar 语言的核心编译库。它为 Mortar 文件提供词法分析、语法分析和代码生成功能。
 

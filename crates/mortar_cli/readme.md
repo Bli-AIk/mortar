@@ -1,5 +1,14 @@
 # Mortar CLI
 
+[![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue)]()
+[![Crates.io](https://img.shields.io/crates/v/mortar_cli.svg)](https://crates.io/crates/mortar_cli)
+[![Documentation](https://docs.rs/mortar_cli/badge.svg)](https://docs.rs/mortar_cli)
+[![codecov](https://codecov.io/gh/Bli-AIk/mortar_language/graph/badge.svg?token=)](https://codecov.io/gh/Bli-AIk/mortar_language)
+
+<img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
+
+![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
+
 > **Current Status**: 🚧 Early Development (Initial version in progress)
 
 **Mortar CLI** is the command line interface for the Mortar language compiler. It provides the `mortar` command that allows you to compile Mortar files into JSON output.

@@ -1,6 +1,15 @@
 # Mortar LSP
 
+[![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue)]()
+[![Crates.io](https://img.shields.io/crates/v/mortar_lsp.svg)](https://crates.io/crates/mortar_lsp)
+[![Documentation](https://docs.rs/mortar_lsp/badge.svg)](https://docs.rs/mortar_lsp)
+[![codecov](https://codecov.io/gh/Bli-AIk/mortar_language/graph/badge.svg?token=)](https://codecov.io/gh/Bli-AIk/mortar_language)
+
+<img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
+
 > **Current Status**: 🚧 Early Development (Initial version in progress)
+
+![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar LSP** is the Language Server Protocol (LSP) implementation for the Mortar language. It provides IDE integration features such as syntax highlighting, error reporting, auto-completion, and more.
 
@@ -15,6 +24,7 @@
 Any editor with LSP support, including:
 - Visual Studio Code
 - Vim/Neovim (with LSP plugins)
+- JetBrains IDEs (with LSP2IJ plugin)
 - Emacs (with lsp-mode)
 - Sublime Text
 - And many more...

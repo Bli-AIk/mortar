@@ -1,15 +1,15 @@
 # Mortar Language
 
-[![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue)](LICENSE-MIT)
-[![Crates.io](https://img.shields.io/crates/v/mortar.svg)](https://crates.io/crates/mortar)
-[![Documentation](https://docs.rs/mortar/badge.svg)](https://docs.rs/mortar)
-[![codecov](https://codecov.io/gh/Bli-AIk/mortar/graph/badge.svg?token=)](https://codecov.io/gh/Bli-AIk/mortar)
+[![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue)]()
+[![Crates.io](https://img.shields.io/crates/v/mortar_language.svg)](https://crates.io/crates/mortar_language)
+[![Documentation](https://docs.rs/mortar_language/badge.svg)](https://docs.rs/mortar_language)
+[![codecov](https://codecov.io/gh/Bli-AIk/mortar_language/graph/badge.svg?token=)](https://codecov.io/gh/Bli-AIk/mortar_language)
 
 <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
 
 > **Current Status**: 🚧 Early Development (Initial version in progress)
 
-![Mortar](./crates/mortar_logo.svg)
+![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar** is a Domain Specific Language (DSL) designed for game dialogue and text event systems. Its core philosophy is
 to achieve **strict separation between text content and event logic**.

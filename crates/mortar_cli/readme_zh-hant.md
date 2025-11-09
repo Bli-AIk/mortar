@@ -1,6 +1,15 @@
 # Mortar CLI
 
+[![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue)]()
+[![Crates.io](https://img.shields.io/crates/v/mortar_cli.svg)](https://crates.io/crates/mortar_cli)
+[![Documentation](https://docs.rs/mortar_cli/badge.svg)](https://docs.rs/mortar_cli)
+[![codecov](https://codecov.io/gh/Bli-AIk/mortar_language/graph/badge.svg?token=)](https://codecov.io/gh/Bli-AIk/mortar_language)
+
+<img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
+
 > **当前状态**：🚧 早期开发中（初始版本正在开发）
+
+![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar CLI** 是 Mortar 语言编译器的命令行界面工具。它提供了 `mortar` 命令，允许您将 Mortar 文件编译成 JSON 输出。
 
