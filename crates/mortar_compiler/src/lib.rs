@@ -7,6 +7,12 @@ pub mod token;
 #[cfg(test)]
 mod tests;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Language {
+    English,
+    Chinese,
+}
+
 pub use diagnostics::{Diagnostic, DiagnosticCollector, DiagnosticKind, Severity};
 pub use handler::file_handler::{FileError, FileHandler};
 pub use parser::{

@@ -1,7 +1,16 @@
+use crate::Language;
 use crate::parser::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+fn get_text(key: &str, language: Language) -> &'static str {
+    match (key, language) {
+        ("generated", Language::English) => "Generated:",
+        ("generated", Language::Chinese) => "生成文件:",
+        _ => "",
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct MortaredOutput {
@@ -112,6 +121,15 @@ impl Serializer {
     }
 
     pub fn save_to_file(program: &Program, input_path: &str, pretty: bool) -> Result<(), String> {
+        Self::save_to_file_with_language(program, input_path, pretty, Language::English)
+    }
+
+    pub fn save_to_file_with_language(
+        program: &Program,
+        input_path: &str,
+        pretty: bool,
+        language: Language,
+    ) -> Result<(), String> {
         let input_path = Path::new(input_path);
         let json_content = Self::serialize_to_json(program, pretty)?;
 
@@ -119,7 +137,11 @@ impl Serializer {
         std::fs::write(&output_path, json_content)
             .map_err(|e| format!("Failed to write file {}: {}", output_path.display(), e))?;
 
-        println!("Generated: {}", output_path.display());
+        println!(
+            "{} {}",
+            get_text("generated", language),
+            output_path.display()
+        );
         Ok(())
     }
 

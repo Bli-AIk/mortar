@@ -1,11 +1,18 @@
 use clap::{Arg, Command};
-use mortar_compiler::{FileHandler, ParseHandler, Serializer};
+use mortar_compiler::{FileHandler, Language, ParseHandler, Serializer};
 use std::process;
 
 mod i18n;
-use i18n::{get_text, Language};
+use i18n::{Language as CliLanguage, get_text};
 
-fn build_command(language: Language) -> Command {
+fn cli_language_to_compiler_language(lang: CliLanguage) -> Language {
+    match lang {
+        CliLanguage::English => Language::English,
+        CliLanguage::Chinese => Language::Chinese,
+    }
+}
+
+fn build_command(language: CliLanguage) -> Command {
     Command::new("mortar")
         .version("0.1.0")
         .author("Bli-AIk <haikun2333@gmail.com>")
@@ -65,14 +72,14 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let language = if let Some(pos) = args.iter().position(|arg| arg == "--lang" || arg == "-L") {
         if let Some(lang_str) = args.get(pos + 1) {
-            Language::from_str(lang_str).unwrap_or(Language::from_env())
+            CliLanguage::from_str(lang_str).unwrap_or(CliLanguage::from_env())
         } else {
-            Language::from_env()
+            CliLanguage::from_env()
         }
     } else {
-        Language::from_env()
+        CliLanguage::from_env()
     };
-    
+
     let matches = build_command(language).get_matches();
 
     let input_path = matches.get_one::<String>("input").unwrap();
@@ -98,10 +105,12 @@ fn main() {
     }
 
     // Parse with diagnostics
-    let (parse_result, diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
+    let compiler_language = cli_language_to_compiler_language(language);
+    let (parse_result, diagnostics) = ParseHandler::parse_source_code_with_diagnostics_and_language(
         &content,
         input_path.clone(),
         verbose_lexer,
+        compiler_language,
     );
 
     // Print diagnostics
@@ -131,7 +140,12 @@ fn main() {
             .map(|s| s.as_str())
             .unwrap_or(input_path);
 
-        match Serializer::save_to_file(&program, output_path, pretty) {
+        match Serializer::save_to_file_with_language(
+            &program,
+            output_path,
+            pretty,
+            compiler_language,
+        ) {
             Ok(()) => println!("{}", get_text("generated_successfully", language)),
             Err(err) => {
                 eprintln!("{} {}", get_text("failed_to_generate", language), err);

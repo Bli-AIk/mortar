@@ -135,6 +135,20 @@ impl ParseHandler {
         file_name: String,
         verbose_lexer: bool,
     ) -> (Result<Program, String>, DiagnosticCollector) {
+        Self::parse_source_code_with_diagnostics_and_language(
+            content,
+            file_name,
+            verbose_lexer,
+            crate::Language::English,
+        )
+    }
+
+    pub fn parse_source_code_with_diagnostics_and_language(
+        content: &str,
+        file_name: String,
+        verbose_lexer: bool,
+        language: crate::Language,
+    ) -> (Result<Program, String>, DiagnosticCollector) {
         let tokens = if verbose_lexer {
             crate::token::lex_with_output(content)
                 .into_iter()
@@ -150,7 +164,7 @@ impl ParseHandler {
         };
 
         let mut parser = Parser::new(tokens);
-        let mut diagnostics = DiagnosticCollector::new(file_name);
+        let mut diagnostics = DiagnosticCollector::new_with_language(file_name, language);
 
         let result = parser.parse_program();
 

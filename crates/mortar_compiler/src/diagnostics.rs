@@ -1,9 +1,22 @@
+use crate::Language;
 use crate::parser::{
     Arg, ChoiceDest, ChoiceItem, Condition, EventAction, FuncCall, FunctionDecl,
     InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TopLevel,
 };
 use owo_colors::OwoColorize;
 use std::collections::{HashMap, HashSet};
+
+fn get_text(key: &str, language: Language) -> &'static str {
+    match (key, language) {
+        ("checking_file", Language::English) => "Checking file:",
+        ("checking_file", Language::Chinese) => "检查文件:",
+        ("error", Language::English) => "error",
+        ("error", Language::Chinese) => "错误",
+        ("warning", Language::English) => "warning",
+        ("warning", Language::Chinese) => "警告",
+        _ => "",
+    }
+}
 
 fn get_line_col(source: &str, pos: usize) -> (usize, usize) {
     let mut line = 1;
@@ -84,6 +97,7 @@ pub struct Diagnostic {
 pub struct DiagnosticCollector {
     diagnostics: Vec<Diagnostic>,
     file_name: String,
+    language: Language,
 }
 
 impl DiagnosticCollector {
@@ -91,6 +105,15 @@ impl DiagnosticCollector {
         Self {
             diagnostics: Vec::new(),
             file_name,
+            language: Language::English,
+        }
+    }
+
+    pub fn new_with_language(file_name: String, language: Language) -> Self {
+        Self {
+            diagnostics: Vec::new(),
+            file_name,
+            language,
         }
     }
 
@@ -109,7 +132,11 @@ impl DiagnosticCollector {
             return;
         }
 
-        println!("Checking file: {}", self.file_name.cyan());
+        println!(
+            "{} {}",
+            get_text("checking_file", self.language),
+            self.file_name.cyan()
+        );
 
         // Sort diagnostics: errors first, then warnings
         let mut sorted_diagnostics = self.diagnostics.clone();
@@ -124,8 +151,8 @@ impl DiagnosticCollector {
 
         for diagnostic in &sorted_diagnostics {
             let severity_str = match diagnostic.severity {
-                Severity::Error => "error",
-                Severity::Warning => "warning",
+                Severity::Error => get_text("error", self.language),
+                Severity::Warning => get_text("warning", self.language),
             };
 
             if let Some((start, _end)) = diagnostic.span {
@@ -138,10 +165,9 @@ impl DiagnosticCollector {
                     severity_str, self.file_name, line, col, diagnostic.message
                 );
 
-                match severity_str {
-                    "error" => println!("{}", header.red()),
-                    "warning" => println!("{}", header.yellow()),
-                    _ => println!("{}", header),
+                match diagnostic.severity {
+                    Severity::Error => println!("{}", header.red()),
+                    Severity::Warning => println!("{}", header.yellow()),
                 }
 
                 // 显示源代码片段
@@ -167,17 +193,16 @@ impl DiagnosticCollector {
                     // 创建指示符，使用等长的 ^ 字符
                     let padding = " ".repeat(col - 1); // col已经是1-based，减1得到正确的位置
                     let pointer_str = "^".repeat(error_length);
-                    let pointer = match severity_str {
-                        "error" => {
+                    let pointer = match diagnostic.severity {
+                        Severity::Error => {
                             format!("    {} {}{}", "|".bright_blue(), padding, pointer_str.red())
                         }
-                        "warning" => format!(
+                        Severity::Warning => format!(
                             "    {} {}{}",
                             "|".bright_blue(),
                             padding,
                             pointer_str.yellow()
                         ),
-                        _ => format!("    {} {}{}", "|".bright_blue(), padding, pointer_str),
                     };
                     println!("{}", pointer);
                 }
@@ -186,10 +211,9 @@ impl DiagnosticCollector {
                     "{}: {}: {}",
                     severity_str, self.file_name, diagnostic.message
                 );
-                match severity_str {
-                    "error" => println!("{}", header.red()),
-                    "warning" => println!("{}", header.yellow()),
-                    _ => println!("{}", header),
+                match diagnostic.severity {
+                    Severity::Error => println!("{}", header.red()),
+                    Severity::Warning => println!("{}", header.yellow()),
                 }
             }
             println!();
