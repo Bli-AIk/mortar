@@ -31,11 +31,6 @@ pub mod lsp {
     pub use mortar_lsp::*;
 }
 
-// Re-export grammar functionality when available
-pub mod grammar {
-    pub use mortar_grammar::*;
-}
-
 // Convenience prelude module
 pub mod prelude {
     pub use crate::*;

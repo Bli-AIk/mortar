@@ -1,6 +1,5 @@
-// Placeholder implementation of LSP server
-// TODO: Implement Language Server Protocol support
+pub mod analysis;
+pub mod backend;
+pub mod files;
 
-pub fn main() {
-    println!("Mortar LSP server has not yet been implemented");
-}
+pub use backend::Backend;

@@ -233,7 +233,6 @@ jobs:
     strategy:
       matrix:
         crate:
-          - mortar_grammar
           - mortar_language
           - mortar_compiler
           - mortar_lsp

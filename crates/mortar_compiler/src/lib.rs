@@ -11,4 +11,4 @@ pub use parser::{
     ChoiceItem, Event, EventAction, NodeDef, NodeJump, NodeStmt, ParseHandler, Program, TopLevel,
 };
 pub use serializer::Serializer;
-pub use token::Token;
+pub use token::{Token, TokenInfo, tokenize};

@@ -148,17 +148,68 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Skip optional separators (commas and semicolons)
+    fn skip_optional_separators(&mut self) {
+        while let Some(token) = self.peek() {
+            if matches!(token, Token::Comma | Token::Semicolon) {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+    }
+
+    /// Skip comments and optional separators
+    fn skip_comments_and_separators(&mut self) {
+        loop {
+            let mut skipped_something = false;
+
+            // Skip comments
+            while let Some(token) = self.peek() {
+                if matches!(
+                    token,
+                    Token::SingleLineComment(_) | Token::MultiLineComment(_)
+                ) {
+                    self.advance();
+                    skipped_something = true;
+                } else {
+                    break;
+                }
+            }
+
+            // Skip separators
+            while let Some(token) = self.peek() {
+                if matches!(token, Token::Comma | Token::Semicolon) {
+                    self.advance();
+                    skipped_something = true;
+                } else {
+                    break;
+                }
+            }
+
+            if !skipped_something {
+                break;
+            }
+        }
+    }
+
     fn parse_program(&mut self) -> Result<Program, String> {
         let mut body = Vec::new();
 
         while !self.is_at_end() {
-            body.push(self.parse_top_level()?);
+            self.skip_comments_and_separators();
+
+            if !self.is_at_end() {
+                body.push(self.parse_top_level()?);
+            }
         }
 
         Ok(Program { body })
     }
 
     fn parse_top_level(&mut self) -> Result<TopLevel, String> {
+        self.skip_comments_and_separators();
+
         match self.peek() {
             Some(Token::Node) => Ok(TopLevel::NodeDef(self.parse_node_def()?)),
             Some(Token::Fn) => Ok(TopLevel::FunctionDecl(self.parse_function_decl()?)),
@@ -179,13 +230,12 @@ impl<'a> Parser<'a> {
 
         let mut body = Vec::new();
         while !self.check(&Token::RightBrace) && !self.is_at_end() {
-            // Skip optional commas
-            if self.check(&Token::Comma) {
-                self.advance();
-                continue;
-            }
+            self.skip_comments_and_separators();
 
-            body.push(self.parse_node_stmt()?);
+            if !self.check(&Token::RightBrace) && !self.is_at_end() {
+                body.push(self.parse_node_stmt()?);
+                self.skip_optional_separators();
+            }
         }
 
         self.consume(&Token::RightBrace, "Expected '}'")?;
@@ -230,10 +280,12 @@ impl<'a> Parser<'a> {
         let mut events = Vec::new();
 
         while !self.check(&Token::RightBracket) && !self.is_at_end() {
-            events.push(self.parse_event()?);
+            self.skip_comments_and_separators();
 
-            // Events are not separated by commas in the Mortar syntax
-            // Each event is on its own line
+            if !self.check(&Token::RightBracket) && !self.is_at_end() {
+                events.push(self.parse_event()?);
+                self.skip_optional_separators();
+            }
         }
 
         self.consume(&Token::RightBracket, "Expected ']'")?;
@@ -247,7 +299,8 @@ impl<'a> Parser<'a> {
             return Err("Expected number for event index".to_string());
         };
 
-        self.consume(&Token::Comma, "Expected ',' after event index")?;
+        // Skip optional comma or semicolon after event index
+        self.skip_optional_separators();
 
         let action = self.parse_event_action()?;
 
@@ -274,11 +327,11 @@ impl<'a> Parser<'a> {
         let mut items = Vec::new();
 
         while !self.check(&Token::RightBracket) && !self.is_at_end() {
-            items.push(self.parse_choice_item()?);
+            self.skip_comments_and_separators();
 
-            // Choices can be separated by commas, but they are optional
-            if self.check(&Token::Comma) {
-                self.advance();
+            if !self.check(&Token::RightBracket) && !self.is_at_end() {
+                items.push(self.parse_choice_item()?);
+                self.skip_optional_separators();
             }
         }
 
@@ -373,12 +426,11 @@ impl<'a> Parser<'a> {
                 let mut items = Vec::new();
 
                 while !self.check(&Token::RightBracket) && !self.is_at_end() {
-                    items.push(self.parse_choice_item()?);
+                    self.skip_comments_and_separators();
 
-                    if self.check(&Token::Comma) {
-                        self.advance();
-                    } else {
-                        break;
+                    if !self.check(&Token::RightBracket) && !self.is_at_end() {
+                        items.push(self.parse_choice_item()?);
+                        self.skip_optional_separators();
                     }
                 }
 
@@ -431,10 +483,9 @@ impl<'a> Parser<'a> {
 
         while !self.check(&Token::RightParen) && !self.is_at_end() {
             params.push(self.parse_param()?);
+            self.skip_optional_separators();
 
-            if self.check(&Token::Comma) {
-                self.advance();
-            } else {
+            if self.check(&Token::RightParen) {
                 break;
             }
         }
@@ -443,11 +494,7 @@ impl<'a> Parser<'a> {
 
         let return_type = if self.check(&Token::Arrow) {
             self.advance(); // consume '->'
-            if let Some(Token::Identifier(type_name)) = self.advance() {
-                Some(type_name.to_string())
-            } else {
-                return Err("Expected type after '->'".to_string());
-            }
+            Some(self.parse_type()?)
         } else {
             None
         };
@@ -468,13 +515,19 @@ impl<'a> Parser<'a> {
 
         self.consume(&Token::Colon, "Expected ':'")?;
 
-        let type_name = if let Some(Token::Identifier(type_name)) = self.advance() {
-            type_name.to_string()
-        } else {
-            return Err("Expected parameter type".to_string());
-        };
+        let type_name = self.parse_type()?;
 
         Ok(Param { name, type_name })
+    }
+
+    fn parse_type(&mut self) -> Result<String, String> {
+        match self.advance() {
+            Some(Token::Identifier(type_name)) => Ok(type_name.to_string()),
+            Some(Token::StringType) => Ok("String".to_string()),
+            Some(Token::NumberType) => Ok("Number".to_string()),
+            Some(Token::BooleanType) => Ok("Boolean".to_string()),
+            _ => Err("Expected type".to_string()),
+        }
     }
 
     fn parse_func_call(&mut self) -> Result<FuncCall, String> {
@@ -490,10 +543,9 @@ impl<'a> Parser<'a> {
 
         while !self.check(&Token::RightParen) && !self.is_at_end() {
             args.push(self.parse_arg()?);
+            self.skip_optional_separators();
 
-            if self.check(&Token::Comma) {
-                self.advance();
-            } else {
+            if self.check(&Token::RightParen) {
                 break;
             }
         }
