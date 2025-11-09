@@ -248,17 +248,14 @@ impl DiagnosticCollector {
 
         // Second pass: check usages
         for item in &program.body {
-            match item {
-                TopLevel::NodeDef(node) => {
-                    self.analyze_node_usage(
-                        node,
-                        &declared_functions,
-                        &declared_nodes,
-                        &mut used_functions,
-                        &mut used_nodes,
-                    );
-                }
-                _ => {}
+            if let TopLevel::NodeDef(node) = item {
+                self.analyze_node_usage(
+                    node,
+                    &declared_functions,
+                    &declared_nodes,
+                    &mut used_functions,
+                    &mut used_nodes,
+                );
             }
         }
 
@@ -373,24 +370,23 @@ impl DiagnosticCollector {
                         self.analyze_func_call(func_call, declared_functions, used_functions);
 
                         // Check that the function returns a boolean type
-                        if let Some(func_decl) = declared_functions.get(&func_call.name) {
-                            if let Some(return_type) = &func_decl.return_type {
-                                if !self.is_boolean_type(return_type) {
-                                    self.add_diagnostic(Diagnostic {
-                                        kind: DiagnosticKind::ConditionTypeMismatch {
-                                            expected: "Boolean".to_string(),
-                                            actual: return_type.clone(),
-                                        },
-                                        severity: Severity::Error,
-                                        span: func_call.name_span,
-                                        message: format!(
-                                            "Condition function '{}' must return a boolean type, but returns '{}'",
-                                            func_call.name,
-                                            return_type
-                                        ),
-                                    });
-                                }
-                            }
+                        if let Some(func_decl) = declared_functions.get(&func_call.name)
+                            && let Some(return_type) = &func_decl.return_type
+                            && !self.is_boolean_type(return_type)
+                        {
+                            self.add_diagnostic(Diagnostic {
+                                kind: DiagnosticKind::ConditionTypeMismatch {
+                                    expected: "Boolean".to_string(),
+                                    actual: return_type.clone(),
+                                },
+                                severity: Severity::Error,
+                                span: func_call.name_span,
+                                message: format!(
+                                    "Condition function '{}' must return a boolean type, but returns '{}'",
+                                    func_call.name,
+                                    return_type
+                                ),
+                            });
                         }
                     }
                 }

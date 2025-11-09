@@ -214,6 +214,7 @@ pub(crate) fn lex_with_output(input: &str) -> Vec<Token<'_>> {
     tokens
 }
 
+#[allow(dead_code)]
 pub(crate) fn lex_silent(input: &str) -> Vec<Token<'_>> {
     let lex = Token::lexer(input);
     let mut tokens = Vec::new();

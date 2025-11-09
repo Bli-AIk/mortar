@@ -115,8 +115,7 @@ impl ParseHandler {
         let tokens = if verbose_lexer {
             crate::token::lex_with_output(content)
                 .into_iter()
-                .enumerate()
-                .map(|(_i, token)| TokenInfo {
+                .map(|token| TokenInfo {
                     token,
                     start: 0, // We'll use better position tracking later
                     end: 0,
@@ -139,8 +138,7 @@ impl ParseHandler {
         let tokens = if verbose_lexer {
             crate::token::lex_with_output(content)
                 .into_iter()
-                .enumerate()
-                .map(|(_i, token)| TokenInfo {
+                .map(|token| TokenInfo {
                     token,
                     start: 0, // We'll use better position tracking later
                     end: 0,
@@ -398,7 +396,7 @@ impl<'a> Parser<'a> {
                 let mut expr_text = String::new();
                 let mut brace_count = 1;
 
-                while let Some(expr_ch) = chars.next() {
+                for expr_ch in chars.by_ref() {
                     if expr_ch == '{' {
                         brace_count += 1;
                         expr_text.push(expr_ch);
