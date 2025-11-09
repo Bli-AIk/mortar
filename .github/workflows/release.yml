@@ -80,22 +80,33 @@ jobs:
 
     - name: Build release (Linux/Windows)
       if: matrix.os != 'macos-latest'
-      run: cargo build --release --target ${{ matrix.target }} --bin mortar
+      run: |
+        cargo build --release --target ${{ matrix.target }} --bin mortar
+        cargo build --release --target ${{ matrix.target }} --bin mortar_lsp
 
     - name: Build and Combine (macOS Universal Binary)
       if: matrix.os == 'macos-latest'
       run: |
         cargo build --release --target ${{ matrix.target }} --bin mortar
+        cargo build --release --target ${{ matrix.target }} --bin mortar_lsp
         cargo build --release --target ${{ matrix.arm_target }} --bin mortar
+        cargo build --release --target ${{ matrix.arm_target }} --bin mortar_lsp
         lipo -create \
-             target/${{ matrix.target }}/release/${{ matrix.artifact_name }} \
-             target/${{ matrix.arm_target }}/release/${{ matrix.artifact_name }} \
+             target/${{ matrix.target }}/release/mortar \
+             target/${{ matrix.arm_target }}/release/mortar \
              -output target/release/mortar-macos-universal
+        lipo -create \
+             target/${{ matrix.target }}/release/mortar_lsp \
+             target/${{ matrix.arm_target }}/release/mortar_lsp \
+             -output target/release/mortar_lsp-macos-universal
         strip target/release/mortar-macos-universal
+        strip target/release/mortar_lsp-macos-universal
       
     - name: Strip binary (Linux)
       if: matrix.os == 'ubuntu-latest'
-      run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+      run: |
+        strip target/${{ matrix.target }}/release/mortar
+        strip target/${{ matrix.target }}/release/mortar_lsp
 
   create-release:
     name: Create Release
@@ -128,9 +139,15 @@ jobs:
           
           ## 下载 / Downloads
           
+          ### Mortar CLI (mortar)
           - **Linux**: mortar-linux-x86_64
           - **Windows**: mortar-windows-x86_64.exe  
           - **macOS**: mortar-macos-universal
+          
+          ### Mortar LSP Server (mortar_lsp)
+          - **Linux**: mortar_lsp-linux-x86_64
+          - **Windows**: mortar_lsp-windows-x86_64.exe
+          - **macOS**: mortar_lsp-macos-universal
 
   build-and-upload:
     name: Build and Upload
@@ -140,20 +157,18 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        binary: [mortar, mortar_lsp]
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact_name: mortar_language
-            asset_name: mortar-linux-x86_64
+            binary_suffix: ""
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: mortar_language.exe
-            asset_name: mortar-windows-x86_64.exe
+            binary_suffix: ".exe"
           - os: macos-latest
             target: x86_64-apple-darwin
             arm_target: aarch64-apple-darwin
-            artifact_name: mortar_language
-            asset_name: mortar-macos-universal
+            binary_suffix: ""
 
     steps:
     - uses: actions/checkout@v5
@@ -198,24 +213,31 @@ jobs:
 
     - name: Build release (Linux/Windows)
       if: matrix.os != 'macos-latest'
-      run: cargo build --release --target ${{ matrix.target }} --bin mortar
+      run: cargo build --release --target ${{ matrix.target }} --bin ${{ matrix.binary }}
 
     - name: Build and Combine (macOS Universal Binary)
       if: matrix.os == 'macos-latest'
       run: |
-        cargo build --release --target ${{ matrix.target }} --bin mortar
-        cargo build --release --target ${{ matrix.arm_target }} --bin mortar
+        cargo build --release --target ${{ matrix.target }} --bin ${{ matrix.binary }}
+        cargo build --release --target ${{ matrix.arm_target }} --bin ${{ matrix.binary }}
+        mkdir -p target/release/
         lipo -create \
-             target/${{ matrix.target }}/release/${{ matrix.artifact_name }} \
-             target/${{ matrix.arm_target }}/release/${{ matrix.artifact_name }} \
-             -output target/release/${{ matrix.asset_name }}
-        strip target/release/${{ matrix.asset_name }}
-        echo "FINAL_ARTIFACT_PATH=target/release/${{ matrix.asset_name }}" >> $GITHUB_ENV
-        echo "FINAL_ARTIFACT_NAME=${{ matrix.asset_name }}" >> $GITHUB_ENV
+             target/${{ matrix.target }}/release/${{ matrix.binary }} \
+             target/${{ matrix.arm_target }}/release/${{ matrix.binary }} \
+             -output target/release/${{ matrix.binary }}-macos-universal
+        strip target/release/${{ matrix.binary }}-macos-universal
+        echo "FINAL_ARTIFACT_PATH=target/release/${{ matrix.binary }}-macos-universal" >> $GITHUB_ENV
+        echo "FINAL_ARTIFACT_NAME=${{ matrix.binary }}-macos-universal" >> $GITHUB_ENV
       
-    - name: Strip binary (Linux and macOS)
+    - name: Strip binary (Linux)
       if: matrix.os == 'ubuntu-latest'
-      run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+      run: strip target/${{ matrix.target }}/release/${{ matrix.binary }}
+      
+    - name: Set artifact path for Linux/Windows
+      if: matrix.os != 'macos-latest'
+      run: |
+        echo "FINAL_ARTIFACT_PATH=target/${{ matrix.target }}/release/${{ matrix.binary }}${{ matrix.binary_suffix }}" >> $GITHUB_ENV
+        echo "FINAL_ARTIFACT_NAME=${{ matrix.binary }}-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'windows' }}-x86_64${{ matrix.binary_suffix }}" >> $GITHUB_ENV
       
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v2
@@ -223,7 +245,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref_name }}
-        files: ${{ env.FINAL_ARTIFACT_PATH || format('target/{0}/release/{1}', matrix.target, matrix.artifact_name) }}
+        files: ${{ env.FINAL_ARTIFACT_PATH }}
+        asset_name: ${{ env.FINAL_ARTIFACT_NAME }}
 
   publish-crates:
     name: Publish crates to crates.io
