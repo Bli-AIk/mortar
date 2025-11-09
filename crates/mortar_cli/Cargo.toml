@@ -1,6 +1,9 @@
 [package]
 name = "mortar_cli"
-version = "0.0.0"
+version = "0.1.0"
+
+[package.metadata.workspaces]
+independent = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
