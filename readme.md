@@ -48,8 +48,8 @@ Static typing.**
 ### Installation
 
 ```bash
-# Install from crates.io
-cargo install mortar
+# Install the CLI tool from crates.io
+cargo install mortar_cli
 
 # Or build from source
 git clone https://github.com/Bli-AIk/mortar.git
@@ -181,13 +181,13 @@ The compiler now generates compressed JSON by default for optimal file size and 
 
 Features to be implemented:
 
-* 🚧 **Command Line Tool**: Complete CLI compiler
+* ✅ **Command Line Tool**: Complete CLI compiler
 * ✅ **Lexer**: High-performance tokenization using logos
 * ✅ **Parsing Framework**: Support for complete token parsing
 * ✅ **AST Structure**: Complete Abstract Syntax Tree definition
 * 🚧 **Error Handling**: `ariadne` friendly error reporting
 * ✅ **JSON Output**: Standardized output format
-* 🚧 **Language Server**: IDE integration and syntax highlighting
+* ✅ **Language Server**: IDE integration and syntax highlighting
 
 Planned features:
 
@@ -211,24 +211,61 @@ The following people have contributed to this project.
 
 **A heartfelt thank you to each and every one of you! 🎔**
 
-### Development Environment Setup
+## Project Structure
+
+This project is organized as a Rust workspace with four main crates:
+
+* **`mortar_language`** - The main library crate that re-exports functionality from all other crates
+* **`mortar_compiler`** - Core compilation library with lexing, parsing, and code generation
+* **`mortar_cli`** - Command-line interface providing the `mortar` command
+* **`mortar_lsp`** - Language Server Protocol implementation for IDE integration
+
+### Building the Project
 
 ```bash
 # Clone the repository
 git clone https://github.com/Bli-AIk/mortar.git
 cd mortar
 
-# Install dependencies and build
+# Build all crates in the workspace
 cargo build
 
-# Run tests
+# Build optimized release version
+cargo build --release
+
+# Build specific crate
+cargo build -p mortar_cli
+cargo build -p mortar_compiler
+cargo build -p mortar_language
+cargo build -p mortar_lsp
+
+# Run tests for all crates
 cargo test
+
+# Run tests for specific crate
+cargo test -p mortar_compiler
 
 # Code check
 cargo clippy
 
 # Format code
 cargo fmt
+```
+
+### Installing Individual Components
+
+```bash
+# Install CLI tool only
+cargo install mortar_cli
+
+# Install LSP server only  
+cargo install mortar_lsp
+
+# Use as library dependency in Cargo.toml
+[dependencies]
+mortar_language = "0.2"
+# Or use individual components
+mortar_compiler = "0.2"
 ```
 
 ## License

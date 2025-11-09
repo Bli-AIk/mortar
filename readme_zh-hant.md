@@ -42,8 +42,8 @@ Mortar 的设计遵循以下核心原则：**内容分离、语义清晰、程�
 ### 安装
 
 ```bash
-# 从 crates.io 安装
-cargo install mortar
+# 从 crates.io 安装命令行工具
+cargo install mortar_cli
 
 # 或从源码构建
 git clone https://github.com/Bli-AIk/mortar.git
@@ -171,13 +171,13 @@ mortar hello.mortar -o custom.json --pretty
 
 待实现功能：
 
-* 🚧 **命令行工具**：完整 CLI 编译器
+* ✅ **命令行工具**：完整 CLI 编译器
 * ✅ **词法分析器**：使用 logos 实现的高性能分词
 * ✅ **解析框架**：支持完整的 token 解析
 * ✅ **AST 结构**：完整的抽象语法树定义
 * 🚧 **错误处理**：ariadne 友好的错误报告
 * ✅ **JSON 输出**：标准化输出格式
-* 🚧 **语言服务器**：IDE 集成与语法高亮
+* ✅ **语言服务器**：IDE 集成与语法高亮
 
 计划中功能：
 * 🚧 **高级语法解析**：完整事件与选项语法
@@ -198,24 +198,61 @@ mortar hello.mortar -o custom.json --pretty
 
 **衷心感谢你们每一个人！🎔**
 
-### 开发环境搭建
+## 项目结构
+
+本项目采用 Rust workspace 组织，包含四个主要的 crate：
+
+* **`mortar_language`** - 主要的库 crate，重新导出所有其他 crate 的功能
+* **`mortar_compiler`** - 核心编译库，包含词法分析、语法解析和代码生成
+* **`mortar_cli`** - 命令行界面，提供 `mortar` 命令
+* **`mortar_lsp`** - 语言服务器协议实现，用于 IDE 集成
+
+### 构建项目
 
 ```bash
 # 克隆仓库
 git clone https://github.com/Bli-AIk/mortar.git
 cd mortar
 
-# 安装依赖并构建
+# 构建 workspace 中的所有 crate
 cargo build
 
-# 运行测试
+# 构建优化的 release 版本
+cargo build --release
+
+# 构建特定的 crate
+cargo build -p mortar_cli
+cargo build -p mortar_compiler
+cargo build -p mortar_language
+cargo build -p mortar_lsp
+
+# 运行所有 crate 的测试
 cargo test
+
+# 运行特定 crate 的测试
+cargo test -p mortar_compiler
 
 # 代码检查
 cargo clippy
 
 # 格式化代码
 cargo fmt
+```
+
+### 安装单个组件
+
+```bash
+# 仅安装 CLI 工具
+cargo install mortar_cli
+
+# 仅安装 LSP 服务器
+cargo install mortar_lsp
+
+# 在 Cargo.toml 中作为库依赖使用
+[dependencies]
+mortar_language = "0.2"
+# 或使用单个组件
+mortar_compiler = "0.2"
 ```
 
 ## 许可协议
