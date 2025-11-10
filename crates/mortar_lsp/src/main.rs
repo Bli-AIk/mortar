@@ -29,7 +29,7 @@ async fn main() {
         .finish();
 
     subscriber::set_global_default(subscriber)
-        .expect(&get_lsp_text("unable_set_subscriber", language));
+        .unwrap_or_else(|_| panic!("{}", get_lsp_text("unable_set_subscriber", language)));
 
     info!("{}", get_lsp_text("starting_lsp_server", language));
     if parse_language_from_args().is_none() {

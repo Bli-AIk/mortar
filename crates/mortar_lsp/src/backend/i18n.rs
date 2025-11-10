@@ -182,18 +182,18 @@ pub fn get_lsp_text(key: &str, language: Language) -> &'static str {
 /// Detect language from environment variables, similar to CLI implementation
 pub fn detect_system_language() -> Language {
     // Check environment variables to determine system language
-    if let Ok(lang) = std::env::var("LANG") {
-        if lang.contains("zh") || lang.contains("cn") || lang.contains("CN") {
-            return Language::Chinese;
-        }
+    if let Ok(lang) = std::env::var("LANG")
+        && (lang.contains("zh") || lang.contains("cn") || lang.contains("CN"))
+    {
+        return Language::Chinese;
     }
 
     // Check other common language environment variables
     for env_var in &["LC_ALL", "LC_MESSAGES", "LANGUAGE"] {
-        if let Ok(lang) = std::env::var(env_var) {
-            if lang.contains("zh") || lang.contains("cn") || lang.contains("CN") {
-                return Language::Chinese;
-            }
+        if let Ok(lang) = std::env::var(env_var)
+            && (lang.contains("zh") || lang.contains("cn") || lang.contains("CN"))
+        {
+            return Language::Chinese;
         }
     }
 
@@ -205,14 +205,14 @@ pub fn parse_language_from_args() -> Option<Language> {
     let args: Vec<String> = std::env::args().collect();
 
     // Check for --lang or -L flag
-    if let Some(pos) = args.iter().position(|arg| arg == "--lang" || arg == "-L") {
-        if let Some(lang_str) = args.get(pos + 1) {
-            return match lang_str.as_str() {
-                "en" | "english" => Some(Language::English),
-                "zh" | "chinese" => Some(Language::Chinese),
-                _ => None,
-            };
-        }
+    if let Some(pos) = args.iter().position(|arg| arg == "--lang" || arg == "-L")
+        && let Some(lang_str) = args.get(pos + 1)
+    {
+        return match lang_str.as_str() {
+            "en" | "english" => Some(Language::English),
+            "zh" | "chinese" => Some(Language::Chinese),
+            _ => None,
+        };
     }
 
     None

@@ -29,17 +29,16 @@ impl Backend {
         });
 
         // Update symbol table if program was parsed successfully
-        if let Some(program) = program_opt {
-            if let Ok(symbol_table) =
+        if let Some(program) = program_opt
+            && let Ok(symbol_table) =
                 tokio::task::spawn_blocking(move || analyze_program(&program)).await
-            {
-                match symbol_table {
-                    Ok(table) => {
-                        self.symbol_tables.insert(uri.clone(), table);
-                    }
-                    Err(_) => {
-                        // Symbol analysis failed, but we already have parse diagnostics
-                    }
+        {
+            match symbol_table {
+                Ok(table) => {
+                    self.symbol_tables.insert(uri.clone(), table);
+                }
+                Err(_) => {
+                    // Symbol analysis failed, but we already have parse diagnostics
                 }
             }
         }

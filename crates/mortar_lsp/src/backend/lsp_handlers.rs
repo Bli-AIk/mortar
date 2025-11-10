@@ -20,25 +20,23 @@ impl LanguageServer for Backend {
         }
 
         // Try to detect language from initialization options (overrides command line)
-        if let Some(init_options) = &params.initialization_options {
-            if let Ok(options) = serde_json::from_value::<serde_json::Map<String, serde_json::Value>>(
+        if let Some(init_options) = &params.initialization_options
+            && let Ok(options) = serde_json::from_value::<serde_json::Map<String, serde_json::Value>>(
                 init_options.clone(),
-            ) {
-                if let Some(lang_value) = options.get("language") {
-                    if let Ok(lang_str) = serde_json::from_value::<String>(lang_value.clone()) {
-                        language = match lang_str.as_str() {
-                            "zh" | "chinese" => mortar_compiler::Language::Chinese,
-                            _ => mortar_compiler::Language::English,
-                        };
-                        self.set_language(language).await;
-                        info!(
-                            "{}: {:?}",
-                            crate::backend::i18n::get_lsp_text("language_set_to", language),
-                            language
-                        );
-                    }
-                }
-            }
+            )
+            && let Some(lang_value) = options.get("language")
+            && let Ok(lang_str) = serde_json::from_value::<String>(lang_value.clone())
+        {
+            language = match lang_str.as_str() {
+                "zh" | "chinese" => mortar_compiler::Language::Chinese,
+                _ => mortar_compiler::Language::English,
+            };
+            self.set_language(language).await;
+            info!(
+                "{}: {:?}",
+                crate::backend::i18n::get_lsp_text("language_set_to", language),
+                language
+            );
         }
 
         Ok(InitializeResult {
