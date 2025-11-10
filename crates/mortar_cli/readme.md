@@ -20,8 +20,11 @@ cargo install mortar_cli
 
 ## Usage
 ```bash
-# Basic compilation (outputs .mortared file)
+# Basic compilation (output .mortared file, which is essentially a JSON file)
 mortar hello.mortar
+
+# Generate formatted JSON with indentation
+mortar hello.mortar --pretty
 
 # Specify output file
 mortar hello.mortar -o hello.json

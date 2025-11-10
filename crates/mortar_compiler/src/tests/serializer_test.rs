@@ -10,6 +10,7 @@ fn create_test_program() -> Program {
         body: vec![
             TopLevel::FunctionDecl(FunctionDecl {
                 name: "my_function".to_string(),
+                name_span: Some((0, 11)), // Approximate span
                 params: vec![Param {
                     name: "p1".to_string(),
                     type_name: "String".to_string(),
@@ -18,6 +19,7 @@ fn create_test_program() -> Program {
             }),
             TopLevel::NodeDef(NodeDef {
                 name: "start_node".to_string(),
+                name_span: Some((0, 10)), // Approximate span
                 body: vec![
                     NodeStmt::Text("This is the first line.".to_string()),
                     NodeStmt::Events(vec![Event {
@@ -25,6 +27,7 @@ fn create_test_program() -> Program {
                         action: EventAction {
                             call: FuncCall {
                                 name: "play_sound".to_string(),
+                                name_span: Some((0, 10)), // Approximate span
                                 args: vec![Arg::String("music.mp3".to_string())],
                             },
                             chains: vec![],
@@ -35,7 +38,7 @@ fn create_test_program() -> Program {
                         ChoiceItem {
                             text: "Go to next".to_string(),
                             condition: None,
-                            target: ChoiceDest::Identifier("next_node".to_string()),
+                            target: ChoiceDest::Identifier("next_node".to_string(), Some((0, 9))),
                         },
                         ChoiceItem {
                             text: "Stay here".to_string(),
@@ -44,7 +47,10 @@ fn create_test_program() -> Program {
                         },
                     ]),
                 ],
-                jump: Some(NodeJump::Identifier("default_next".to_string())),
+                jump: Some(NodeJump::Identifier(
+                    "default_next".to_string(),
+                    Some((0, 12)),
+                )),
             }),
         ],
     }
@@ -53,7 +59,7 @@ fn create_test_program() -> Program {
 #[test]
 fn test_serialize_program() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     assert_eq!(json["metadata"]["version"], "0.1.0");
@@ -66,7 +72,7 @@ fn test_serialize_program() {
 #[test]
 fn test_serialize_function_decl() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     let function = &json["functions"][0];
@@ -79,7 +85,7 @@ fn test_serialize_function_decl() {
 #[test]
 fn test_serialize_node_def() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     let node = &json["nodes"][0];
@@ -92,7 +98,7 @@ fn test_serialize_node_def() {
 #[test]
 fn test_serialize_text_and_events() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     let node = &json["nodes"][0];
@@ -110,7 +116,7 @@ fn test_serialize_text_and_events() {
 #[test]
 fn test_serialize_choices() {
     let program = create_test_program();
-    let json_string = Serializer::serialize_to_json(&program).unwrap();
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
     let node = &json["nodes"][0];

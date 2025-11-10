@@ -48,8 +48,8 @@ Static typing.**
 ### Installation
 
 ```bash
-# Install from crates.io
-cargo install mortar
+# Install the CLI tool from crates.io
+cargo install mortar_cli
 
 # Or build from source
 git clone https://github.com/Bli-AIk/mortar.git
@@ -81,7 +81,7 @@ node Start {
     ]
     // When we use the text field again, it means that this is another text block for the same node.
     // You can write several text blocks and they will be played sequentially.
-    text: "I think your name is {get_name()}, right?"
+    text: $"I think your name is {get_name()}, right?"
     events: [
         // The index can be a floating point number! 
         // Generally speaking, decimal points are used for voice synchronization. And typewriters are integers.
@@ -106,17 +106,17 @@ node ChoicePoint {
     // By choice field, we can also jump to different nodes.
     choice: [
         // This option does not have any conditional judgment. Logically speaking, you can always choose it.
-        "Explore the forest" -> forest_scene,
+        "Explore the forest" -> ForestScene,
         
         // These two options have the when keyword, which means they have conditional judgment!
         // The when keyword supports chain writing and functional writing.
-        ("Stay in town").when(has_map) -> town_scene,
-        "Check inventory" when has_backpack  -> inventory,
+        ("Stay in town").when(has_map) -> TownScene,
+        "Check Inventory" when has_backpack  -> Inventory,
         
         // A selection field can also be nested within a selection field. You can nest as many levels as you want!
         "Have something to eat" -> [
-            "Apple" -> eat_apple,
-            "Bread" -> eat_bread
+            "Apple" -> EatApple,
+            "Bread" -> EatBread
         ]
         
         // Use the return keyword to exit the current node.
@@ -154,15 +154,20 @@ fn has_backpack() -> Boolean
 Compile the Mortar file:
 
 ```bash
-# Basic compilation (outputs hello.mortared)
-mortarc hello.mortar
+# Basic compilation (outputs compressed JSON by default)
+mortar hello.mortar
+
+# Generate formatted JSON with indentation  
+mortar hello.mortar --pretty
 
 # Specify output file
-mortarc hello.mortar -o hello.json
+mortar hello.mortar -o output_file
 
-# Enable verbose output
-mortarc hello.mortar --verbose
+# Combine options
+mortar hello.mortar -o custom.json --pretty
 ```
+
+The compiler now generates compressed JSON by default for optimal file size and performance. Use the `--pretty` flag when you need human-readable formatted output for debugging or review.
 
 ## Applicable Scenarios
 
@@ -176,13 +181,13 @@ mortarc hello.mortar --verbose
 
 Features to be implemented:
 
-* 🚧 **Command Line Tool**: Complete CLI compiler
+* ✅ **Command Line Tool**: Complete CLI compiler
 * ✅ **Lexer**: High-performance tokenization using logos
 * ✅ **Parsing Framework**: Support for complete token parsing
 * ✅ **AST Structure**: Complete Abstract Syntax Tree definition
 * 🚧 **Error Handling**: `ariadne` friendly error reporting
 * ✅ **JSON Output**: Standardized output format
-* 🚧 **Language Server**: IDE integration and syntax highlighting
+* ✅ **Language Server**: IDE integration and syntax highlighting
 
 Planned features:
 
@@ -206,24 +211,61 @@ The following people have contributed to this project.
 
 **A heartfelt thank you to each and every one of you! 🎔**
 
-### Development Environment Setup
+## Project Structure
+
+This project is organized as a Rust workspace with four main crates:
+
+* **`mortar_language`** - The main library crate that re-exports functionality from all other crates
+* **`mortar_compiler`** - Core compilation library with lexing, parsing, and code generation
+* **`mortar_cli`** - Command-line interface providing the `mortar` command
+* **`mortar_lsp`** - Language Server Protocol implementation for IDE integration
+
+### Building the Project
 
 ```bash
 # Clone the repository
 git clone https://github.com/Bli-AIk/mortar.git
 cd mortar
 
-# Install dependencies and build
+# Build all crates in the workspace
 cargo build
 
-# Run tests
+# Build optimized release version
+cargo build --release
+
+# Build specific crate
+cargo build -p mortar_cli
+cargo build -p mortar_compiler
+cargo build -p mortar_language
+cargo build -p mortar_lsp
+
+# Run tests for all crates
 cargo test
+
+# Run tests for specific crate
+cargo test -p mortar_compiler
 
 # Code check
 cargo clippy
 
 # Format code
 cargo fmt
+```
+
+### Installing Individual Components
+
+```bash
+# Install CLI tool only
+cargo install mortar_cli
+
+# Install LSP server only  
+cargo install mortar_lsp
+
+# Use as library dependency in Cargo.toml
+[dependencies]
+mortar_language = "0.2"
+# Or use individual components
+mortar_compiler = "0.2"
 ```
 
 ## License

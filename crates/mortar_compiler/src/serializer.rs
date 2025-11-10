@@ -1,7 +1,16 @@
+use crate::Language;
 use crate::parser::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+fn get_text(key: &str, language: Language) -> &'static str {
+    match (key, language) {
+        ("generated", Language::English) => "Generated:",
+        ("generated", Language::Chinese) => "生成文件:",
+        _ => "",
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct MortaredOutput {
@@ -30,7 +39,20 @@ struct JsonNode {
 struct JsonText {
     text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    interpolated_parts: Option<Vec<JsonStringPart>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     events: Option<Vec<JsonEvent>>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonStringPart {
+    #[serde(rename = "type")]
+    part_type: String, // "text" or "expression"
+    content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    function_name: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    args: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -88,20 +110,38 @@ struct JsonParam {
 pub struct Serializer;
 
 impl Serializer {
-    pub fn serialize_to_json(program: &Program) -> Result<String, String> {
+    pub fn serialize_to_json(program: &Program, pretty: bool) -> Result<String, String> {
         let mortared = Self::convert_program_to_mortared(program)?;
-        serde_json::to_string_pretty(&mortared).map_err(|e| format!("Serialization error: {}", e))
+        if pretty {
+            serde_json::to_string_pretty(&mortared)
+                .map_err(|e| format!("Serialization error: {}", e))
+        } else {
+            serde_json::to_string(&mortared).map_err(|e| format!("Serialization error: {}", e))
+        }
     }
 
-    pub fn save_to_file(program: &Program, input_path: &str) -> Result<(), String> {
+    pub fn save_to_file(program: &Program, input_path: &str, pretty: bool) -> Result<(), String> {
+        Self::save_to_file_with_language(program, input_path, pretty, Language::English)
+    }
+
+    pub fn save_to_file_with_language(
+        program: &Program,
+        input_path: &str,
+        pretty: bool,
+        language: Language,
+    ) -> Result<(), String> {
         let input_path = Path::new(input_path);
-        let json_content = Self::serialize_to_json(program)?;
+        let json_content = Self::serialize_to_json(program, pretty)?;
 
         let output_path = input_path.with_extension("mortared");
         std::fs::write(&output_path, json_content)
             .map_err(|e| format!("Failed to write file {}: {}", output_path.display(), e))?;
 
-        println!("Generated: {}", output_path.display());
+        println!(
+            "{} {}",
+            get_text("generated", language),
+            output_path.display()
+        );
         Ok(())
     }
 
@@ -147,6 +187,7 @@ impl Serializer {
                     if let Some(text_content) = current_text.take() {
                         texts.push(JsonText {
                             text: text_content,
+                            interpolated_parts: None,
                             events: if current_events.is_empty() {
                                 None
                             } else {
@@ -156,6 +197,34 @@ impl Serializer {
                         current_events.clear();
                     }
                     current_text = Some(text.clone());
+                }
+                NodeStmt::InterpolatedText(interpolated) => {
+                    // If we have a current text, save it first
+                    if let Some(text_content) = current_text.take() {
+                        texts.push(JsonText {
+                            text: text_content,
+                            interpolated_parts: None,
+                            events: if current_events.is_empty() {
+                                None
+                            } else {
+                                Some(current_events.clone())
+                            },
+                        });
+                        current_events.clear();
+                    }
+
+                    // Convert interpolated string
+                    let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
+                    texts.push(JsonText {
+                        text: rendered_text,
+                        interpolated_parts: Some(parts),
+                        events: if current_events.is_empty() {
+                            None
+                        } else {
+                            Some(current_events.clone())
+                        },
+                    });
+                    current_events.clear();
                 }
                 NodeStmt::Events(events) => {
                     // Convert events and associate with current text
@@ -168,6 +237,7 @@ impl Serializer {
                     if let Some(text_content) = current_text.take() {
                         texts.push(JsonText {
                             text: text_content,
+                            interpolated_parts: None,
                             events: if current_events.is_empty() {
                                 None
                             } else {
@@ -190,6 +260,7 @@ impl Serializer {
         if let Some(text_content) = current_text {
             texts.push(JsonText {
                 text: text_content,
+                interpolated_parts: None,
                 events: if current_events.is_empty() {
                     None
                 } else {
@@ -199,7 +270,7 @@ impl Serializer {
         }
 
         let next = match &node_def.jump {
-            Some(NodeJump::Identifier(name)) => Some(name.clone()),
+            Some(NodeJump::Identifier(name, _)) => Some(name.clone()),
             _ => None,
         };
 
@@ -271,7 +342,7 @@ impl Serializer {
         };
 
         let (next, action, nested_choice) = match &choice_item.target {
-            ChoiceDest::Identifier(name) => (Some(name.clone()), None, None),
+            ChoiceDest::Identifier(name, _) => (Some(name.clone()), None, None),
             ChoiceDest::Return => (None, Some("return".to_string()), None),
             ChoiceDest::Break => (None, Some("break".to_string()), None),
             ChoiceDest::NestedChoices(nested_items) => {
@@ -307,5 +378,54 @@ impl Serializer {
             params,
             return_type: func_decl.return_type.clone(),
         }
+    }
+
+    fn convert_interpolated_string(
+        interpolated: &InterpolatedString,
+    ) -> Result<(String, Vec<JsonStringPart>), String> {
+        let mut rendered_text = String::new();
+        let mut parts = Vec::new();
+
+        for part in &interpolated.parts {
+            match part {
+                StringPart::Text(text) => {
+                    rendered_text.push_str(text);
+                    parts.push(JsonStringPart {
+                        part_type: "text".to_string(),
+                        content: text.clone(),
+                        function_name: None,
+                        args: Vec::new(),
+                    });
+                }
+                StringPart::Expression(func_call) => {
+                    // For rendering, we'll use a placeholder
+                    let placeholder = format!("{{{}}}", func_call.name);
+                    rendered_text.push_str(&placeholder);
+
+                    // Convert arguments to strings
+                    let args: Vec<String> = func_call
+                        .args
+                        .iter()
+                        .map(|arg| {
+                            match arg {
+                                Arg::String(s) => format!("\"{}\"", s),
+                                Arg::Number(n) => n.to_string(),
+                                Arg::Identifier(id) => id.clone(),
+                                Arg::FuncCall(nested) => format!("{}()", nested.name), // Simplified
+                            }
+                        })
+                        .collect();
+
+                    parts.push(JsonStringPart {
+                        part_type: "expression".to_string(),
+                        content: placeholder.clone(),
+                        function_name: Some(func_call.name.clone()),
+                        args,
+                    });
+                }
+            }
+        }
+
+        Ok((rendered_text, parts))
     }
 }

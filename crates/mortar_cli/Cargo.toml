@@ -19,5 +19,8 @@ path = "src/main.rs"
 clap.workspace = true
 mortar_compiler.workspace = true
 
+[dev-dependencies]
+tempfile = "3.8"
+
 [package.metadata.workspaces]
 independent = true

@@ -1,15 +1,44 @@
 use ropey::Rope;
-use tokio;
 use tower_lsp_server::LanguageServer;
 use tower_lsp_server::jsonrpc::Result;
 use tower_lsp_server::lsp_types::*;
 use tracing::info;
 
-use crate::analysis::SymbolTable;
 use crate::backend::Backend;
 
 impl LanguageServer for Backend {
-    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        let mut language = self.get_language().await; // 使用之前设置的语言或默认语言
+
+        // Check for language preference in client info or initialization options
+        if let Some(client_info) = &params.client_info {
+            info!(
+                "{}: {}",
+                crate::backend::i18n::get_lsp_text("client_connected", language),
+                client_info.name
+            );
+        }
+
+        // Try to detect language from initialization options (overrides command line)
+        if let Some(init_options) = &params.initialization_options
+            && let Ok(options) = serde_json::from_value::<serde_json::Map<String, serde_json::Value>>(
+                init_options.clone(),
+            )
+            && let Some(lang_value) = options.get("language")
+            && let Ok(lang_str) = serde_json::from_value::<String>(lang_value.clone())
+        {
+            language = match lang_str.as_str() {
+                "zh" | "chinese" => mortar_compiler::Language::Chinese,
+                _ => mortar_compiler::Language::English,
+            };
+            self.set_language(language).await;
+            info!(
+                "{}: {:?}",
+                crate::backend::i18n::get_lsp_text("language_set_to", language),
+                language
+            );
+        }
+
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -64,6 +93,10 @@ impl LanguageServer for Backend {
                         },
                     ),
                 ),
+                execute_command_provider: Some(ExecuteCommandOptions {
+                    commands: vec!["mortar.setLanguage".to_string()],
+                    work_done_progress_options: WorkDoneProgressOptions::default(),
+                }),
                 ..ServerCapabilities::default()
             },
             ..InitializeResult::default()
@@ -77,7 +110,11 @@ impl LanguageServer for Backend {
     }
 
     async fn shutdown(&self) -> Result<()> {
-        info!("Close request received");
+        let language = self.get_language().await;
+        info!(
+            "{}",
+            crate::backend::i18n::get_lsp_text("shutdown_requested", language)
+        );
 
         self.documents.clear();
         self.diagnostics.clear();
@@ -95,35 +132,8 @@ impl LanguageServer for Backend {
         let rope = Rope::from_str(&content);
         self.documents.insert(uri.clone(), (rope, version));
 
-        let client = self.client.clone();
-        let symbol_tables = self.symbol_tables.clone();
-        let diagnostics = self.diagnostics.clone();
-        let uri_clone = uri.clone();
-        let content_clone = content.clone();
-
-        tokio::spawn(async move {
-            let mut diagnostics_vec = Vec::new();
-            let symbol_table = SymbolTable::new();
-
-            if content_clone.trim().is_empty() {
-                diagnostics_vec.push(Diagnostic::new_simple(
-                    Range::new(Position::new(0, 0), Position::new(0, 0)),
-                    "Document is empty".to_string(),
-                ));
-            } else if !content_clone.contains("node") {
-                diagnostics_vec.push(Diagnostic::new_simple(
-                    Range::new(Position::new(0, 0), Position::new(0, 0)),
-                    "The document should contain at least one node definition".to_string(),
-                ));
-            }
-
-            symbol_tables.insert(uri_clone.clone(), symbol_table);
-            diagnostics.insert(uri_clone.clone(), diagnostics_vec.clone());
-
-            let _ = client
-                .publish_diagnostics(uri_clone, diagnostics_vec, None)
-                .await;
-        });
+        // Use the new analyze_document method
+        self.analyze_document(&uri, &content).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
@@ -135,35 +145,8 @@ impl LanguageServer for Backend {
             let rope = Rope::from_str(&content);
             self.documents.insert(uri.clone(), (rope, version));
 
-            let client = self.client.clone();
-            let symbol_tables = self.symbol_tables.clone();
-            let diagnostics = self.diagnostics.clone();
-            let uri_clone = uri.clone();
-            let content_clone = content.clone();
-
-            tokio::spawn(async move {
-                let mut diagnostics_vec = Vec::new();
-                let symbol_table = SymbolTable::new();
-
-                if content_clone.trim().is_empty() {
-                    diagnostics_vec.push(Diagnostic::new_simple(
-                        Range::new(Position::new(0, 0), Position::new(0, 0)),
-                        "Document is empty".to_string(),
-                    ));
-                } else if !content_clone.contains("node") {
-                    diagnostics_vec.push(Diagnostic::new_simple(
-                        Range::new(Position::new(0, 0), Position::new(0, 0)),
-                        "The document should contain at least one node definition".to_string(),
-                    ));
-                }
-
-                symbol_tables.insert(uri_clone.clone(), symbol_table);
-                diagnostics.insert(uri_clone.clone(), diagnostics_vec.clone());
-
-                let _ = client
-                    .publish_diagnostics(uri_clone, diagnostics_vec, None)
-                    .await;
-            });
+            // Use the new analyze_document method
+            self.analyze_document(&uri, &content).await;
         }
     }
 
@@ -306,5 +289,65 @@ impl LanguageServer for Backend {
             result_id: None,
             data: tokens,
         })))
+    }
+
+    async fn execute_command(
+        &self,
+        params: ExecuteCommandParams,
+    ) -> Result<Option<serde_json::Value>> {
+        match params.command.as_str() {
+            "mortar.setLanguage" => {
+                if !params.arguments.is_empty()
+                    && let Some(lang_arg) = params.arguments.first()
+                    && let Ok(lang_str) = serde_json::from_value::<String>(lang_arg.clone())
+                {
+                    let language = match lang_str.as_str() {
+                        "en" | "english" => mortar_compiler::Language::English,
+                        "zh" | "chinese" => mortar_compiler::Language::Chinese,
+                        _ => {
+                            let error_msg = crate::backend::i18n::get_lsp_text(
+                                "unsupported_language_error",
+                                self.get_language().await,
+                            );
+                            return Ok(Some(serde_json::json!({
+                                "error": error_msg
+                            })));
+                        }
+                    };
+
+                    self.set_language(language).await;
+
+                    // Re-analyze all open documents with the new language
+                    let documents_snapshot: Vec<(Uri, String)> = self
+                        .documents
+                        .iter()
+                        .map(|entry| {
+                            let uri = entry.key().clone();
+                            let content = entry.value().0.to_string();
+                            (uri, content)
+                        })
+                        .collect();
+
+                    for (uri, content) in documents_snapshot {
+                        self.analyze_document(&uri, &content).await;
+                    }
+
+                    let success_msg =
+                        crate::backend::i18n::get_lsp_text("language_changed_success", language);
+                    return Ok(Some(serde_json::json!({
+                        "message": success_msg,
+                        "language": lang_str
+                    })));
+                }
+                let error_msg = crate::backend::i18n::get_lsp_text(
+                    "invalid_command_arguments",
+                    self.get_language().await,
+                );
+                Ok(Some(serde_json::json!({
+                    "error": error_msg
+                })))
+            }
+            _ => Ok(None),
+        }
     }
 }

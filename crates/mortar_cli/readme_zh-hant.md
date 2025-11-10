@@ -20,8 +20,11 @@ cargo install mortar_cli
 
 ## 使用方法
 ```bash
-# 基本编译（输出 .mortared 文件）
+# 基本编译（输出 .mortared 文件，其本质上就是 JSON 文件）
 mortar hello.mortar
+
+# 生成带缩进的格式化 JSON
+mortar hello.mortar --pretty
 
 # 指定输出文件
 mortar hello.mortar -o hello.json
