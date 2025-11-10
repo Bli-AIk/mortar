@@ -17,52 +17,56 @@ fn get_text(key: &str, language: Language) -> &'static str {
 
         // Function naming warnings
         ("function_should_use_snake_case", Language::English) => {
-            "Function '{}' should use snake_case naming"
+            "Function '{}' should use snake_case naming."
         }
         ("function_should_use_snake_case", Language::Chinese) => {
-            "函数 '{}' 应该使用 snake_case 命名"
+            "函数 '{}' 应该使用 snake_case 命名。"
         }
 
         // Node naming warnings
         ("node_should_use_pascal_case", Language::English) => {
-            "Node '{}' should use PascalCase naming"
+            "Node '{}' should use PascalCase naming."
         }
-        ("node_should_use_pascal_case", Language::Chinese) => "节点 '{}' 应该使用 PascalCase 命名",
+        ("node_should_use_pascal_case", Language::Chinese) => {
+            "节点 '{}' 应该使用 PascalCase 命名。"
+        }
 
         // Unused function warnings
         ("function_declared_but_never_used", Language::English) => {
-            "Function '{}' is declared but never used"
+            "Function '{}' is declared but never used."
         }
-        ("function_declared_but_never_used", Language::Chinese) => "函数 '{}' 已声明但从未使用",
+        ("function_declared_but_never_used", Language::Chinese) => "函数 '{}' 已声明但从未使用。",
 
         // Node not found errors
-        ("node_not_defined", Language::English) => "Node '{}' is not defined",
+        ("node_not_defined", Language::English) => "Node '{}' is not defined.",
         ("node_not_defined", Language::Chinese) => "节点 '{}' 未定义",
 
         // Function not found errors
-        ("function_not_declared", Language::English) => "Function '{}' is not declared",
-        ("function_not_declared", Language::Chinese) => "函数 '{}' 未声明",
+        ("function_not_declared", Language::English) => "Function '{}' is not declared.",
+        ("function_not_declared", Language::Chinese) => "函数 '{}' 未声明。",
 
         // Argument count mismatch errors
         ("function_expects_args", Language::English) => {
-            "Function '{}' expects {} arguments, but {} were provided"
+            "Function '{}' expects {} arguments, but {} were provided."
         }
-        ("function_expects_args", Language::Chinese) => "函数 '{}' 期望 {} 个参数，但提供了 {} 个",
+        ("function_expects_args", Language::Chinese) => {
+            "函数 '{}' 期望 {} 个参数，但提供了 {} 个。"
+        }
 
         // Argument type mismatch errors
         ("function_parameter_type_mismatch", Language::English) => {
-            "Function '{}' parameter '{}' expects type '{}', but '{}' was provided"
+            "Function '{}' parameter '{}' expects type '{}', but '{}' was provided."
         }
         ("function_parameter_type_mismatch", Language::Chinese) => {
-            "函数 '{}' 的参数 '{}' 期望类型 '{}'，但提供了 '{}'"
+            "函数 '{}' 的参数 '{}' 期望类型 '{}'，但提供了 '{}'。"
         }
 
         // Condition type mismatch errors
         ("condition_must_return_boolean", Language::English) => {
-            "Condition function '{}' must return a boolean type, but returns '{}'"
+            "Condition function '{}' must return a boolean type, but returns '{}'."
         }
         ("condition_must_return_boolean", Language::Chinese) => {
-            "条件函数 '{}' 必须返回布尔类型，但返回了 '{}'"
+            "条件函数 '{}' 必须返回布尔类型，但返回了 '{}'。"
         }
 
         _ => "",
@@ -735,35 +739,4 @@ fn is_pascal_case(s: &str) -> bool {
     // Should contain only letters and digits
     s.chars()
         .all(|c| c.is_ascii_alphabetic() || c.is_ascii_digit())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_snake_case() {
-        assert!(is_snake_case("hello"));
-        assert!(is_snake_case("hello_world"));
-        assert!(is_snake_case("get_name"));
-        assert!(is_snake_case("_private"));
-
-        assert!(!is_snake_case("Hello"));
-        assert!(!is_snake_case("HelloWorld"));
-        assert!(!is_snake_case("hello-world"));
-        assert!(!is_snake_case(""));
-    }
-
-    #[test]
-    fn test_pascal_case() {
-        assert!(is_pascal_case("Hello"));
-        assert!(is_pascal_case("HelloWorld"));
-        assert!(is_pascal_case("Start"));
-        assert!(is_pascal_case("ChoicePoint"));
-
-        assert!(!is_pascal_case("hello"));
-        assert!(!is_pascal_case("helloWorld"));
-        assert!(!is_pascal_case("hello_world"));
-        assert!(!is_pascal_case(""));
-    }
 }

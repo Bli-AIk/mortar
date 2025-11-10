@@ -4,9 +4,6 @@ pub mod parser;
 pub mod serializer;
 pub mod token;
 
-#[cfg(test)]
-mod tests;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Language {
     English,
@@ -20,3 +17,6 @@ pub use parser::{
 };
 pub use serializer::Serializer;
 pub use token::{Token, TokenInfo, tokenize};
+
+#[cfg(test)]
+mod tests;

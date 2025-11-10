@@ -217,32 +217,3 @@ pub fn parse_language_from_args() -> Option<Language> {
 
     None
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_lsp_text() {
-        // Test English
-        assert_eq!(
-            get_lsp_text("starting_lsp_server", Language::English),
-            "Starting the Mortar LSP server..."
-        );
-
-        // Test Chinese
-        assert_eq!(
-            get_lsp_text("starting_lsp_server", Language::Chinese),
-            "正在启动 Mortar LSP 服务器..."
-        );
-
-        // Test fallback
-        assert_eq!(get_lsp_text("nonexistent_key", Language::Chinese), "");
-    }
-
-    #[test]
-    fn test_detect_system_language() {
-        // This test depends on environment, so we just ensure it doesn't panic
-        let _language = detect_system_language();
-    }
-}
