@@ -179,13 +179,13 @@ The compiler now generates compressed JSON by default for optimal file size and 
 
 ## Development Progress
 
-Features to be implemented:
+Features:
 
 * ✅ **Command Line Tool**: Complete CLI compiler
 * ✅ **Lexer**: High-performance tokenization using logos
 * ✅ **Parsing Framework**: Support for complete token parsing
 * ✅ **AST Structure**: Complete Abstract Syntax Tree definition
-* 🚧 **Error Handling**: `ariadne` friendly error reporting
+* ✅ **Error Handling**: `ariadne` friendly error reporting
 * ✅ **JSON Output**: Standardized output format
 * ✅ **Language Server**: IDE integration and syntax highlighting
 
