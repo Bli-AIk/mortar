@@ -250,9 +250,9 @@ cargo install mortar_lsp
 
 # 在 Cargo.toml 中作为库依赖使用
 [dependencies]
-mortar_language = "0.2"
+mortar_language = "0.3"
 # 或使用单个组件
-mortar_compiler = "0.2"
+mortar_compiler = "0.3"
 ```
 
 ## 许可协议

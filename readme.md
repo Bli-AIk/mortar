@@ -263,9 +263,9 @@ cargo install mortar_lsp
 
 # Use as library dependency in Cargo.toml
 [dependencies]
-mortar_language = "0.2"
+mortar_language = "0.3"
 # Or use individual components
-mortar_compiler = "0.2"
+mortar_compiler = "0.3"
 ```
 
 ## License
