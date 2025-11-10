@@ -1,0 +1,42 @@
+[book]
+title = "Mortar Language Guide"
+authors = ["Bli-AIk"]
+description = "A comprehensive guide to the Mortar Domain Specific Language"
+src = "src"
+language = "en"
+multilingual = true
+
+[output.html]
+default-theme = "latte"
+preferred-dark-theme = "mocha"
+theme = "./theme"
+git-repository-url = "https://github.com/Bli-AIk/mortar"
+git-repository-icon = "fa-github"
+edit-url-template = "https://github.com/Bli-AIk/mortar/edit/main/docs/{path}"
+additional-css = ["./theme/catppuccin-complete.css", "./theme/catppuccin.css", "./theme/catppuccin-admonish.css"]
+
+[output.html.search]
+enable = true
+
+[output.html.print]
+enable = true
+
+[output.html.playground]
+runnable = false
+
+[output.html.redirect]
+"/index.html" = "/en/index.html"
+
+[build]
+build-dir = "../book/en"
+
+[preprocessor.links]
+
+[preprocessor.index]
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[preprocessor.admonish]
+command = "mdbook-admonish"
+assets_version = "3.0.1"

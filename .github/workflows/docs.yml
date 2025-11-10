@@ -1,0 +1,107 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'docs/**' ]
+  pull_request:
+    branches: [ main ]
+    paths: [ 'docs/**' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Setup mdBook
+      uses: peaceiris/actions-mdbook@v2
+      with:
+        mdbook-version: 'latest'
+
+    - name: Install mdBook plugins
+      run: |
+        cargo install mdbook-mermaid
+        cargo install mdbook-admonish
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: Build English docs
+      run: |
+        cd docs
+        mdbook build
+
+    - name: Build Chinese docs  
+      run: |
+        # Copy theme to Chinese docs directory for proper path resolution
+        cp -r docs/theme docs/zh-Hans/
+        cd docs/zh-Hans
+        mdbook build
+
+    - name: Prepare deployment structure
+      run: |
+        mkdir -p _site
+        cp -r docs/book/en/* _site/
+        mkdir -p _site/zh-Hans
+        cp -r docs/book/zh-Hans/* _site/zh-Hans/
+        
+        # Create index redirect
+        cat > _site/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Redirecting...</title>
+          <script>
+            // Detect language preference and redirect
+            const lang = navigator.language || navigator.userLanguage;
+            if (lang.startsWith('zh')) {
+              window.location.replace('./zh-Hans/');
+            } else {
+              window.location.replace('./en/');
+            }
+          </script>
+          <meta http-equiv="refresh" content="0; url=./en/">
+        </head>
+        <body>
+          <p>If you are not redirected automatically, follow these links:</p>
+          <ul>
+            <li><a href="./en/">English Documentation</a></li>
+            <li><a href="./zh-Hans/">中文文档</a></li>
+          </ul>
+        </body>
+        </html>
+        EOF
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '_site'
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
