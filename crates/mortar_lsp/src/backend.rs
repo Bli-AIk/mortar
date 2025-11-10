@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use dashmap::DashMap;
+use mortar_compiler::Language;
 use ropey::Rope;
 use tokio::sync::RwLock;
 use tower_lsp_server::Client;
@@ -17,6 +18,7 @@ pub struct Backend {
     pub documents: Arc<DashMap<Uri, (Rope, Option<i32>)>>,
     pub diagnostics: Arc<DashMap<Uri, Vec<Diagnostic>>>,
     pub symbol_tables: Arc<DashMap<Uri, SymbolTable>>,
+    pub language: Arc<RwLock<Language>>,
 }
 
 impl Backend {
@@ -27,31 +29,56 @@ impl Backend {
             documents: Arc::new(DashMap::new()),
             diagnostics: Arc::new(DashMap::new()),
             symbol_tables: Arc::new(DashMap::new()),
+            language: Arc::new(RwLock::new(Language::English)), // Default to English
         }
+    }
+
+    /// Set the language for diagnostics
+    pub async fn set_language(&self, language: Language) {
+        let mut lang = self.language.write().await;
+        *lang = language;
+    }
+
+    /// Get the current language
+    pub async fn get_language(&self) -> Language {
+        *self.language.read().await
     }
 
     /// Clear all cached data
     pub async fn cleanup(&self) {
-        info!("Start cleaning up LSP server resources...");
+        let language = self.get_language().await;
+        info!("{}", i18n::get_lsp_text("cleanup_resources", language));
 
         let documents_count = self.documents.len();
         self.documents.clear();
-        info!("{} documents cleaned", documents_count);
+        info!(
+            "{} {}",
+            documents_count,
+            i18n::get_lsp_text("documents_cleaned", language)
+        );
 
         let diagnostics_count = self.diagnostics.len();
         self.diagnostics.clear();
-        info!("Cleaned {} diagnostic messages", diagnostics_count);
+        info!(
+            "{} {}",
+            diagnostics_count,
+            i18n::get_lsp_text("diagnostics_cleaned", language)
+        );
 
         let symbols_count = self.symbol_tables.len();
         self.symbol_tables.clear();
-        info!("Cleaned {} symbol tables", symbols_count);
+        info!(
+            "{} {}",
+            symbols_count,
+            i18n::get_lsp_text("symbols_cleaned", language)
+        );
 
         {
             let mut files = self.files.write().await;
             *files = Files::new();
         }
 
-        info!("LSP server resource cleanup completed");
+        info!("{}", i18n::get_lsp_text("cleanup_completed", language));
     }
 
     /// Simplified cleanup operations to avoid asynchronous blocking
@@ -124,7 +151,12 @@ impl Backend {
     }
 }
 
-// Re-export the modules from backend/ directory
+#[path = "backend/i18n.rs"]
+pub mod i18n;
+
+#[path = "backend/diagnostics.rs"]
+pub mod diagnostics;
+
 #[path = "backend/completion.rs"]
 mod completion;
 
@@ -138,3 +170,5 @@ mod document_analysis;
 mod lsp_handlers;
 
 pub use completion::CompletionContext;
+pub use diagnostics::{convert_diagnostics_to_lsp, parse_with_diagnostics};
+pub use i18n::{detect_system_language, parse_language_from_args};

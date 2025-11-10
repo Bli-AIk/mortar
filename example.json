@@ -97,32 +97,32 @@
       "choice": [
         {
           "text": "探索森林",
-          "next": "forest_scene"
+          "next": "ForestScene"
         },
         {
           "text": "留在城里",
           "condition": {
             "type": "has_map"
           },
-          "next": "town_scene"
+          "next": "TownScene"
         },
         {
           "text": "查看背包",
           "condition": {
             "type": "has_backpack"
           },
-          "next": "inventory"
+          "next": "Inventory"
         },
         {
           "text": "吃点什么",
           "choice": [
             {
               "text": "Apple",
-              "next": "eat_apple"
+              "next": "EatApple"
             },
             {
               "text": "Bread",
-              "next": "eat_bread"
+              "next": "EatBread"
             }
           ]
         },

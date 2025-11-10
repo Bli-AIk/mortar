@@ -1,4 +1,3 @@
-use owo_colors::OwoColorize;
 use std::fs;
 use std::io;
 
@@ -31,14 +30,6 @@ pub struct FileHandler;
 impl FileHandler {
     /// Read and validate the source file
     pub fn read_source_file(path: &str) -> Result<String, FileError> {
-        fs::read_to_string(path).map_err(|e| {
-            eprintln!();
-            eprintln!(
-                "{} {}",
-                format!("Failed to read '{}':", path).bright_red(),
-                e
-            );
-            FileError::from(e)
-        })
+        fs::read_to_string(path).map_err(FileError::from)
     }
 }

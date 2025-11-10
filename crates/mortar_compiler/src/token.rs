@@ -89,6 +89,13 @@ pub enum Token<'a> {
     })]
     String(&'a str),
 
+    // Interpolated string: $"text {expression} more text"
+    #[regex(r#"\$"([^"\\]|\\.)*""#, |lex| {
+        let s = lex.slice();
+        &s[2..s.len()-1] // Remove $" and "
+    })]
+    InterpolatedString(&'a str),
+
     #[regex(r"[0-9]+(\.[0-9]+)?")]
     Number(&'a str),
 
@@ -176,6 +183,7 @@ impl fmt::Display for Token<'_> {
             RightParen => write!(f, ")"),
 
             String(s) => write!(f, "\"{}\"", s),
+            InterpolatedString(s) => write!(f, "$\"{}\"", s),
             Number(s) => write!(f, "{}", s),
             Identifier(s) => write!(f, "{}", s),
         }
@@ -203,5 +211,24 @@ pub(crate) fn lex_with_output(input: &str) -> Vec<Token<'_>> {
     }
 
     println!("\n");
+    tokens
+}
+
+#[allow(dead_code)]
+pub(crate) fn lex_silent(input: &str) -> Vec<Token<'_>> {
+    let lex = Token::lexer(input);
+    let mut tokens = Vec::new();
+
+    for result in lex {
+        match result {
+            Ok(token) => {
+                tokens.push(token);
+            }
+            Err(_) => {
+                break;
+            }
+        }
+    }
+
     tokens
 }
