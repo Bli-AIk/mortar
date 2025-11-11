@@ -1,0 +1,195 @@
+/* Catppuccin Theme for mdBook - Complete theme file */
+
+/* Latte (Light) Theme */
+.latte {
+    --bg: #eff1f5;
+    --fg: #4c4f69;
+
+    --sidebar-bg: #e6e9ef;
+    --sidebar-fg: #4c4f69;
+    --sidebar-non-existant: #6c6f85;
+    --sidebar-active: #1e66f5;
+    --sidebar-spacer: #ccd0da;
+
+    --scrollbar: #acb0be;
+
+    --icons: #6c6f85;
+    --icons-hover: #4c4f69;
+
+    --links: #1e66f5;
+
+    --inline-code-color: #d20f39;
+
+    --theme-popup-bg: #e6e9ef;
+    --theme-popup-border: #ccd0da;
+    --theme-hover: #dce0e8;
+
+    --quote-bg: #e6e9ef;
+    --quote-border: #8839ef;
+
+    --warning-border: #df8e1d;
+
+    --table-border-color: #ccd0da;
+    --table-header-bg: #dce0e8;
+    --table-alternate-bg: #eff1f5;
+
+    --searchbar-border-color: #ccd0da;
+    --searchbar-bg: #e6e9ef;
+    --searchbar-fg: #4c4f69;
+    --searchbar-drop-bg: #dce0e8;
+    --searchbar-drop-border: #8839ef;
+    --search-mark-bg: #fe640b;
+}
+
+/* Frappé Theme */
+.frappe {
+    --bg: #303446;
+    --fg: #c6d0f5;
+
+    --sidebar-bg: #292c3c;
+    --sidebar-fg: #c6d0f5;
+    --sidebar-non-existant: #737994;
+    --sidebar-active: #8caaee;
+    --sidebar-spacer: #414559;
+
+    --scrollbar: #626880;
+
+    --icons: #737994;
+    --icons-hover: #c6d0f5;
+
+    --links: #8caaee;
+
+    --inline-code-color: #e78284;
+
+    --theme-popup-bg: #292c3c;
+    --theme-popup-border: #414559;
+    --theme-hover: #414559;
+
+    --quote-bg: #292c3c;
+    --quote-border: #ca9ee6;
+
+    --warning-border: #e5c890;
+
+    --table-border-color: #414559;
+    --table-header-bg: #414559;
+    --table-alternate-bg: #292c3c;
+
+    --searchbar-border-color: #414559;
+    --searchbar-bg: #292c3c;
+    --searchbar-fg: #c6d0f5;
+    --searchbar-drop-bg: #414559;
+    --searchbar-drop-border: #ca9ee6;
+    --search-mark-bg: #ef9f76;
+}
+
+/* Macchiato Theme */
+.macchiato {
+    --bg: #24273a;
+    --fg: #cad3f5;
+
+    --sidebar-bg: #1e2030;
+    --sidebar-fg: #cad3f5;
+    --sidebar-non-existant: #6e738d;
+    --sidebar-active: #8aadf4;
+    --sidebar-spacer: #363a4f;
+
+    --scrollbar: #5b6078;
+
+    --icons: #6e738d;
+    --icons-hover: #cad3f5;
+
+    --links: #8aadf4;
+
+    --inline-code-color: #ed8796;
+
+    --theme-popup-bg: #1e2030;
+    --theme-popup-border: #363a4f;
+    --theme-hover: #363a4f;
+
+    --quote-bg: #1e2030;
+    --quote-border: #c6a0f6;
+
+    --warning-border: #eed49f;
+
+    --table-border-color: #363a4f;
+    --table-header-bg: #363a4f;
+    --table-alternate-bg: #1e2030;
+
+    --searchbar-border-color: #363a4f;
+    --searchbar-bg: #1e2030;
+    --searchbar-fg: #cad3f5;
+    --searchbar-drop-bg: #363a4f;
+    --searchbar-drop-border: #c6a0f6;
+    --search-mark-bg: #f5a97f;
+}
+
+/* Mocha (Dark) Theme */
+.mocha {
+    --bg: #1e1e2e;
+    --fg: #cdd6f4;
+
+    --sidebar-bg: #181825;
+    --sidebar-fg: #cdd6f4;
+    --sidebar-non-existant: #6c7086;
+    --sidebar-active: #89b4fa;
+    --sidebar-spacer: #313244;
+
+    --scrollbar: #585b70;
+
+    --icons: #6c7086;
+    --icons-hover: #cdd6f4;
+
+    --links: #89b4fa;
+
+    --inline-code-color: #f38ba8;
+
+    --theme-popup-bg: #181825;
+    --theme-popup-border: #313244;
+    --theme-hover: #313244;
+
+    --quote-bg: #181825;
+    --quote-border: #cba6f7;
+
+    --warning-border: #f9e2af;
+
+    --table-border-color: #313244;
+    --table-header-bg: #313244;
+    --table-alternate-bg: #181825;
+
+    --searchbar-border-color: #313244;
+    --searchbar-bg: #181825;
+    --searchbar-fg: #cdd6f4;
+    --searchbar-drop-bg: #313244;
+    --searchbar-drop-border: #cba6f7;
+    --search-mark-bg: #fab387;
+}
+
+/* Additional Catppuccin styles */
+.latte .nav-chapters,
+.frappe .nav-chapters,
+.macchiato .nav-chapters,
+.mocha .nav-chapters {
+    color: var(--fg);
+}
+
+.latte .chapter li.part-title,
+.frappe .chapter li.part-title,
+.macchiato .chapter li.part-title,
+.mocha .chapter li.part-title {
+    color: var(--fg);
+    opacity: 0.8;
+}
+
+.latte .chapter li a,
+.frappe .chapter li a,
+.macchiato .chapter li a,
+.mocha .chapter li a {
+    color: var(--fg);
+}
+
+.latte .chapter li a:hover,
+.frappe .chapter li a:hover,
+.macchiato .chapter li a:hover,
+.mocha .chapter li a:hover {
+    color: var(--sidebar-active);
+}

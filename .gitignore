@@ -1,1 +1,40 @@
 /target
+
+# mdBook build outputs
+book/
+**/book/
+
+# mdBook temporary files
+.mdbook-*
+
+# Theme backup files
+theme-backup/
+temp-theme/
+
+# Node modules (if using npm for preprocessors)
+node_modules/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Preprocessor outputs
+mermaid-*
+admonish-*

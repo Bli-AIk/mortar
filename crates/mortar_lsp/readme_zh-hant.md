@@ -7,8 +7,6 @@
 
 <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
 
-> **当前状态**：🚧 早期开发中（初始版本正在开发）
-
 ![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar LSP** 是 Mortar 语言的语言服务器协议 (LSP) 实现。它提供 IDE 集成功能，如语法高亮、错误报告、自动补全等。

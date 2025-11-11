@@ -7,8 +7,6 @@
 
 <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
 
-> **Current Status**: 🚧 Early Development (Initial version in progress)
-
 ![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar LSP** is the Language Server Protocol (LSP) implementation for the Mortar language. It provides IDE integration features such as syntax highlighting, error reporting, auto-completion, and more.

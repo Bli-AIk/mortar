@@ -7,8 +7,6 @@
 
 <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
 
-> **Current Status**: 🚧 Early Development (Initial version in progress)
-
 ![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar** is a Domain Specific Language (DSL) designed for game dialogue and text event systems. Its core philosophy is
@@ -30,6 +28,10 @@ but its key distinction is:
 * **Event Part**: System execution commands, used to control presentation effects, independent of text content;
 * **Mortar Language Itself**: Provides an elegant bridge, allowing the two to be clearly associated and remain
   unpolluted.
+
+> `Mortar Language` is a derivative of the SoupRune project and is the language of choice for dialogue systems.
+>
+> SoupRune is a game framework specifically for Deltarune / Undertale Fangame.  [Learn more](https://github.com/Bli-AIk/souprune).
 
 ## Design Goals
 
