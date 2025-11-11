@@ -26,6 +26,10 @@ Mortar 的灵感来自 [ink](https://github.com/inkle/ink) 与 [Yarn Spinner](ht
 * **事件部分**：系统执行指令，用于控制呈现效果，与文本内容无关；
 * **Mortar 语言本身**：提供一种优雅的桥梁，让两者能清晰关联、互不污染。
 
+> `Mortar Language` 是 SoupRune 项目的衍生工具，是对话系统的首选语言。
+>
+> SoupRune 是专门针对 Deltarune / Undertale Fangame 的游戏框架。[了解更多](https://github.com/Bli-AIk/souprune)。
+
 ## 设计目标
 
 Mortar 的设计遵循以下核心原则：**内容分离、语义清晰、程序友好、静态类型。**

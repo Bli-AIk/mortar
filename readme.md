@@ -29,6 +29,10 @@ but its key distinction is:
 * **Mortar Language Itself**: Provides an elegant bridge, allowing the two to be clearly associated and remain
   unpolluted.
 
+> `Mortar Language` is a derivative of the SoupRune project and is the language of choice for dialogue systems.
+>
+> SoupRune is a game framework specifically for Deltarune / Undertale Fangame.  [Learn more](https://github.com/Bli-AIk/souprune).
+
 ## Design Goals
 
 Mortar's design adheres to the following core principles: **Content Separation, Clear Semantics, Program Friendly,
