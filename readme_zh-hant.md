@@ -7,8 +7,6 @@
 
 <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
 
-> **当前状态**：🚧 早期开发中（初始版本正在开发）
-
 ![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar** 是一个为游戏对话与文字事件系统设计的领域特定语言（DSL），核心理念是实现 **文本内容与事件逻辑的严格分离**。
