@@ -14,19 +14,19 @@ Mortar 编译后生成的是标准 JSON 格式，这一章详细说明 JSON 的�
 
 有三个顶层字段：
 
-- **nodes** - 所有对话节点
+- **node Dialogue节点
 - **functions** - 函数声明列表
 - **metadata** - 元数据（版本等）
 
 ## nodes 字段
 
-一个字典（对象），键是节点名，值是节点数据：
+一个字典（对象），键是"NodeName"，值是节点数据：
 
 ```json
 {
   "nodes": {
-    "节点名1": { ... },
-    "节点名2": { ... }
+    "NodeName1": { ... },
+    "NodeName2": { ... }
   }
 }
 ```
@@ -397,7 +397,7 @@ fn simple_func()
 ### 有参数无返回
 
 ```mortar
-fn play_sound(filename: String)
+fn play_sound(file_name: String)
 ```
 
 生成：
@@ -473,7 +473,7 @@ fn complex_func(a: String, b: Number, c: Bool) -> Bool
 ### Mortar 源文件
 
 ```mortar
-node 开始 {
+node StartScene {
     text: "你好！"
     events: [
         0, play_sound("hi.wav")
@@ -482,16 +482,16 @@ node 开始 {
     text: $"你的名字是{get_name()}吗？"
     
     choice: [
-        "是的" -> 确认,
-        "不是" -> 否认
+        "是的" -> Confirm,
+        "不是" -> Deny
     ]
 }
 
-node 确认 {
+node Confirm {
     text: "很高兴认识你！"
 }
 
-node 否认 {
+node Deny {
     text: "哦，那你叫什么？"
 }
 

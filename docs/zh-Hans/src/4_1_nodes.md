@@ -5,25 +5,49 @@
 ## 最简单的节点
 
 ```mortar
-node 开场 {
+node OpeningScene {
     text: "你好，世界！"
 }
 ```
 
 就这么简单！一个节点需要：
 - `node` 关键字（也可以简写成 `nd`）
-- 一个名字（这里是"开场"）
+- 一个名字（这里是 `OpeningScene`）
 - 大括号 `{}` 里面的内容
 
-## 节点名称规则
+## 节点命名规范
 
-节点名可以是：
-- **中文**：`node 开场 {}`
-- **英文**：`node Start {}`  
-- **数字**：`node Scene1 {}`
-- **下划线**：`node first_scene {}`
+> **⚠️ 重要：推荐使用大驼峰命名法（PascalCase）**
 
-建议用有意义的名字，让人一看就知道这是干什么的。
+**✅ 推荐的命名方式**：
+```mortar
+node OpeningScene { }       // 大驼峰：每个单词首字母大写
+node ForestEntrance { }     // 清晰易读
+node BossDialogue { }       // 见名知意
+node Chapter1Start { }      // 可以包含数字
+```
+
+**⚠️ 不推荐的命名方式**：
+```mortar
+node 开场 { }              // 避免使用中文
+node opening_scene { }    // 不要用蛇形命名（这是函数的风格）
+node openingscene { }     // 全小写不易阅读
+node opening-scene { }    // 不能使用短横线
+node 1stScene { }         // 不能以数字开头
+```
+
+**命名建议**：
+- 使用英文单词组合
+- 每个单词首字母大写
+- 名字要有意义，能够描述节点的用途
+- 避免使用特殊字符和非ASCII字符
+- 保持项目内命名风格一致
+
+**技术原因**：
+- 标准命名便于代码维护和团队协作
+- 避免不同操作系统和编辑器的编码问题
+- 与主流编程语言的命名习惯一致
+- 便于在代码中引用和跳转
 
 ## 节点里能放什么？
 
@@ -32,7 +56,7 @@ node 开场 {
 ### 1. 文本块
 
 ```mortar
-node 对话 {
+node Dialogue {
     text: "这是第一句话。"
     text: "这是第二句话。"
     text: "还可以有第三句。"
@@ -44,7 +68,7 @@ node 对话 {
 ### 2. 事件列表
 
 ```mortar
-node 对话 {
+node Dialogue {
     text: "你好呀！"
     events: [
         0, play_sound("hi.wav")
@@ -60,8 +84,8 @@ node 选择 {
     text: "你想去哪？"
     
     choice: [
-        "森林" -> 森林场景,
-        "城镇" -> 城镇场景
+        "森林" -> ForestScene场景,
+        "城镇" -> TownScene场景
     ]
 }
 ```
@@ -179,7 +203,7 @@ node 快速选择 {
 ### 分段式对话
 
 ```mortar
-node 长对话 {
+node Dialogue {
     text: "嗨，很高兴见到你。"
     
     // 第一个选择点
@@ -197,8 +221,8 @@ node 长对话 {
 
 ## 常见问题
 
-### Q: 节点名可以重复吗？
-不行！每个节点名必须唯一。
+### Q: "NodeName"可以重复吗？
+不行！每个"NodeName"必须唯一。
 
 ### Q: 节点顺序重要吗？
 不重要。你可以先定义节点 B，后定义节点 A，只要跳转关系对就行。

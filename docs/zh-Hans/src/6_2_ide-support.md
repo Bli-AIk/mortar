@@ -51,7 +51,7 @@ code --install-extension mortar-language-0.1.0.vsix
 
 ```mortar
 // ← 这是注释（灰色）
-node 开始 {  // ← 'node' 是关键字（蓝色），'开始' 是标识符
+node StartScene {  // ← 'node' 是关键字（蓝色），'开始' 是标识符
     text: "你好！"  // ← 'text' 是关键字，字符串是绿色
     events: [  // ← 'events' 是关键字
         0, play_sound("hi.wav")  // ← 函数名特殊高亮
@@ -89,7 +89,7 @@ node ${1:NodeName} {
 自动高亮匹配的括号，方便查看嵌套层级：
 
 ```mortar
-node Test {  // ← 点击这里
+node TestNode {  // ← 点击这里
     choice: [
         "选项" -> [  // ← 自动高亮对应的括号
             "子选项" -> A
@@ -103,7 +103,7 @@ node Test {  // ← 点击这里
 按下 `Enter` 时自动缩进到合适的位置：
 
 ```mortar
-node Test {
+node TestNode {
     text: "内容"
     events: [
         ← 光标自动缩进到这里
@@ -170,7 +170,7 @@ cargo install mortar_lsp
 在你编辑时就能发现错误，不用等到编译：
 
 ```mortar
-node Test {
+node TestNode {
     text: "你好
     // ↑ 这里会显示红色波浪线：缺少引号
 }
@@ -185,7 +185,7 @@ node Another {
 
 #### 2. 跳转到定义
 
-按住 `Ctrl`/`Cmd` 点击节点名或函数名，跳转到定义处：
+按住 `Ctrl`/`Cmd` 点击"NodeName"或函数名，跳转到定义处：
 
 ```mortar
 node Start {
@@ -217,7 +217,7 @@ fn play_sound(file: String)  // ← 右键这里
 输入时自动提示：
 
 - 关键字：`node`, `text`, `events` 等
-- 已定义的节点名
+- 已定义的"NodeName"
 - 已声明的函数名
 - 类型名：`String`, `Bool`, `Number`
 
@@ -239,7 +239,7 @@ node Start {
 ```mortar
 fn get_name() -> String
 
-node Test {
+node TestNode {
     text: $"你好，{get_name()}！"
                      ↑
     // 悬停显示：fn get_name() -> String

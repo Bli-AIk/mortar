@@ -41,18 +41,18 @@ Mortar 特别适合这些场景：
 这是一段 Mortar 代码的样子：
 
 ```mortar
-node 开场 {
+node OpeningScene {
     text: "欢迎来到魔法世界！"
     events: [
-        0, play_sound("魔法音效.wav")
+        0, play_sound("magic_sound.wav")
         7, sparkle_effect()
     ]
     
     text: "准备好开始冒险了吗？"
     
     choice: [
-        "当然，我准备好了！" -> 冒险开始,
-        "让我再想想..." -> 犹豫不决
+        "当然，我准备好了！" -> AdventureStart,
+        "让我再想想..." -> Hesitate
     ]
 }
 ```

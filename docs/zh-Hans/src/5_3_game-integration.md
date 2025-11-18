@@ -29,7 +29,7 @@
 创建 `simple.mortar`：
 
 ```mortar
-node 开始 {
+node StartScene {
     text: "你好！"
     events: [
         0, play_sound("hi.wav")
@@ -38,16 +38,16 @@ node 开始 {
     text: $"你是{get_name()}吗？"
     
     choice: [
-        "是的" -> 确认,
-        "不是" -> 否认
+        "是的" -> Confirm,
+        "不是" -> Deny
     ]
 }
 
-node 确认 {
+node Confirm {
     text: "很高兴见到你！"
 }
 
-node 否认 {
+node Deny {
     text: "哦，抱歉认错人了。"
 }
 
@@ -196,7 +196,7 @@ public class DialogueManager : MonoBehaviour {
     public void LoadDialogue(string jsonPath) {
         string json = File.ReadAllText(jsonPath);
         dialogue = JsonUtility.FromJson<MortarDialogue>(json);
-        Debug.Log($"加载了 {dialogue.nodes.Count} 个对话节点");
+        Debug.Log($"加载了 {dialogue.node Dialogue节点");
     }
 }
 ```
@@ -622,7 +622,7 @@ func check_has_item() -> bool:
 A: 按场景/章节拆分成多个文件，按需加载。
 
 ### Q: 怎么实现存档？
-A: 保存当前节点名和相关变量即可恢复对话进度。
+A: 保存当前"NodeName"和相关变量即可恢复对话进度。
 
 ### Q: 怎么支持快进？
 A: 跳过打字机效果，直接显示完整文本，快速触发所有事件。

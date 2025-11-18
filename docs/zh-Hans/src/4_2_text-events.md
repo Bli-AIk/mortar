@@ -34,7 +34,7 @@ events: [
 ### 最简单的文本
 
 ```mortar
-node 示例 {
+node Example {
     text: "这是一段文本。"
 }
 ```
@@ -42,7 +42,7 @@ node 示例 {
 ### 多段文本
 
 ```mortar
-node 对话 {
+node Dialogue {
     text: "第一句话。"
     text: "第二句话。"
     text: "第三句话。"
@@ -198,7 +198,7 @@ node 旁白 {
 ### 语音同步动画
 
 ```mortar
-node 语音对话 {
+node Dialogue {
     text: "我要告诉你一个秘密..."
     events: [
         0.0, play_voice("secret.wav")

@@ -9,16 +9,16 @@ node 选择 {
     text: "你想去哪？"
     
     choice: [
-        "森林" -> 森林场景,
-        "城镇" -> 城镇场景
+        "森林" -> ForestScene场景,
+        "城镇" -> TownScene场景
     ]
 }
 
-node 森林场景 {
+node ForestScene场景 {
     text: "你来到了森林。"
 }
 
-node 城镇场景 {
+node TownScene场景 {
     text: "你来到了城镇。"
 }
 ```

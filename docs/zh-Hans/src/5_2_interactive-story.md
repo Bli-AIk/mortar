@@ -13,7 +13,7 @@
 
 ```mortar
 // ========== 开场 ==========
-node 开场 {
+node OpeningScene {
     text: "夜幕降临，你独自走在幽暗的森林中。"
     events: [
         0, play_ambient("forest_night.ogg"),
@@ -28,14 +28,14 @@ node 开场 {
     text: "你走近一看，是一池闪闪发光的泉水..."
     
     choice: [
-        "谨慎地观察" -> 观察泉水,
-        "直接喝一口" -> 直接饮用,
-        "离开这里" -> 选择离开
+        "谨慎地观察" -> ObserveSpring,
+        "直接喝一口" -> DirectDrink,
+        "离开这里" -> ChooseLeave
     ]
 }
 
 // ========== 观察分支 ==========
-node 观察泉水 {
+node ObserveSpring {
     text: "你蹲下身，仔细观察这池泉水。"
     text: "水面上浮现出古老的文字..."
     events: [
@@ -45,15 +45,15 @@ node 观察泉水 {
     text: "文字说：'饮此圣泉者，将获得真知与力量。'"
     
     choice: [
-        "那我就喝吧" -> 谨慎饮用,
-        "感觉有点可怕，还是走吧" -> 选择离开,
+        "那我就喝吧" -> CautiousDrink,
+        "感觉有点可怕，还是走吧" -> ChooseLeave,
         
         // 带装备的玩家有特殊选项
-        "用魔法瓶收集泉水" when has_magic_bottle() -> 收集泉水
+        "用魔法瓶收集泉水" when has_magic_bottle() -> CollectWater
     ]
 }
 
-node 谨慎饮用 {
+node CautiousDrink {
     text: "你小心翼翼地捧起一点泉水，轻轻啜了一口。"
     events: [
         7, play_sound("drink_water.wav")
@@ -67,9 +67,9 @@ node 谨慎饮用 {
     
     text: $"你感觉到力量在增长... 力量值提升了 {get_power_bonus()} 点！"
     
-} -> 好结局_力量
+} -> GoodEndingPower
 
-node 收集泉水 {
+node CollectWater {
     text: "你拿出珍贵的魔法瓶，小心地收集了泉水。"
     events: [
         0, play_sound("bottle_fill.wav"),
@@ -78,10 +78,10 @@ node 收集泉水 {
     
     text: "这可是无价之宝，关键时刻能救命！"
     
-} -> 好结局_智慧
+} -> GoodEndingWisdom
 
 // ========== 直接饮用分支 ==========
-node 直接饮用 {
+node DirectDrink {
     text: "不管三七二十一，你直接痛饮了一大口！"
     events: [
         12, play_sound("gulp.wav")
@@ -92,14 +92,14 @@ node 直接饮用 {
     // 检查玩家是否有足够的抗性
     choice: [
         // 有抗性：没事
-        "（继续）" when has_magic_resistance() -> 直接饮用_成功,
+        "（继续）" when has_magic_resistance() -> DirectDrinkSuccess,
         
         // 没有抗性：糟糕
-        "（继续）" -> 直接饮用_失败
+        "（继续）" -> DirectDrinkFail
     ]
 }
 
-node 直接饮用_成功 {
+node DirectDrinkSuccess {
     text: "多亏你强大的魔法抗性，泉水的力量被完美吸收了！"
     events: [
         0, play_sound("success.wav")
@@ -107,9 +107,9 @@ node 直接饮用_成功 {
     
     text: "你感到前所未有的强大！"
     
-} -> 好结局_力量
+} -> GoodEndingPower
 
-node 直接饮用_失败 {
+node DirectDrinkFail {
     text: "糟糕！魔力太强了，你的身体承受不住！"
     events: [
         0, screen_shake(),
@@ -118,10 +118,10 @@ node 直接饮用_失败 {
     
     text: "你眼前一黑，倒在了地上..."
     
-} -> 坏结局_昏迷
+} -> BadEndingUnconscious
 
 // ========== 离开分支 ==========
-node 选择离开 {
+node ChooseLeave {
     text: "你决定还是保持谨慎，离开这个神秘的地方。"
     
     text: "走了几步，你回头看了一眼..."
@@ -131,10 +131,10 @@ node 选择离开 {
         18, fade_out_effect()
     ]
     
-} -> 普通结局_谨慎
+} -> NormalEndingCautious
 
 // ========== 结局节点 ==========
-node 好结局_力量 {
+node GoodEndingPower {
     text: "=== 结局：力量觉醒 ==="
     events: [
         0, play_music("victory_theme.ogg")
@@ -147,7 +147,7 @@ node 好结局_力量 {
     text: "【游戏结束】"
 }
 
-node 好结局_智慧 {
+node GoodEndingWisdom {
     text: "=== 结局：智者之路 ==="
     events: [
         0, play_music("wisdom_theme.ogg")
@@ -160,7 +160,7 @@ node 好结局_智慧 {
     text: "【游戏结束】"
 }
 
-node 坏结局_昏迷 {
+node BadEndingUnconscious {
     text: "=== 结局：贪婪的代价 ==="
     events: [
         0, play_music("bad_ending.ogg"),
@@ -174,7 +174,7 @@ node 坏结局_昏迷 {
     text: "【游戏结束】"
 }
 
-node 普通结局_谨慎 {
+node NormalEndingCautious {
     text: "=== 结局：平凡之路 ==="
     events: [
         0, play_music("normal_ending.ogg")
@@ -190,7 +190,7 @@ node 普通结局_谨慎 {
 // ========== 函数声明 ==========
 // 音效与视效
 fn play_ambient(filename: String)
-fn play_sound(filename: String)
+fn play_sound(file_name: String)
 fn play_music(filename: String)
 fn fade_in_music()
 fn fade_out_effect()

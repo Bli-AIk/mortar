@@ -41,12 +41,12 @@ events: [
 **当然可以！** 事件是可选的：
 
 ```mortar
-node 简单对话 {
+node SimpleDialogue {
     text: "你好！"
     text: "欢迎来玩！"
     
     choice: [
-        "谢谢" -> 感谢,
+        "谢谢" -> Thanks,
         "拜拜" -> return
     ]
 }
@@ -99,7 +99,7 @@ text: '他说："你好啊！"'
 **完全一样！** `nd` 只是 `node` 的简写：
 
 ```mortar
-node 开场 { }
+node OpeningScene { }
 nd 开场 { }      // 完全相同
 ```
 
@@ -120,7 +120,7 @@ nd 开场 { }      // 完全相同
 注释
 */
 
-node 示例 {
+node Example {
     text: "对话内容"  // 也可以写在行尾
 }
 ```
@@ -129,21 +129,34 @@ node 示例 {
 
 ### 节点名字有什么要求？
 
-节点名可以是：
-- 中文、英文、数字、下划线
+**技术上**可以使用：
+- 英文字母、数字、下划线
 - 但不能以数字开头
-- 推荐有意义的名字
+
+**但我们强烈推荐使用大驼峰命名法（PascalCase）**：
 
 ```mortar
-// ✅ 好的命名
-node 森林入口 { }
+// ✅ 推荐的命名（大驼峰）
+node OpeningScene { }
 node ForestEntrance { }
-node forest_1 { }
+node BossDialogue { }
+node Chapter1Start { }
+
+// ⚠️ 不推荐但能用
+node opening_scene { }  // 蛇形是函数的风格
+node forest_1 { }       // 可以，但不如 Forest1
 
 // ❌ 不好的命名
-node 1node { }      // 不能以数字开头
-node node-1 { }     // 不能用短横线
+node 开场 { }           // 避免使用中文
+node 1node { }         // 不能以数字开头
+node node-1 { }        // 不能用短横线
 ```
+
+**为什么推荐大驼峰？**
+- 与主流编程语言的类型命名一致
+- 清晰易读，便于识别
+- 避免跨平台编码问题
+- 团队协作更规范
 
 ### 可以跳转到不存在的节点吗？
 
@@ -185,11 +198,11 @@ node B {
 // 方式3：结束节点
 node C {
     choice: [
-        "结束" -> 结束节点
+        "结束" -> EndingNode
     ]
 }
 
-node 结束节点 {
+node EndingNode {
     text: "谢谢游玩！"
 }
 ```
@@ -348,6 +361,32 @@ fn complex_function(
 ) -> Bool
 ```
 
+### 函数名有什么命名规范？
+
+**强烈推荐使用蛇形命名法（snake_case）**：
+
+```mortar
+// ✅ 推荐的命名（蛇形）
+fn play_sound(file_name: String)
+fn get_player_name() -> String
+fn check_inventory() -> Bool
+fn calculate_damage(base: Number, modifier: Number) -> Number
+
+// ⚠️ 不推荐
+fn playSound() { }          // 驼峰是其他语言的风格
+fn PlaySound() { }          // 大驼峰是节点的风格
+fn 播放声音() { }           // 避免使用中文
+
+// ❌ 错误
+fn play-sound() { }         // 不能用短横线
+```
+
+**参数名也要用蛇形命名**：
+```mortar
+fn load_scene(scene_name: String, fade_time: Number)  // ✅
+fn load_scene(SceneName: String, fadeTime: Number)    // ❌
+```
+
 ## 字符串插值
 
 ### 什么是字符串插值？
@@ -401,7 +440,7 @@ mortar input.mortar -o output.json
 ```json
 {
   "nodes": {
-    "节点名": {
+    ""NodeName"": {
       "texts": [...],
       "events": [...],
       "choices": [...]
@@ -530,7 +569,7 @@ fn can_proceed() -> Bool  // 在游戏里实现逻辑
 
 建议方案：
 1. 为每种语言创建独立的 Mortar 文件
-2. 保持节点名和函数名一致
+2. 保持"NodeName"和函数名一致
 3. 只翻译文本内容
 4. 根据语言选择加载对应的 JSON
 
@@ -559,13 +598,13 @@ dialogues/
 1. 仔细看错误信息指出的位置
 2. 检查是否漏了括号、引号
 3. 检查关键字拼写是否正确
-4. 确保节点名、函数名有效
+4. 确保"NodeName"、函数名有效
 
 ### "未定义的节点"错误？
 
 检查：
 - 跳转目标的节点是否存在
-- 节点名大小写是否一致（区分大小写！）
+- "NodeName"大小写是否一致（区分大小写！）
 - 是否有拼写错误
 
 ### "类型不匹配"错误？

@@ -20,10 +20,49 @@ events: [
 - Mortar 编译时检查类型，确保你用对了
 - 编译成 JSON 后，你的游戏再实现这些函数
 
+## 函数命名规范
+
+> **⚠️ 重要：推荐使用蛇形命名法（snake_case）**
+
+**✅ 推荐的命名方式**：
+```mortar
+fn play_sound(file_name: String)         // 蛇形：全小写，单词用下划线分隔
+fn get_player_name() -> String           // 清晰易读
+fn check_inventory_space() -> Bool       // 见名知意
+fn calculate_damage(base: Number, modifier: Number) -> Number
+```
+
+**⚠️ 不推荐的命名方式**：
+```mortar
+fn playSound() { }              // 避免驼峰命名（这是其他语言的风格）
+fn PlaySound() { }              // 不要用大驼峰（这是节点的风格）
+fn play-sound() { }             // 不能使用短横线
+fn 播放声音() { }               // 避免使用中文
+fn playsound() { }              // 全小写不易阅读
+```
+
+**参数命名规范**：
+```mortar
+// ✅ 好的参数命名
+fn move_to(target_x: Number, target_y: Number)
+fn load_scene(scene_name: String, fade_time: Number)
+
+// ❌ 不好的参数命名
+fn move_to(x1: Number, y1: Number)          // 不够描述性
+fn load_scene(s: String, t: Number)        // 缩写不清晰
+```
+
+**命名建议**：
+- 使用英文单词，全小写
+- 多个单词用下划线 `_` 分隔
+- 动词开头，描述函数功能：`get_`, `set_`, `check_`, `play_`, `show_`
+- 参数名要有描述性
+- 保持项目内命名风格一致
+
 ## 基本语法
 
 ```mortar
-fn 函数名(参数: 类型) -> 返回类型
+fn function_name(param: Type) -> ReturnType
 ```
 
 ### 无参数无返回值
@@ -74,7 +113,7 @@ Mortar 支持这些类型：
 ```mortar
 // 一个完整的 Mortar 文件
 
-node 开始 {
+node StartScene {
     text: $"欢迎，{get_player_name()}！"
     events: [
         0, play_bgm("theme.mp3")

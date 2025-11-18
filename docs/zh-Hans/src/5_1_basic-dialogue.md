@@ -12,23 +12,23 @@
 
 ```mortar
 // 村民的问候
-node 村民问候 {
+node VillagerGreeting {
     text: "你好呀，冒险者！"
     text: "欢迎来到我们的小村庄。"
     text: "需要我帮忙吗？"
     
     choice: [
-        "需要帮助" -> 提供帮助,
-        "不用了，谢谢" -> 礼貌告别
+        "需要帮助" -> OfferHelp,
+        "不用了，谢谢" -> PoliteFarewell
     ]
 }
 
-node 提供帮助 {
+node OfferHelp {
     text: "太好了！让我看看能帮你什么..."
     text: "这是一份地图，希望对你有用！"
 }
 
-node 礼貌告别 {
+node PoliteFarewell {
     text: "好的，祝你旅途愉快！"
 }
 ```
@@ -43,7 +43,7 @@ node 礼貌告别 {
 现在让对话更生动，加入音效：
 
 ```mortar
-node 村民问候 {
+node VillagerGreeting {
     text: "你好呀，冒险者！"
     events: [
         // 在"你"字出现时播放问候音效
@@ -59,12 +59,12 @@ node 村民问候 {
     text: "需要我帮忙吗？"
     
     choice: [
-        "需要帮助" -> 提供帮助,
-        "不用了，谢谢" -> 礼貌告别
+        "需要帮助" -> OfferHelp,
+        "不用了，谢谢" -> PoliteFarewell
     ]
 }
 
-node 提供帮助 {
+node OfferHelp {
     text: "太好了！让我看看能帮你什么..."
     
     text: "这是一份地图，希望对你有用！"
@@ -76,7 +76,7 @@ node 提供帮助 {
     ]
 }
 
-node 礼貌告别 {
+node PoliteFarewell {
     text: "好的，祝你旅途愉快！"
     events: [
         0, play_sound("farewell.wav")
@@ -84,7 +84,7 @@ node 礼貌告别 {
 }
 
 // 函数声明
-fn play_sound(filename: String)
+fn play_sound(file_name: String)
 fn play_music(filename: String)
 fn show_item_icon(item_name: String)
 ```
@@ -99,7 +99,7 @@ fn show_item_icon(item_name: String)
 让对话更个性化，根据玩家名字来问候：
 
 ```mortar
-node 村民问候 {
+node VillagerGreeting {
     // 使用字符串插值，动态插入玩家名字
     text: $"你好呀，{get_player_name()}！"
     events: [
@@ -114,12 +114,12 @@ node 村民问候 {
     text: "需要我帮忙吗？"
     
     choice: [
-        "需要帮助" -> 提供帮助,
-        "不用了，谢谢" -> 礼貌告别
+        "需要帮助" -> OfferHelp,
+        "不用了，谢谢" -> PoliteFarewell
     ]
 }
 
-node 提供帮助 {
+node OfferHelp {
     text: "太好了！让我看看能帮你什么..."
     
     text: "这是一份地图，希望对你有用！"
@@ -131,7 +131,7 @@ node 提供帮助 {
     text: $"祝你好运，{get_player_name()}！"
 }
 
-node 礼貌告别 {
+node PoliteFarewell {
     text: "好的，祝你旅途愉快！"
     events: [
         0, play_sound("farewell.wav")
@@ -139,7 +139,7 @@ node 礼貌告别 {
 }
 
 // 函数声明
-fn play_sound(filename: String)
+fn play_sound(file_name: String)
 fn play_music(filename: String)
 fn show_item_icon(item_name: String)
 fn get_player_name() -> String  // 返回玩家名字
@@ -155,7 +155,7 @@ fn get_player_name() -> String  // 返回玩家名字
 有些玩家可能已经有地图了，我们加个条件判断：
 
 ```mortar
-node 村民问候 {
+node VillagerGreeting {
     text: $"你好呀，{get_player_name()}！"
     events: [
         0, play_sound("greeting.wav")
@@ -170,17 +170,17 @@ node 村民问候 {
     
     choice: [
         // 只有没有地图时才显示这个选项
-        "需要帮助" when need_map() -> 提供帮助,
+        "需要帮助" when need_map() -> OfferHelp,
         
         // 已有地图的玩家看到这个
-        "我已经有地图了" when has_map() -> 已有地图,
+        "我已经有地图了" when has_map() -> AlreadyHasMap,
         
         // 这个选项总是显示
-        "不用了，谢谢" -> 礼貌告别
+        "不用了，谢谢" -> PoliteFarewell
     ]
 }
 
-node 提供帮助 {
+node OfferHelp {
     text: "太好了！让我看看能帮你什么..."
     text: "这是一份地图，希望对你有用！"
     events: [
@@ -190,12 +190,12 @@ node 提供帮助 {
     text: $"祝你好运，{get_player_name()}！"
 }
 
-node 已有地图 {
+node AlreadyHasMap {
     text: "哦，看来你准备得很充分！"
     text: "那就祝你一路平安吧！"
 }
 
-node 礼貌告别 {
+node PoliteFarewell {
     text: "好的，祝你旅途愉快！"
     events: [
         0, play_sound("farewell.wav")
@@ -203,7 +203,7 @@ node 礼貌告别 {
 }
 
 // 函数声明
-fn play_sound(filename: String)
+fn play_sound(file_name: String)
 fn play_music(filename: String)
 fn show_item_icon(item_name: String)
 fn get_player_name() -> String

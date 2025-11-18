@@ -57,7 +57,7 @@
 ## 最小复现示例
 ```mortar
 // 能复现问题的最小代码
-node Test {
+node TestNode {
     text: "..."
 }
 ```
@@ -78,7 +78,7 @@ node Test {
 1. 创建文件 `test.mortar`
 2. 写入以下内容：
    ```mortar
-   node Test {
+   node TestNode {
        text: "你好"
        choice: []
    }
@@ -196,7 +196,7 @@ node MyNode {
 让我们写一段简单的 NPC 对话：
 
 ```mortar
-node 村民 {
+node Villager {
     text: "你好，旅行者！"
 }
 ```
@@ -388,7 +388,7 @@ mod tests {
     #[test]
     fn test_parse_simple_node() {
         let input = r#"
-            node Test {
+            node TestNode {
                 text: "Hello"
             }
         "#;
