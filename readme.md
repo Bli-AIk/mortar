@@ -194,11 +194,12 @@ Features:
 * ✅ **Language Server**: IDE integration and syntax highlighting
 * ✅ **Variable System**: Variable declarations, constants, and enums
 * ✅ **Branch Interpolation**: Non-symmetric text support (inspired by [Fluent](https://github.com/projectfluent/fluent))
+* ✅ **Conditional Expressions**: AND, OR, NOT, comparisons
+* ✅ **Control Flow Statements**：if，else
 
 Planned Features:
 * 🚧 **Event System**: Extracts events into independent nodes
-* 🚧 **Conditional Expressions**: AND, OR, NOT, comparisons
-* 🚧 **Control Flow Statements**: if, else, while...
+* 🚧 **Control Flow Statements**: while
 * 🚧 **Localization Support**: Multiple file localization support
 
 ## Contributing
