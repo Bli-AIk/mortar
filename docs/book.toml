@@ -23,9 +23,6 @@ enable = true
 [output.html.playground]
 runnable = false
 
-[output.html.redirect]
-"/index.html" = "/en/index.html"
-
 [build]
 build-dir = "../book/en"
 
