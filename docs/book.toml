@@ -4,7 +4,6 @@ authors = ["Bli-AIk"]
 description = "A comprehensive guide to the Mortar Domain Specific Language"
 src = "src"
 language = "en"
-multilingual = true
 
 [output.html]
 default-theme = "latte"
