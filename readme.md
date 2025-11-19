@@ -304,4 +304,3 @@ Special thanks to the creators of ink and Yarn Spinner for paving the way for in
 
 Also, thanks to the Rust community for providing excellent parsing and compilation-related libraries, enabling Mortar's
 creation.
-
