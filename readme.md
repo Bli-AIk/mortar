@@ -12,6 +12,8 @@
 **Mortar** is a Domain Specific Language (DSL) designed for game dialogue and text event systems. Its core philosophy is
 to achieve **strict separation between text content and event logic**.
 
+Read the [official guide](https://bli-aik.github.io/mortar/en) to learn how to use mortar!
+
 | English         | Simplified Chinese          |
 |-----------------|-----------------------------|
 | English Version | [简体中文](./readme_zh-hant.md) |

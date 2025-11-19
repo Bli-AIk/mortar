@@ -56,22 +56,23 @@ jobs:
         ls -la book/ || echo "No book directory"
         ls -la docs/book/ || echo "No docs/book directory"
         
-        # Copy English docs
+        # Copy English docs to /en/ path
+        mkdir -p _site/en
         if [ -d "book/en" ]; then
-          cp -r book/en/* _site/
+          cp -r book/en/* _site/en/
         elif [ -d "docs/book/en" ]; then
-          cp -r docs/book/en/* _site/
+          cp -r docs/book/en/* _site/en/
         else
           echo "English docs not found!"
           exit 1
         fi
         
-        # Copy Chinese docs
-        mkdir -p _site/zh-Hans
+        # Copy Chinese docs to /zh-hans/ path (lowercase)
+        mkdir -p _site/zh-hans
         if [ -d "book/zh-Hans" ]; then
-          cp -r book/zh-Hans/* _site/zh-Hans/
+          cp -r book/zh-Hans/* _site/zh-hans/
         elif [ -d "docs/book/zh-Hans" ]; then
-          cp -r docs/book/zh-Hans/* _site/zh-Hans/
+          cp -r docs/book/zh-Hans/* _site/zh-hans/
         else
           echo "Chinese docs not found!"
           exit 1
@@ -88,7 +89,7 @@ jobs:
             // Detect language preference and redirect
             const lang = navigator.language || navigator.userLanguage;
             if (lang.startsWith('zh')) {
-              window.location.replace('./zh-Hans/');
+              window.location.replace('./zh-hans/');
             } else {
               window.location.replace('./en/');
             }
@@ -99,7 +100,7 @@ jobs:
           <p>If you are not redirected automatically, follow these links:</p>
           <ul>
             <li><a href="./en/">English Documentation</a></li>
-            <li><a href="./zh-Hans/">中文文档</a></li>
+            <li><a href="./zh-hans/">中文文档</a></li>
           </ul>
         </body>
         </html>

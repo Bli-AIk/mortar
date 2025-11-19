@@ -22,8 +22,8 @@ text: "你好，欢迎来到这里！"
 events: [
     0, play_sound("hi.wav")
     3, show_animation("wave")
-    5, set_color("red")
-    6, set_color("normal")
+    8, set_color("red")
+    9, set_color("normal")
 ]
 ```
 
