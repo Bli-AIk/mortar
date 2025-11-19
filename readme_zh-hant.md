@@ -7,8 +7,6 @@
 
 <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
 
-> **当前状态**：🚧 早期开发中（初始版本正在开发）
-
 ![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar** 是一个为游戏对话与文字事件系统设计的领域特定语言（DSL），核心理念是实现 **文本内容与事件逻辑的严格分离**。
@@ -27,6 +25,10 @@ Mortar 的灵感来自 [ink](https://github.com/inkle/ink) 与 [Yarn Spinner](ht
 * **文本部分**：纯叙事内容，完全为人类编写，不混入事件逻辑；
 * **事件部分**：系统执行指令，用于控制呈现效果，与文本内容无关；
 * **Mortar 语言本身**：提供一种优雅的桥梁，让两者能清晰关联、互不污染。
+
+> `Mortar Language` 是 SoupRune 项目的衍生工具，是其对话系统的首选语言。
+>
+> SoupRune 是专门针对 Deltarune / Undertale Fangame 的游戏框架。[了解更多](https://github.com/Bli-AIk/souprune)。
 
 ## 设计目标
 
@@ -180,10 +182,12 @@ mortar hello.mortar -o custom.json --pretty
 * ✅ **语言服务器**：IDE 集成与语法高亮
 
 计划中功能：
-* 🚧 **高级语法解析**：完整事件与选项语法
-* 🚧 **条件表达式**：复杂逻辑判断支持
-* 🚧 **变量系统**：全局与局部变量管理
-* 🚧 **函数调用**：内置与自定义函数
+* 🚧 **键值对解析**：支持编写非对话文本
+* 🚧 **演出系统**：将events 提取成 独立节点
+* 🚧 **条件表达式**：与、或、非，比较
+* 🚧 **判断、循环语句**：if，else，while
+* 🚧 **本地化支持**：参考 [Fluent](https://github.com/projectfluent/fluent) 实现本地化支持
+
 ## 参与贡献
 
 欢迎社区贡献！详细信息请参阅 [贡献指南](./CONTRIBUTING.md)。

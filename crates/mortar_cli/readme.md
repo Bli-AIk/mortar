@@ -9,8 +9,6 @@
 
 ![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
-> **Current Status**: 🚧 Early Development (Initial version in progress)
-
 **Mortar CLI** is the command line interface for the Mortar language compiler. It provides the `mortar` command that allows you to compile Mortar files into JSON output.
 
 ## Installation
