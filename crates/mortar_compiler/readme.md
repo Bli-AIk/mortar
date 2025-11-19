@@ -7,8 +7,6 @@
 
 <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
 
-> **Current Status**: 🚧 Early Development (Initial version in progress)
-
 ![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar Compiler** is the core compilation library for the Mortar language. It provides lexing, parsing, and code generation functionality for Mortar files.

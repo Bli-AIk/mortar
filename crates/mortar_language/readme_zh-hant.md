@@ -7,8 +7,6 @@
 
 <img src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white" />
 
-> **当前状态**：🚧 早期开发中（初始版本正在开发）
-
 ![mortar_logo](https://raw.githubusercontent.com/Bli-AIk/mortar/refs/heads/main/crates/mortar_logo.svg)
 
 **Mortar Language** 是 Mortar 语言生态系统的主要库 crate。它重新导出编译器和 LSP 服务器的核心功能，为 Mortar 语言工具提供统一接口。

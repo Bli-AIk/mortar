@@ -1,0 +1,30 @@
+[book]
+title = "Mortar 语言指南"
+authors = ["Bli-AIk"]
+description = "Mortar 领域特定语言的综合指南"
+src = "src"
+language = "zh-Hans"
+
+[output.html]
+default-theme = "latte"
+preferred-dark-theme = "mocha"
+theme = "./theme"
+git-repository-url = "https://github.com/Bli-AIk/mortar"
+edit-url-template = "https://github.com/Bli-AIk/mortar/edit/main/docs/zh-Hans/{path}"
+additional-css = ["./theme/catppuccin-complete.css", "./theme/catppuccin.css", "./theme/catppuccin-admonish.css"]
+
+[output.html.search]
+enable = true
+
+[output.html.print]
+enable = true
+
+[output.html.playground]
+runnable = false
+
+[build]
+build-dir = "../../book/zh-Hans"
+
+[preprocessor.links]
+
+[preprocessor.index]
