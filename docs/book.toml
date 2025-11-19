@@ -10,7 +10,6 @@ default-theme = "latte"
 preferred-dark-theme = "mocha"
 theme = "./theme"
 git-repository-url = "https://github.com/Bli-AIk/mortar"
-git-repository-icon = "fa-github"
 edit-url-template = "https://github.com/Bli-AIk/mortar/edit/main/docs/{path}"
 additional-css = ["./theme/catppuccin-complete.css", "./theme/catppuccin.css", "./theme/catppuccin-admonish.css"]
 
