@@ -61,9 +61,10 @@ node SimpleDialogue {
 **大部分情况下可以省略！** Mortar 语法很宽松：
 
 ```mortar
-// 这两种写法都可以
+// 这三种写法都可以
 text: "你好"
 text: "你好",
+text: "你好";
 
 events: [
     0, sound_a()
@@ -73,6 +74,11 @@ events: [
 events: [
     0, sound_a(),
     1, sound_b(),
+]
+
+events: [
+    0, sound_a();
+    1, sound_b();
 ]
 ```
 
@@ -85,13 +91,6 @@ events: [
 ```mortar
 text: "双引号字符串"
 text: '单引号字符串'
-```
-
-如果字符串里有引号，就用另一种包起来：
-
-```mortar
-text: "他说：'你好啊！'"
-text: '他说："你好啊！"'
 ```
 
 ### node 和 nd 有什么区别？
@@ -147,7 +146,7 @@ node opening_scene { }  // 蛇形是函数的风格
 node forest_1 { }       // 可以，但不如 Forest1
 
 // ❌ 不好的命名
-node 开场 { }           // 避免使用中文
+node 开场 { }           // 避免使用 非 ASCII 文本
 node 1node { }         // 不能以数字开头
 node node-1 { }        // 不能用短横线
 ```
@@ -177,7 +176,7 @@ node B { }
 
 有三种方式：
 
-1. **return** - 退出当前节点（如果有后续节点，会继续）
+1. **return** - 结束当前节点（如果有后续节点，会继续）
 2. **没有后续跳转** - 对话自然结束
 3. **跳转到特殊节点** - 可以做一个专门的"结束"节点
 
@@ -217,12 +216,12 @@ node EndingNode {
 choice: [
     "吃什么？" -> [
         "中餐" -> [
-            "米饭" -> 吃米饭,
-            "面条" -> 吃面条
+            "米饭" -> End1,
+            "面条" -> End2
         ],
         "西餐" -> [
-            "牛排" -> 吃牛排,
-            "意面" -> 吃意面
+            "牛排" -> End3,
+            "意面" -> End4
         ]
     ]
 ]
@@ -234,10 +233,10 @@ choice: [
 
 ```mortar
 choice: [
-    // 函数式写法
+    // 链式写法
     ("选项A").when(has_key) -> A,
     
-    // 中缀写法（推荐）
+    // 函数式写法
     "选项B" when has_key -> B
 ]
 ```
@@ -375,10 +374,7 @@ fn calculate_damage(base: Number, modifier: Number) -> Number
 // ⚠️ 不推荐
 fn playSound() { }          // 驼峰是其他语言的风格
 fn PlaySound() { }          // 大驼峰是节点的风格
-fn 播放声音() { }           // 避免使用中文
-
-// ❌ 错误
-fn play-sound() { }         // 不能用短横线
+fn 播放声音() { }           // 避免使用 非 ASCII 文本
 ```
 
 **参数名也要用蛇形命名**：
@@ -468,30 +464,6 @@ Error: Undefined node 'Unknown'
   │
 ```
 
-## 性能与优化
-
-### Mortar 文件可以很大吗？
-
-**可以！** Mortar 编译器性能很好，可以处理大型对话文件。
-
-建议：
-- 按功能模块分成多个文件
-- 每个文件几百个节点没问题
-
-### 编译速度慢怎么办？
-
-编译通常很快。如果觉得慢：
-- 检查是否有语法错误（编译器会尝试恢复）
-- 考虑拆分大文件
-
-### 生成的JSON太大怎么办？
-
-默认生成的是压缩JSON，已经很小了。
-
-如果还嫌大：
-- 在游戏里按需加载（不用一次加载所有对话）
-- 考虑压缩文件（gzip等）
-
 ## 项目实践
 
 ### 多人协作怎么办？
@@ -535,7 +507,7 @@ Error: Undefined node 'Unknown'
 
 ### 支持变量吗？
 
-目前版本还不支持内置变量系统，但你可以：
+目前不支持内置变量系统，但你可以：
 - 在游戏代码里维护变量
 - 通过函数调用来读写变量
 
@@ -565,23 +537,11 @@ choice: [
 fn can_proceed() -> Bool  // 在游戏里实现逻辑
 ```
 
+本功能即将支持。
+
 ### 怎么做本地化（多语言）？
 
-建议方案：
-1. 为每种语言创建独立的 Mortar 文件
-2. 保持"NodeName"和函数名一致
-3. 只翻译文本内容
-4. 根据语言选择加载对应的 JSON
-
-```
-dialogues/
-  ├── zh-CN/
-  │   └── story.mortar
-  ├── en-US/
-  │   └── story.mortar
-  └── ja-JP/
-      └── story.mortar
-```
+本功能即将支持。
 
 ### 支持模块化吗？
 
@@ -590,6 +550,8 @@ dialogues/
 建议：
 - 把相关对话写在同一个文件
 - 或者在游戏里加载多个 JSON 文件并整合
+
+本功能即将支持。
 
 ## 故障排查
 
@@ -622,7 +584,7 @@ dialogues/
 
 ## 还有问题？
 
-- 📖 查看 [示例代码](./5_examples.md)
+- 📖 查看 [示例代码](./5_0_examples)
 - 💬 到 [GitHub Discussions](https://github.com/Bli-AIk/mortar/discussions) 提问
 - 🐛 在 [GitHub Issues](https://github.com/Bli-AIk/mortar/issues) 报告 bug
 - 📚 阅读 [参考资料](./7_3_contributing.md)

@@ -34,21 +34,21 @@ fn calculate_damage(base: Number, modifier: Number) -> Number
 
 **⚠️ 不推荐的命名方式**：
 ```mortar
-fn playSound() { }              // 避免驼峰命名（这是其他语言的风格）
+fn playSound() { }              // 避免小驼峰命名（这是其他语言的风格）
 fn PlaySound() { }              // 不要用大驼峰（这是节点的风格）
-fn play-sound() { }             // 不能使用短横线
-fn 播放声音() { }               // 避免使用中文
+fn play-sound() { }             // 不建议使用串型明明
+fn 播放声音() { }               // 不建议使用非 ASCII 文本
 fn playsound() { }              // 全小写不易阅读
 ```
 
 **参数命名规范**：
 ```mortar
 // ✅ 好的参数命名
-fn move_to(target_x: Number, target_y: Number)
+fn move_to(x: Number, y: Number)
 fn load_scene(scene_name: String, fade_time: Number)
 
 // ❌ 不好的参数命名
-fn move_to(x1: Number, y1: Number)          // 不够描述性
+fn move_to(a: Number, b: Number)        // 没有语义
 fn load_scene(s: String, t: Number)        // 缩写不清晰
 ```
 
@@ -98,7 +98,7 @@ fn find_item(name: String) -> Bool
 
 ## 支持的类型
 
-Mortar 支持这些类型：
+Mortar 支持 json 中的类型：
 
 | 类型 | 别名 | 说明 | 示例 |
 |------|------|------|------|
@@ -210,12 +210,17 @@ fn get_level() -> Number
 fn get_status() -> String
 ```
 
-**注意**：插值中的函数必须有返回值！
+**注意**：插值中的函数必须返回 String！
 
 ```mortar
 // ❌ 错误：函数无返回值
 text: $"结果：{do_something()}"
 fn do_something()  // 没有返回值
+
+
+// ❌ 错误：返回类型不是 String
+text: $"结果：{get_hp()}"
+fn get_hp() -> Number  // 返回类型错误
 
 // ✅ 正确
 text: $"结果：{get_result()}"
@@ -224,7 +229,7 @@ fn get_result() -> String
 
 ## 在条件中使用
 
-`when` 后面的函数必须返回 `Bool`：
+`when` 后面的函数必须返回 `Bool` / `Boolean`：
 
 ```mortar
 choice: [
@@ -232,14 +237,6 @@ choice: [
 ]
 
 fn is_unlocked() -> Bool
-```
-
-**常见条件函数**：
-
-```mortar
-fn has_item(name: String) -> Bool
-fn is_quest_done(id: Number) -> Bool
-fn is_level_above(level: Number) -> Bool
 ```
 
 ## 函数声明的位置
@@ -303,21 +300,7 @@ Mortar 只负责声明，真正的实现在你的游戏代码里。
 }
 ```
 
-你的游戏读取 JSON，然后实现这些函数：
-
-```javascript
-// 伪代码示例
-function callFunction(name, args) {
-  switch(name) {
-    case "play_sound":
-      Audio.play(args[0]);
-      break;
-    case "get_player_name":
-      return Player.name;
-    // ... 其他函数
-  }
-}
-```
+你的游戏读取 JSON，然后实现这些函数。
 
 详见[接入游戏](./5_3_game-integration.md)。
 
@@ -354,7 +337,7 @@ fn do_complex_thing(a: Number, b: Number, c: String, d: Bool, e: Number, f: Stri
 ### 建议
 
 1. **见名知意**：函数名应该说明它做什么
-2. **参数适度**：一般不超过 4-5 个参数
+2. **参数适度**：一般不超过 7 个参数
 3. **类型明确**：所有参数和返回值都要注明类型
 4. **分类整理**：相关的函数放在一起，加注释说明
 

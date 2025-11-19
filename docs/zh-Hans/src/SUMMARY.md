@@ -6,7 +6,7 @@
 
 # 核心概念
 
-- [理解 Mortar 语言](./4_core-concepts.md)
+- [理解 Mortar 语言](./4_0_core-concepts)
   - [节点：对话的积木块](./4_1_nodes.md)
   - [文本与事件：分离的艺术](./4_2_text-events.md)
   - [选项：让玩家做选择](./4_3_choices.md)
@@ -14,7 +14,7 @@
 
 # 实战演练
 
-- [完整示例与讲解](./5_examples.md)
+- [完整示例与讲解](./5_0_examples)
   - [写一段简单对话](./5_1_basic-dialogue.md)
   - [制作互动故事](./5_2_interactive-story.md)
   - [接入你的游戏](./5_3_game-integration.md)

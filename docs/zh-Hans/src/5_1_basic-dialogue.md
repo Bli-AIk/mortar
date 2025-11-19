@@ -270,4 +270,4 @@ mortar village_npc.mortar -o npc_dialogue.json
 
 - 想学更复杂的分支剧情？看 [制作互动故事](./5_2_interactive-story.md)
 - 想了解具体集成方法？看 [接入你的游戏](./5_3_game-integration.md)
-- 想深入理解语法？看 [核心概念](../4_core-concepts.md)
+- 想深入理解语法？看 [核心概念](../4_0_core-concepts)

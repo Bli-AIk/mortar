@@ -258,7 +258,6 @@ mortar/
 │   ├── mortar_lsp/       # 语言服务器
 │   └── mortar_language/  # 主库
 ├── docs/                 # 文档
-├── vscode-mortar-extension/  # VS Code 扩展
 └── tests/                # 集成测试
 ```
 

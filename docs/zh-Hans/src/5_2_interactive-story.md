@@ -381,4 +381,4 @@ void screen_flash(string color) {
 
 - 想了解具体集成？看 [接入你的游戏](./5_3_game-integration.md)
 - 想了解 JSON 结构？看 [JSON 输出说明](../7_1_json-output.md)
-- 回到示例总览：[完整示例与讲解](./5_examples.md)
+- 回到示例总览：[完整示例与讲解](./5_0_examples)

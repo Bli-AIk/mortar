@@ -134,55 +134,6 @@ mortar story.mortar --pretty
 mortar story.mortar -o assets/dialogues/story.json
 ```
 
-### 批量编译
-
-在 Linux/macOS 上批量编译多个文件：
-
-```bash
-# 编译当前目录所有 .mortar 文件
-for file in *.mortar; do
-    mortar "$file" -o "${file%.mortar}.json"
-done
-```
-
-在 Windows PowerShell 上：
-
-```powershell
-Get-ChildItem *.mortar | ForEach-Object {
-    mortar $_.Name -o "$($_.BaseName).json"
-}
-```
-
-### 自动化构建
-
-在构建脚本中使用：
-
-**Makefile**:
-```makefile
-.PHONY: compile-dialogues
-compile-dialogues:
-	mortar dialogues/chapter1.mortar -o assets/chapter1.json
-	mortar dialogues/chapter2.mortar -o assets/chapter2.json
-	mortar dialogues/chapter3.mortar -o assets/chapter3.json
-```
-
-**package.json** (Node.js 项目):
-```json
-{
-  "scripts": {
-    "build:dialogues": "mortar dialogues/main.mortar -o public/dialogues.json"
-  }
-}
-```
-
-**build.sh**:
-```bash
-#!/bin/bash
-echo "编译对话文件..."
-mortar dialogues/main.mortar -o assets/main_dialogue.json
-echo "完成！"
-```
-
 ## 错误处理
 
 ### 语法错误
@@ -254,81 +205,6 @@ else
 fi
 ```
 
-## 性能
-
-Mortar 编译器速度很快：
-
-- 小型文件（<100 节点）：几乎瞬间完成
-- 中型文件（100-500 节点）：通常 < 1 秒
-- 大型文件（500+ 节点）：通常 < 3 秒
-
-**示例**：
-
-```bash
-$ time mortar large_story.mortar
-编译完成：1247 个节点，389 个函数
-
-real    0m0.856s
-user    0m0.721s
-sys     0m0.134s
-```
-
-## 集成到编辑器
-
-### VS Code
-
-创建任务 `.vscode/tasks.json`：
-
-```json
-{
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "编译 Mortar",
-      "type": "shell",
-      "command": "mortar",
-      "args": [
-        "${file}",
-        "--pretty"
-      ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      }
-    }
-  ]
-}
-```
-
-然后按 `Ctrl+Shift+B` 或 `Cmd+Shift+B` 即可编译当前文件。
-
-### Vim/Neovim
-
-在 `.vimrc` 或 `init.vim` 中添加：
-
-```vim
-" 编译当前 Mortar 文件
-autocmd FileType mortar nnoremap <buffer> <F5> :!mortar % --pretty<CR>
-```
-
-按 `F5` 编译当前文件。
-
-### Sublime Text
-
-创建构建系统 `Tools -> Build System -> New Build System`：
-
-```json
-{
-  "cmd": ["mortar", "$file", "--pretty"],
-  "file_regex": "^(.+):([0-9]+):([0-9]+)",
-  "selector": "source.mortar"
-}
-```
-
 ## 常见问题
 
 ### Q: 为什么默认是压缩格式？
@@ -337,91 +213,17 @@ A: 压缩格式文件更小，加载更快，适合生产环境。开发时用 `
 
 ### Q: 可以编译整个目录吗？
 
-A: 目前不支持，但可以用 shell 脚本批量编译（见上文"批量编译"）。
+A: 目前不支持，但可以用 shell 脚本批量编译。
 
 ### Q: 输出文件可以不是 JSON 吗？
 
 A: 目前只支持 JSON 输出。JSON 是通用格式，几乎所有语言和引擎都能解析。
-
-### Q: 编译很慢怎么办？
-
-A: 如果文件很大（>1000 节点），考虑拆分成多个文件。通常编译应该很快。
 
 ### Q: 怎么检查语法但不生成文件？
 
 A: 目前没有专门的检查模式，但可以输出到临时文件：
 ```bash
 mortar test.mortar -o /tmp/test.json
-```
-
-## 高级用法
-
-### 配合 Git Hooks
-
-在 `.git/hooks/pre-commit` 中：
-
-```bash
-#!/bin/bash
-# 自动编译所有修改的 Mortar 文件
-
-for file in $(git diff --cached --name-only | grep '\.mortar$'); do
-    echo "编译 $file..."
-    if ! mortar "$file"; then
-        echo "❌ $file 编译失败"
-        exit 1
-    fi
-done
-
-echo "✅ 所有对话文件编译成功"
-```
-
-### 监视文件变化
-
-使用 `watchexec`（需要单独安装）：
-
-```bash
-# 安装 watchexec
-cargo install watchexec-cli
-
-# 监视文件变化并自动编译
-watchexec -e mortar "mortar dialogues/main.mortar -o output.json --pretty"
-```
-
-每次保存 `.mortar` 文件时自动编译。
-
-### CI/CD 集成
-
-**GitHub Actions** 示例：
-
-```yaml
-name: 编译对话文件
-
-on: [push, pull_request]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      
-      - name: 安装 Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      
-      - name: 安装 Mortar CLI
-        run: cargo install mortar_cli
-      
-      - name: 编译对话文件
-        run: |
-          mortar dialogues/main.mortar -o assets/main.json
-          mortar dialogues/tutorial.mortar -o assets/tutorial.json
-      
-      - name: 上传编译结果
-        uses: actions/upload-artifact@v2
-        with:
-          name: dialogues
-          path: assets/*.json
 ```
 
 ## 小结

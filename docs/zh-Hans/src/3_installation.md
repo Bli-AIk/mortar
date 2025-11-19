@@ -4,7 +4,7 @@
 
 ## 方法一：用 Cargo 安装（推荐）
 
-如果你已经安装了 [Rust](https://www.rust-lang.org/)，那就太方便了：
+如果你已经安装了 [Rust](https://rust-lang.org/)，那就太方便了：
 
 ```bash
 cargo install mortar_cli
@@ -18,9 +18,9 @@ mortar --version
 
 看到版本号就说明安装成功了！
 
-## 方法二：从源码编译
+## 方法二：从源码编译（不太适合普通用户）
 
-想体验最新的开发版？可以从源码构建：
+想体验最新的开发版？可以从源码构建（这也需要 rust 开发环境）：
 
 ```bash
 # 下载源码
@@ -34,7 +34,53 @@ cargo build --release
 ./target/release/mortar --version
 ```
 
-**提示**：编译好的可执行文件位于 `target/release/mortar`，你可以把它复制到系统路径中。
+**提示**：编译好的可执行文件位于 `target/release/mortar`，你可以把它加入环境变量。
+
+## 方法三：从 GitHub Release 下载（不太适合普通用户）
+
+如果你不想使用 Rust 或 Cargo，也可以直接从 [Mortar 的 GitHub Release 页面](https://github.com/Bli-AIk/mortar/releases) 下载预编译的二进制文件。
+
+### Linux / macOS
+
+1. 打开 Release 页面，下载对应版本，例如 `mortar-x.x.x-linux-x64.tar.gz` 或 `mortar-x.x.x-macos-x64.tar.gz`。
+2. 解压到任意目录：
+
+```bash
+tar -xzf mortar-x.x.x-linux-x64.tar.gz -C ~/mortar
+```
+
+3. 将可执行文件路径加入环境变量，例如：
+
+```bash
+export PATH="$HOME/mortar:$PATH"
+```
+
+4. 检查是否安装成功：
+
+```bash
+mortar --version
+```
+
+### Windows
+
+1. 下载对应版本的 `mortar-x.x.x-windows-x64.zip`。
+2. 解压到任意目录，例如 `D:\mortar`。
+3. 将目录添加到系统环境变量 PATH：
+    * 右键「此电脑」→「属性」→「高级系统设置」→「环境变量」
+    * 在「系统变量」或「用户变量」中找到 `Path` → 编辑 → 添加 `D:\mortar`
+4. 打开新的命令提示符，检查安装：
+
+```cmd
+mortar --version
+```
+
+⚠️ **注意**：
+
+* 需要手动设置环境变量
+* 每次开新终端或修改系统配置时可能会出现问题
+* 对普通用户来说不太友好
+
+因此推荐使用 **方法一（Cargo）**，安装体验更顺畅。
 
 ## 检查安装
 
@@ -54,22 +100,15 @@ mortar --help
 cargo install mortar_lsp
 ```
 
-然后在你喜欢的编辑器里配置它：
+然后在你喜欢的编辑器里配置它即可。
 
-### VS Code
-
-1. 安装扩展：搜索 "Mortar" 并安装
-2. 重启编辑器，就能享受语法高亮和自动补全了！
-
-### 其他编辑器
-
-查看[编辑器支持](./6_2_ide-support.md)了解如何配置其他编辑器。
+查看 [编辑器支持](./6_2_ide-support.md) 了解如何配置你的编辑器。
 
 ## 遇到问题？
 
 ### "找不到 cargo 命令"
 
-你需要先安装 Rust。访问 [https://rustup.rs](https://rustup.rs) 按照指引安装。
+你需要先安装 Rust。访问 [https://rust-lang.org/](https://rust-lang.org/) 按照指引安装。
 
 ### "编译失败"
 
