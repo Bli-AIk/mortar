@@ -1,0 +1,152 @@
+// ==============================================================================
+// Performance System Example
+// ==============================================================================
+// This example demonstrates the new performance system features in Mortar,
+// including event definitions, timelines, run statements, and with events.
+
+// ------------------------------------------------------------------------------
+// Event Definitions
+// ------------------------------------------------------------------------------
+// Events are reusable actions that can be triggered independently or attached
+// to text. They can have an index (for text association) and a duration.
+
+event SetForestBackground {
+    index: 0
+    action: set_background("bg_forest.png")
+}
+
+event ShowAlice {
+    action: show_character("alice.png", "center")
+    duration: 2.0
+}
+
+event ShowBob {
+    action: show_character("bob.png", "right")
+    duration: 1.5
+}
+
+event PlayBGM {
+    action: play_music("bgm_adventure.mp3", 0.7)
+    duration: 0.0
+}
+
+event FadeOut {
+    action: fade_to_black()
+    duration: 1.0
+}
+
+// ------------------------------------------------------------------------------
+// Timeline Definitions
+// ------------------------------------------------------------------------------
+// Timelines are sequences of events and wait statements that execute in order.
+// They're perfect for complex cutscenes or animations.
+
+timeline OpeningCutscene {
+    run ShowAlice
+    wait 1.0
+    run ShowBob
+    wait 0.5
+    run PlayBGM
+    wait 2.0
+    run DialogueStart("Welcome")
+}
+
+timeline EndingCutscene {
+    run FadeOut
+    wait 1.5
+    run PlayMusic("ending_theme.mp3")
+    wait 3.0
+}
+
+// ------------------------------------------------------------------------------
+// Node Examples
+// ------------------------------------------------------------------------------
+
+// Example 1: Basic run statement
+// The 'run' keyword executes an event immediately, ignoring its index.
+node BasicRunExample {
+    text: "The scene begins..."
+    run SetForestBackground
+    run ShowAlice
+    text: "Alice appears in the forest."
+}
+
+// Example 2: With events (text association)
+// The 'with' keyword associates events with the previous text.
+// Events are sorted by their index and executed as the text displays.
+node WithEventsExample {
+    text: "Welcome to the adventure!"
+    with SetForestBackground  // Single event
+    
+    text: "The forest comes alive with sound and color."
+    with events: [
+        ShowAlice
+        PlayBGM
+    ]
+}
+
+// Example 3: Run with custom index
+// You can override an event's index when running it.
+node CustomIndexExample {
+    text: "This text has a custom event timing."
+    let custom_time: Number = 0.5
+    run ShowAlice with custom_time
+}
+
+// Example 4: Run with reference
+// Using 'ref' creates a dynamic reference that can change at runtime.
+node ReferenceExample {
+    text: "Dynamic event timing."
+    let dynamic_index: Number = 1.0
+    run ShowBob with ref dynamic_index
+}
+
+// Example 5: Mixed usage
+node MixedExample {
+    // Direct run (executes immediately)
+    run SetForestBackground
+    
+    // Text with associated event
+    text: "A figure emerges from the shadows..."
+    with ShowAlice
+    
+    // Another text block
+    text: "It's Alice!"
+    
+    // Run with custom index
+    let reveal_time: Number = 0.3
+    run PlayBGM with reveal_time
+    
+    // Choice with event
+    choice: [
+        "Approach Alice" -> AliceRoute
+        "Hide" -> HideRoute
+    ]
+}
+
+// Example 6: Timeline in node
+node TimelineExample {
+    text: "Watch the opening cutscene..."
+    run OpeningCutscene  // Execute the entire timeline
+}
+
+// Placeholder nodes for choices
+node AliceRoute {
+    text: "You approach Alice..."
+}
+
+node HideRoute {
+    text: "You hide behind a tree..."
+}
+
+// ------------------------------------------------------------------------------
+// Function Declarations
+// ------------------------------------------------------------------------------
+// All functions used in events must be declared.
+
+fn set_background(file_name: String)
+fn show_character(sprite: String, position: String)
+fn play_music(file_name: String, volume: Number)
+fn fade_to_black()
+fn DialogueStart(node_name: String)
+fn PlayMusic(file_name: String)

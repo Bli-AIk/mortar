@@ -13,6 +13,8 @@ pub enum TopLevel {
     VarDecl(VarDecl),
     ConstDecl(ConstDecl),
     EnumDef(EnumDef),
+    EventDef(EventDef),
+    TimelineDef(TimelineDef),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -31,6 +33,9 @@ pub enum NodeStmt {
     Choice(Vec<ChoiceItem>),
     Branch(BranchDef),
     IfElse(IfElseStmt),
+    Run(RunStmt),
+    WithEvents(WithEventsStmt),
+    VarDecl(VarDecl),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -92,15 +97,15 @@ pub enum StringPart {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BranchDef {
-    pub name: String,  // e.g., "place", "object"
+    pub name: String, // e.g., "place", "object"
     pub name_span: Option<(usize, usize)>,
-    pub enum_type: Option<String>,  // Some("ExampleEnum") or None for bool branches
+    pub enum_type: Option<String>, // Some("ExampleEnum") or None for bool branches
     pub cases: Vec<BranchCase>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BranchCase {
-    pub condition: String,  // e.g., "is_forest", "tree"
+    pub condition: String, // e.g., "is_forest", "tree"
     pub text: String,
     pub events: Option<Vec<Event>>,
 }
@@ -122,6 +127,54 @@ pub struct Event {
 pub struct EventAction {
     pub call: FuncCall,
     pub chains: Vec<FuncCall>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct EventDef {
+    pub name: String,
+    pub name_span: Option<(usize, usize)>,
+    pub index: Option<f64>,
+    pub action: EventAction,
+    pub duration: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct TimelineDef {
+    pub name: String,
+    pub name_span: Option<(usize, usize)>,
+    pub body: Vec<TimelineStmt>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TimelineStmt {
+    Run(RunStmt),
+    Wait(f64),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct RunStmt {
+    pub event_name: String,
+    pub event_name_span: Option<(usize, usize)>,
+    pub args: Vec<Arg>,
+    pub index_override: Option<IndexOverride>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum IndexOverride {
+    Value(f64),
+    Variable(String),
+    Reference(String),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WithEventsStmt {
+    pub events: Vec<WithEventItem>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum WithEventItem {
+    EventRef(String, Option<(usize, usize)>),
+    EventList(Vec<WithEventItem>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -346,25 +399,31 @@ impl<'a> Parser<'a> {
             ))
         }
     }
-    
+
     fn consume_identifier(&mut self, error_msg: &str) -> Result<String, String> {
         if let Some(token_info) = self.advance() {
             if let Token::Identifier(name) = &token_info.token {
                 Ok(name.to_string())
             } else {
-                Err(format!("{}: expected identifier, found {:?}", error_msg, token_info.token))
+                Err(format!(
+                    "{}: expected identifier, found {:?}",
+                    error_msg, token_info.token
+                ))
             }
         } else {
             Err(format!("{}: unexpected end of input", error_msg))
         }
     }
-    
+
     fn consume_string(&mut self, error_msg: &str) -> Result<String, String> {
         if let Some(token_info) = self.advance() {
             if let Token::String(s) = &token_info.token {
                 Ok(s.to_string())
             } else {
-                Err(format!("{}: expected string, found {:?}", error_msg, token_info.token))
+                Err(format!(
+                    "{}: expected string, found {:?}",
+                    error_msg, token_info.token
+                ))
             }
         } else {
             Err(format!("{}: unexpected end of input", error_msg))
@@ -437,10 +496,14 @@ impl<'a> Parser<'a> {
             Some(Token::Node) => Ok(TopLevel::NodeDef(self.parse_node_def()?)),
             Some(Token::Fn) => Ok(TopLevel::FunctionDecl(self.parse_function_decl()?)),
             Some(Token::Let) => Ok(TopLevel::VarDecl(self.parse_var_decl()?)),
-            Some(Token::Const) | Some(Token::Pub) => Ok(TopLevel::ConstDecl(self.parse_const_decl()?)),
+            Some(Token::Const) | Some(Token::Pub) => {
+                Ok(TopLevel::ConstDecl(self.parse_const_decl()?))
+            }
             Some(Token::Enum) => Ok(TopLevel::EnumDef(self.parse_enum_def()?)),
+            Some(Token::Event) => Ok(TopLevel::EventDef(self.parse_event_def()?)),
+            Some(Token::Timeline) => Ok(TopLevel::TimelineDef(self.parse_timeline_def()?)),
             _ => Err(format!(
-                "Expected 'node', 'fn', 'let', 'const', 'pub', or 'enum', found {:?}",
+                "Expected 'node', 'fn', 'let', 'const', 'pub', 'enum', 'event', or 'timeline', found {:?}",
                 self.peek().map(|t| &t.token)
             )),
         }
@@ -493,6 +556,9 @@ impl<'a> Parser<'a> {
             Some(Token::Text) => Ok(self.parse_text_stmt()?),
             Some(Token::Events) => Ok(NodeStmt::Events(self.parse_events_stmt()?)),
             Some(Token::Choice) => Ok(NodeStmt::Choice(self.parse_choice_stmt()?)),
+            Some(Token::Run) => Ok(NodeStmt::Run(self.parse_run_stmt()?)),
+            Some(Token::With) => Ok(NodeStmt::WithEvents(self.parse_with_events_stmt()?)),
+            Some(Token::Let) => Ok(NodeStmt::VarDecl(self.parse_var_decl()?)),
             Some(Token::Identifier(_)) => {
                 // Could be a branch definition (name: branch [...])
                 // Peek ahead to see if there's a colon followed by 'branch'
@@ -506,11 +572,11 @@ impl<'a> Parser<'a> {
                     }
                 }
                 Err(format!(
-                    "Unexpected identifier in node body. Expected 'text', 'events', 'choice', or branch definition"
+                    "Unexpected identifier in node body. Expected 'text', 'events', 'choice', 'run', 'with', 'let', or branch definition"
                 ))
             }
             _ => Err(format!(
-                "Expected 'text', 'events', 'choice', or branch definition, found {:?}",
+                "Expected 'text', 'events', 'choice', 'run', 'with', 'let', or branch definition, found {:?}",
                 self.peek().map(|t| &t.token)
             )),
         }
@@ -648,14 +714,14 @@ impl<'a> Parser<'a> {
     fn parse_branch_def(&mut self) -> Result<BranchDef, String> {
         // Parse: name: branch [condition, text, ...]
         // or: name: branch<EnumType> [variant, text, ...]
-        
+
         let name_token = self.consume_identifier("Expected branch name")?;
         let name = name_token.clone();
         let name_span = Some((0, name.len())); // Approximate
-        
+
         self.consume(&Token::Colon, "Expected ':' after branch name")?;
         self.consume(&Token::Branch, "Expected 'branch' keyword")?;
-        
+
         // Check for optional enum type: <EnumType>
         let enum_type = if self.check(&Token::Less) {
             self.advance(); // consume <
@@ -665,24 +731,24 @@ impl<'a> Parser<'a> {
         } else {
             None
         };
-        
+
         // Parse cases in brackets: [condition, text, ...]
         self.consume(&Token::LeftBracket, "Expected '[' to start branch cases")?;
-        
+
         let mut cases = Vec::new();
-        
+
         while !self.check(&Token::RightBracket) && !self.is_at_end() {
             let case = self.parse_branch_case()?;
             cases.push(case);
-            
+
             // Cases can be separated by newlines or commas (optional)
             if self.check(&Token::Comma) {
                 self.advance();
             }
         }
-        
+
         self.consume(&Token::RightBracket, "Expected ']' to end branch cases")?;
-        
+
         Ok(BranchDef {
             name,
             name_span,
@@ -690,20 +756,20 @@ impl<'a> Parser<'a> {
             cases,
         })
     }
-    
+
     fn parse_branch_case(&mut self) -> Result<BranchCase, String> {
         // Parse: condition, text
         // or: condition, text, events: [...]
-        
+
         let condition = self.consume_identifier("Expected condition or variant")?;
         self.consume(&Token::Comma, "Expected ',' after condition")?;
-        
+
         let text = self.consume_string("Expected text for branch case")?;
-        
+
         // Check for optional events
         let events = if self.check(&Token::Comma) {
             self.advance(); // consume comma
-            
+
             if self.check(&Token::Events) {
                 self.advance(); // consume 'events'
                 self.consume(&Token::Colon, "Expected ':' after 'events'")?;
@@ -714,42 +780,42 @@ impl<'a> Parser<'a> {
         } else {
             None
         };
-        
+
         Ok(BranchCase {
             condition,
             text,
             events,
         })
     }
-    
+
     fn parse_event_list(&mut self) -> Result<Vec<Event>, String> {
         self.consume(&Token::LeftBracket, "Expected '[' to start events")?;
-        
+
         let mut events = Vec::new();
-        
+
         while !self.check(&Token::RightBracket) && !self.is_at_end() {
             let event = self.parse_event()?;
             events.push(event);
-            
+
             if self.check(&Token::Comma) {
                 self.advance();
             }
         }
-        
+
         self.consume(&Token::RightBracket, "Expected ']' to end events")?;
-        
+
         Ok(events)
     }
-    
+
     fn parse_if_else(&mut self) -> Result<IfElseStmt, String> {
         self.consume(&Token::If, "Expected 'if'")?;
-        
+
         // Parse condition
         let condition = self.parse_if_condition()?;
-        
+
         // Parse then body
         self.consume(&Token::LeftBrace, "Expected '{' after if condition")?;
-        
+
         let mut then_body = Vec::new();
         while !self.check(&Token::RightBrace) && !self.is_at_end() {
             self.skip_comments_and_separators();
@@ -758,14 +824,14 @@ impl<'a> Parser<'a> {
             }
             then_body.push(self.parse_node_stmt()?);
         }
-        
+
         self.consume(&Token::RightBrace, "Expected '}' to end if body")?;
-        
+
         // Parse optional else body
         let else_body = if self.check(&Token::Else) {
             self.advance(); // consume 'else'
             self.consume(&Token::LeftBrace, "Expected '{' after else")?;
-            
+
             let mut body = Vec::new();
             while !self.check(&Token::RightBrace) && !self.is_at_end() {
                 self.skip_comments_and_separators();
@@ -774,27 +840,27 @@ impl<'a> Parser<'a> {
                 }
                 body.push(self.parse_node_stmt()?);
             }
-            
+
             self.consume(&Token::RightBrace, "Expected '}' to end else body")?;
             Some(body)
         } else {
             None
         };
-        
+
         Ok(IfElseStmt {
             condition,
             then_body,
             else_body,
         })
     }
-    
+
     fn parse_if_condition(&mut self) -> Result<IfCondition, String> {
         self.parse_or_expression()
     }
-    
+
     fn parse_or_expression(&mut self) -> Result<IfCondition, String> {
         let mut left = self.parse_and_expression()?;
-        
+
         while self.check(&Token::Or) {
             self.advance();
             let right = self.parse_and_expression()?;
@@ -804,13 +870,13 @@ impl<'a> Parser<'a> {
                 right,
             }));
         }
-        
+
         Ok(left)
     }
-    
+
     fn parse_and_expression(&mut self) -> Result<IfCondition, String> {
         let mut left = self.parse_comparison_expression()?;
-        
+
         while self.check(&Token::And) {
             self.advance();
             let right = self.parse_comparison_expression()?;
@@ -820,13 +886,13 @@ impl<'a> Parser<'a> {
                 right,
             }));
         }
-        
+
         Ok(left)
     }
-    
+
     fn parse_comparison_expression(&mut self) -> Result<IfCondition, String> {
         let mut left = self.parse_unary_expression()?;
-        
+
         while let Some(op) = self.peek_comparison_op() {
             self.advance(); // consume operator
             let right = self.parse_unary_expression()?;
@@ -836,10 +902,10 @@ impl<'a> Parser<'a> {
                 right,
             }));
         }
-        
+
         Ok(left)
     }
-    
+
     fn parse_unary_expression(&mut self) -> Result<IfCondition, String> {
         if self.check(&Token::Not) {
             self.advance();
@@ -849,10 +915,10 @@ impl<'a> Parser<'a> {
                 operand,
             })));
         }
-        
+
         self.parse_primary_if_condition()
     }
-    
+
     fn parse_primary_if_condition(&mut self) -> Result<IfCondition, String> {
         // Handle parenthesized expressions
         if self.check(&Token::LeftParen) {
@@ -861,18 +927,18 @@ impl<'a> Parser<'a> {
             self.consume(&Token::RightParen, "Expected ')' after condition")?;
             return Ok(cond);
         }
-        
+
         // Handle boolean literals
         if self.check(&Token::True) {
             self.advance();
             return Ok(IfCondition::Literal(true));
         }
-        
+
         if self.check(&Token::False) {
             self.advance();
             return Ok(IfCondition::Literal(false));
         }
-        
+
         // Handle identifiers (variables) and numbers
         if let Some(token_info) = self.peek() {
             match &token_info.token {
@@ -889,10 +955,10 @@ impl<'a> Parser<'a> {
                 _ => {}
             }
         }
-        
+
         Err("Expected condition expression".to_string())
     }
-    
+
     fn peek_comparison_op(&self) -> Option<ComparisonOp> {
         match self.peek().map(|t| &t.token) {
             Some(Token::Greater) => Some(ComparisonOp::Greater),
@@ -1341,12 +1407,265 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_func_call(&mut self) -> Result<FuncCall, String> {
+    fn parse_event_def(&mut self) -> Result<EventDef, String> {
+        self.consume(&Token::Event, "Expected 'event'")?;
+
         let (name, name_span) = if let Some(token_info) = self.advance() {
             if let Token::Identifier(name) = &token_info.token {
                 (name.to_string(), Some((token_info.start, token_info.end)))
             } else {
-                return Err("Expected function name".to_string());
+                return Err("Expected identifier after 'event'".to_string());
+            }
+        } else {
+            return Err("Expected identifier after 'event'".to_string());
+        };
+
+        self.consume(&Token::LeftBrace, "Expected '{'")?;
+
+        let mut index = None;
+        let mut action = None;
+        let mut duration = None;
+
+        while !self.check(&Token::RightBrace) && !self.is_at_end() {
+            self.skip_comments_and_separators();
+
+            if self.check(&Token::RightBrace) {
+                break;
+            }
+
+            match self.peek().map(|t| &t.token) {
+                Some(Token::Index) => {
+                    self.advance();
+                    self.consume(&Token::Colon, "Expected ':' after 'index'")?;
+                    if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
+                        index = Some(n.parse::<f64>().map_err(|_| "Invalid number")?);
+                        self.advance();
+                    } else {
+                        return Err("Expected number after 'index:'".to_string());
+                    }
+                }
+                Some(Token::Action) => {
+                    self.advance();
+                    self.consume(&Token::Colon, "Expected ':' after 'action'")?;
+                    action = Some(self.parse_event_action()?);
+                }
+                Some(Token::Duration) => {
+                    self.advance();
+                    self.consume(&Token::Colon, "Expected ':' after 'duration'")?;
+                    if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
+                        duration = Some(n.parse::<f64>().map_err(|_| "Invalid number")?);
+                        self.advance();
+                    } else {
+                        return Err("Expected number after 'duration:'".to_string());
+                    }
+                }
+                _ => {
+                    return Err(format!(
+                        "Expected 'index', 'action', or 'duration' in event definition, found {:?}",
+                        self.peek().map(|t| &t.token)
+                    ));
+                }
+            }
+
+            self.skip_optional_separators();
+        }
+
+        self.consume(&Token::RightBrace, "Expected '}'")?;
+
+        let action = action.ok_or("Event definition must have an 'action' field")?;
+
+        Ok(EventDef {
+            name,
+            name_span,
+            index,
+            action,
+            duration,
+        })
+    }
+
+    fn parse_timeline_def(&mut self) -> Result<TimelineDef, String> {
+        self.consume(&Token::Timeline, "Expected 'timeline'")?;
+
+        let (name, name_span) = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                (name.to_string(), Some((token_info.start, token_info.end)))
+            } else {
+                return Err("Expected identifier after 'timeline'".to_string());
+            }
+        } else {
+            return Err("Expected identifier after 'timeline'".to_string());
+        };
+
+        self.consume(&Token::LeftBrace, "Expected '{'")?;
+
+        let mut body = Vec::new();
+        while !self.check(&Token::RightBrace) && !self.is_at_end() {
+            self.skip_comments_and_separators();
+
+            if !self.check(&Token::RightBrace) && !self.is_at_end() {
+                body.push(self.parse_timeline_stmt()?);
+                self.skip_optional_separators();
+            }
+        }
+
+        self.consume(&Token::RightBrace, "Expected '}'")?;
+
+        Ok(TimelineDef {
+            name,
+            name_span,
+            body,
+        })
+    }
+
+    fn parse_timeline_stmt(&mut self) -> Result<TimelineStmt, String> {
+        match self.peek().map(|t| &t.token) {
+            Some(Token::Run) => Ok(TimelineStmt::Run(self.parse_run_stmt()?)),
+            Some(Token::Wait) => {
+                self.advance();
+                if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
+                    let duration = n.parse::<f64>().map_err(|_| "Invalid number")?;
+                    self.advance();
+                    Ok(TimelineStmt::Wait(duration))
+                } else {
+                    Err("Expected number after 'wait'".to_string())
+                }
+            }
+            _ => Err(format!(
+                "Expected 'run' or 'wait' in timeline, found {:?}",
+                self.peek().map(|t| &t.token)
+            )),
+        }
+    }
+
+    fn parse_run_stmt(&mut self) -> Result<RunStmt, String> {
+        self.consume(&Token::Run, "Expected 'run'")?;
+
+        let (event_name, event_name_span) = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                (name.to_string(), Some((token_info.start, token_info.end)))
+            } else {
+                return Err("Expected identifier after 'run'".to_string());
+            }
+        } else {
+            return Err("Expected identifier after 'run'".to_string());
+        };
+
+        let mut args = Vec::new();
+
+        // Check if there are arguments
+        if self.check(&Token::LeftParen) {
+            self.advance();
+
+            while !self.check(&Token::RightParen) && !self.is_at_end() {
+                args.push(self.parse_arg()?);
+                self.skip_optional_separators();
+
+                if self.check(&Token::RightParen) {
+                    break;
+                }
+            }
+
+            self.consume(&Token::RightParen, "Expected ')'")?;
+        }
+
+        // Check for 'with' clause
+        let index_override = if self.check(&Token::With) {
+            self.advance();
+
+            if self.check(&Token::Ref) {
+                self.advance();
+                let var_name = self.consume_identifier("Expected variable name after 'ref'")?;
+                Some(IndexOverride::Reference(var_name))
+            } else if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
+                let value = n.parse::<f64>().map_err(|_| "Invalid number")?;
+                self.advance();
+                Some(IndexOverride::Value(value))
+            } else if let Some(Token::Identifier(name)) = self.peek().map(|t| &t.token) {
+                let name = name.to_string();
+                self.advance();
+                Some(IndexOverride::Variable(name))
+            } else {
+                return Err("Expected number, identifier, or 'ref' after 'with'".to_string());
+            }
+        } else {
+            None
+        };
+
+        Ok(RunStmt {
+            event_name,
+            event_name_span,
+            args,
+            index_override,
+        })
+    }
+
+    fn parse_with_events_stmt(&mut self) -> Result<WithEventsStmt, String> {
+        self.consume(&Token::With, "Expected 'with'")?;
+
+        let mut events = Vec::new();
+
+        // Check if it's "with events: [...]" or "with EventName"
+        if self.check(&Token::Events) {
+            self.advance();
+            self.consume(&Token::Colon, "Expected ':' after 'events'")?;
+            self.consume(&Token::LeftBracket, "Expected '['")?;
+
+            while !self.check(&Token::RightBracket) && !self.is_at_end() {
+                self.skip_comments_and_separators();
+
+                if self.check(&Token::RightBracket) {
+                    break;
+                }
+
+                if let Some(Token::Identifier(name)) = self.peek().map(|t| &t.token) {
+                    let name = name.to_string();
+                    let span = self.peek().map(|t| (t.start, t.end));
+                    self.advance();
+                    events.push(WithEventItem::EventRef(name, span));
+                } else {
+                    return Err("Expected event name in 'with events' list".to_string());
+                }
+
+                self.skip_optional_separators();
+            }
+
+            self.consume(&Token::RightBracket, "Expected ']'")?;
+        } else if let Some(Token::Identifier(name)) = self.peek().map(|t| &t.token) {
+            let name = name.to_string();
+            let span = self.peek().map(|t| (t.start, t.end));
+            self.advance();
+            events.push(WithEventItem::EventRef(name, span));
+        } else {
+            return Err("Expected 'events' or event name after 'with'".to_string());
+        }
+
+        Ok(WithEventsStmt { events })
+    }
+
+    fn parse_func_call(&mut self) -> Result<FuncCall, String> {
+        let (name, name_span) = if let Some(token_info) = self.advance() {
+            match &token_info.token {
+                Token::Identifier(name) => {
+                    (name.to_string(), Some((token_info.start, token_info.end)))
+                }
+                // Allow certain keywords as function names for backwards compatibility
+                Token::Wait => ("wait".to_string(), Some((token_info.start, token_info.end))),
+                Token::Run => ("run".to_string(), Some((token_info.start, token_info.end))),
+                Token::Action => (
+                    "action".to_string(),
+                    Some((token_info.start, token_info.end)),
+                ),
+                Token::Index => (
+                    "index".to_string(),
+                    Some((token_info.start, token_info.end)),
+                ),
+                Token::Duration => (
+                    "duration".to_string(),
+                    Some((token_info.start, token_info.end)),
+                ),
+                _ => {
+                    return Err("Expected function name".to_string());
+                }
             }
         } else {
             return Err("Expected function name".to_string());

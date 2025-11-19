@@ -1,4 +1,4 @@
-use crate::{DiagnosticCollector, ParseHandler, Language};
+use crate::{DiagnosticCollector, Language, ParseHandler};
 
 #[test]
 fn test_diagnostic_collector_creation() {
@@ -8,10 +8,8 @@ fn test_diagnostic_collector_creation() {
 
 #[test]
 fn test_diagnostic_collector_with_language() {
-    let _collector = DiagnosticCollector::new_with_language(
-        "test.mortar".to_string(),
-        Language::Chinese
-    );
+    let _collector =
+        DiagnosticCollector::new_with_language("test.mortar".to_string(), Language::Chinese);
 }
 
 #[test]
@@ -23,13 +21,10 @@ fn test_parse_with_diagnostics_success() {
         }
         fn test()
     "#;
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     assert!(result.is_ok());
 }
 
@@ -39,14 +34,14 @@ fn test_parse_with_diagnostics_chinese() {
         fn unused()
         node Test { text: "Hi" }
     "#;
-    
+
     let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics_and_language(
         source,
         "test.mortar".to_string(),
         false,
         Language::Chinese,
     );
-    
+
     assert!(result.is_ok());
 }
 
@@ -57,13 +52,10 @@ fn test_analyze_program_with_undefined_node() {
             text: "Test"
         } -> UndefinedNode
     "#;
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     if let Ok(program) = result {
         let mut diag = DiagnosticCollector::new("test.mortar".to_string());
         diag.analyze_program(&program);
@@ -80,13 +72,10 @@ fn test_analyze_program_with_unused_function() {
             text: "Hello"
         }
     "#;
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     if let Ok(program) = result {
         let mut diag = DiagnosticCollector::new("test.mortar".to_string());
         diag.analyze_program(&program);
@@ -104,13 +93,10 @@ fn test_analyze_program_with_undefined_function() {
             ]
         }
     "#;
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     if let Ok(program) = result {
         let mut diag = DiagnosticCollector::new("test.mortar".to_string());
         diag.analyze_program(&program);
@@ -127,13 +113,10 @@ fn test_analyze_program_naming_conventions() {
         
         fn MyFunction()
     "#;
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     if let Ok(program) = result {
         let mut diag = DiagnosticCollector::new("test.mortar".to_string());
         diag.analyze_program(&program);
@@ -153,13 +136,10 @@ fn test_analyze_program_type_mismatch() {
         
         fn expect_number(arg: Number)
     "#;
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     if let Ok(program) = result {
         let mut diag = DiagnosticCollector::new("test.mortar".to_string());
         diag.analyze_program(&program);
@@ -181,13 +161,10 @@ fn test_analyze_program_duplicate_definitions() {
         fn test()
         fn test()
     "#;
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     if let Ok(program) = result {
         let mut diag = DiagnosticCollector::new("test.mortar".to_string());
         diag.analyze_program(&program);
@@ -212,13 +189,10 @@ fn test_analyze_program_valid_calls() {
         fn my_func(s: String, n: Number)
         fn check() -> Bool
     "#;
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     assert!(result.is_ok());
     if let Ok(program) = result {
         let mut diag = DiagnosticCollector::new("test.mortar".to_string());
@@ -238,13 +212,10 @@ fn test_analyze_with_variables() {
             text: "Test"
         }
     "#;
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     assert!(result.is_ok());
     if let Ok(program) = result {
         let mut diag = DiagnosticCollector::new("test.mortar".to_string());
@@ -256,13 +227,10 @@ fn test_analyze_with_variables() {
 #[test]
 fn test_parse_error_generates_diagnostic() {
     let source = "invalid syntax here {{{{";
-    
-    let (result, _diagnostics) = ParseHandler::parse_source_code_with_diagnostics(
-        source,
-        "test.mortar".to_string(),
-        false,
-    );
-    
+
+    let (result, _diagnostics) =
+        ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
+
     // Should fail to parse
     assert!(result.is_err());
     // Diagnostics should contain the error

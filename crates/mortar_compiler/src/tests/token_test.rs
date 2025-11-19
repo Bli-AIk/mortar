@@ -88,7 +88,7 @@ fn test_tokenize_enum_definition() {
     assert!(matches!(tokens[0].token, Token::Enum));
     assert!(matches!(tokens[1].token, Token::Identifier(_)));
     assert!(matches!(tokens[2].token, Token::LeftBrace));
-    assert!(matches!(tokens[tokens.len()-1].token, Token::RightBrace));
+    assert!(matches!(tokens[tokens.len() - 1].token, Token::RightBrace));
 }
 
 #[test]
@@ -236,7 +236,7 @@ fn test_tokenize_punctuation() {
 fn test_token_display() {
     let input = "let score: Number = 100";
     let tokens = tokenize(input);
-    
+
     // Test that Display trait works
     for token in tokens {
         let _display = format!("{}", token.token);
@@ -265,7 +265,7 @@ fn test_tokenize_complex_program() {
             text: "Hello"
         }
     "#;
-    
+
     let tokens = tokenize(input);
     // Should have multiple tokens
     assert!(tokens.len() > 20);

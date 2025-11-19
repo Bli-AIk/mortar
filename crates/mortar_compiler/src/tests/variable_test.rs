@@ -301,7 +301,7 @@ fn test_boolean_argument_in_function_call() {
     assert!(result.is_ok());
 
     let program = result.unwrap();
-    
+
     // Check that boolean argument is parsed
     match &program.body[0] {
         TopLevel::NodeDef(node) => {
@@ -331,7 +331,7 @@ fn test_enum_empty_body() {
     let source = "enum Empty { }";
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
-    
+
     let program = result.unwrap();
     match &program.body[0] {
         TopLevel::EnumDef(enum_def) => {

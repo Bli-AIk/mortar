@@ -36,7 +36,7 @@ pub enum Token<'a> {
     Break,
     #[token("when")]
     When,
-    
+
     // Variable and constant keywords
     #[token("let")]
     Let,
@@ -47,16 +47,37 @@ pub enum Token<'a> {
     Pub,
     #[token("enum")]
     Enum,
-    
+
     // Branch interpolation keyword
     #[token("branch")]
     Branch,
-    
+
     // Control flow keywords
     #[token("if")]
     If,
     #[token("else")]
     Else,
+
+    // Performance system keywords
+    #[token("event")]
+    Event,
+    #[token("run")]
+    Run,
+    #[token("with")]
+    With,
+    #[token("ref")]
+    Ref,
+    #[token("timeline")]
+    #[token("tl")]
+    Timeline,
+    #[token("wait")]
+    Wait,
+    #[token("index")]
+    Index,
+    #[token("action")]
+    Action,
+    #[token("duration")]
+    Duration,
 
     // Type keywords
     #[token("String")]
@@ -211,6 +232,15 @@ impl fmt::Display for Token<'_> {
             Branch => write!(f, "branch"),
             If => write!(f, "if"),
             Else => write!(f, "else"),
+            Event => write!(f, "event"),
+            Run => write!(f, "run"),
+            With => write!(f, "with"),
+            Ref => write!(f, "ref"),
+            Timeline => write!(f, "timeline"),
+            Wait => write!(f, "wait"),
+            Index => write!(f, "index"),
+            Action => write!(f, "action"),
+            Duration => write!(f, "duration"),
 
             StringType => write!(f, "String"),
             NumberType => write!(f, "Number"),

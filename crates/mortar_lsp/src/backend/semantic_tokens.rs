@@ -135,6 +135,15 @@ impl Backend {
             | Token::Branch
             | Token::If
             | Token::Else
+            | Token::Event
+            | Token::Run
+            | Token::With
+            | Token::Ref
+            | Token::Timeline
+            | Token::Wait
+            | Token::Index
+            | Token::Action
+            | Token::Duration
             | Token::StringType
             | Token::NumberType
             | Token::BooleanType

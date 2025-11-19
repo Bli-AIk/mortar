@@ -134,7 +134,7 @@ fn test_serialize_choices() {
 #[test]
 fn test_serialize_empty_program() {
     use crate::parser::Program;
-    
+
     let program = Program { body: vec![] };
     let result = Serializer::serialize_to_json(&program, false);
     assert!(result.is_ok());
@@ -148,7 +148,7 @@ fn test_serialize_empty_program() {
 #[test]
 fn test_serialize_to_json_pretty() {
     use crate::parser::Program;
-    
+
     let program = Program { body: vec![] };
     let result = Serializer::serialize_to_json(&program, true);
     assert!(result.is_ok());
@@ -162,7 +162,7 @@ fn test_serialize_to_json_pretty() {
 fn test_save_to_file_basic() {
     use crate::parser::Program;
     use tempfile::TempDir;
-    
+
     let program = Program { body: vec![] };
     let temp_dir = TempDir::new().unwrap();
     let output_file = temp_dir.path().join("output.mortared");
@@ -177,7 +177,7 @@ fn test_save_to_file_basic() {
 fn test_save_to_file_with_language() {
     use crate::{Language, parser::Program};
     use tempfile::TempDir;
-    
+
     let program = Program { body: vec![] };
     let temp_dir = TempDir::new().unwrap();
     let output_file = temp_dir.path().join("output.mortared");
@@ -196,7 +196,7 @@ fn test_save_to_file_with_language() {
 #[test]
 fn test_serialize_variable_declarations() {
     use crate::parser::{Program, TopLevel, VarDecl, VarValue};
-    
+
     let program = Program {
         body: vec![
             TopLevel::VarDecl(VarDecl {
@@ -213,15 +213,15 @@ fn test_serialize_variable_declarations() {
             }),
         ],
     };
-    
+
     let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
-    
+
     assert_eq!(json["variables"].as_array().unwrap().len(), 2);
     assert_eq!(json["variables"][0]["name"], "player_name");
     assert_eq!(json["variables"][0]["type"], "String");
     assert!(json["variables"][0]["value"].is_null());
-    
+
     assert_eq!(json["variables"][1]["name"], "score");
     assert_eq!(json["variables"][1]["type"], "Number");
     assert_eq!(json["variables"][1]["value"], 100.0);
@@ -229,8 +229,8 @@ fn test_serialize_variable_declarations() {
 
 #[test]
 fn test_serialize_constant_declarations() {
-    use crate::parser::{Program, TopLevel, ConstDecl, VarValue};
-    
+    use crate::parser::{ConstDecl, Program, TopLevel, VarValue};
+
     let program = Program {
         body: vec![
             TopLevel::ConstDecl(ConstDecl {
@@ -249,42 +249,40 @@ fn test_serialize_constant_declarations() {
             }),
         ],
     };
-    
+
     let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
-    
+
     assert_eq!(json["constants"].as_array().unwrap().len(), 2);
-    
+
     assert_eq!(json["constants"][0]["name"], "game_title");
     assert_eq!(json["constants"][0]["type"], "String");
     assert_eq!(json["constants"][0]["value"], "My Game");
     assert_eq!(json["constants"][0]["public"], true);
-    
+
     assert_eq!(json["constants"][1]["name"], "max_level");
     assert_eq!(json["constants"][1]["public"], false);
 }
 
 #[test]
 fn test_serialize_enum_definitions() {
-    use crate::parser::{Program, TopLevel, EnumDef};
-    
+    use crate::parser::{EnumDef, Program, TopLevel};
+
     let program = Program {
-        body: vec![
-            TopLevel::EnumDef(EnumDef {
-                name: "GameState".to_string(),
-                name_span: Some((0, 9)),
-                variants: vec![
-                    "menu".to_string(),
-                    "playing".to_string(),
-                    "paused".to_string(),
-                ],
-            }),
-        ],
+        body: vec![TopLevel::EnumDef(EnumDef {
+            name: "GameState".to_string(),
+            name_span: Some((0, 9)),
+            variants: vec![
+                "menu".to_string(),
+                "playing".to_string(),
+                "paused".to_string(),
+            ],
+        })],
     };
-    
+
     let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
-    
+
     assert_eq!(json["enums"].as_array().unwrap().len(), 1);
     assert_eq!(json["enums"][0]["name"], "GameState");
     assert_eq!(json["enums"][0]["variants"].as_array().unwrap().len(), 3);

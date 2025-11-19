@@ -23,6 +23,10 @@ pub struct MortaredOutput {
     enums: Vec<JsonEnum>,
     nodes: Vec<JsonNode>,
     functions: Vec<JsonFunction>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    events: Vec<JsonEventDef>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    timelines: Vec<JsonTimelineDef>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -177,6 +181,34 @@ struct JsonEnum {
     variants: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct JsonEventDef {
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    index: Option<f64>,
+    action: JsonAction,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonTimelineDef {
+    name: String,
+    statements: Vec<JsonTimelineStmt>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonTimelineStmt {
+    #[serde(rename = "type")]
+    stmt_type: String, // "run" or "wait"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    event_name: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    args: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration: Option<f64>,
+}
+
 pub struct Serializer;
 
 impl Serializer {
@@ -226,6 +258,8 @@ impl Serializer {
         let mut enums = Vec::new();
         let mut nodes = Vec::new();
         let mut functions = Vec::new();
+        let mut events = Vec::new();
+        let mut timelines = Vec::new();
 
         for top_level in &program.body {
             match top_level {
@@ -244,6 +278,12 @@ impl Serializer {
                 TopLevel::EnumDef(enum_def) => {
                     enums.push(Self::convert_enum_def(enum_def));
                 }
+                TopLevel::EventDef(event_def) => {
+                    events.push(Self::convert_event_def(event_def));
+                }
+                TopLevel::TimelineDef(timeline_def) => {
+                    timelines.push(Self::convert_timeline_def(timeline_def));
+                }
             }
         }
 
@@ -254,6 +294,8 @@ impl Serializer {
             enums,
             nodes,
             functions,
+            events,
+            timelines,
         })
     }
 
@@ -275,7 +317,7 @@ impl Serializer {
                             text: text_content,
                             interpolated_parts: None,
                             condition: None,
-                        events: if current_events.is_empty() {
+                            events: if current_events.is_empty() {
                                 None
                             } else {
                                 Some(current_events.clone())
@@ -283,7 +325,7 @@ impl Serializer {
                         });
                         current_events.clear();
                     }
-                    
+
                     // Process if-else as conditional texts
                     Self::process_if_else(if_else, &mut texts)?;
                     continue;
@@ -300,7 +342,7 @@ impl Serializer {
                             text: text_content,
                             interpolated_parts: None,
                             condition: None,
-                        events: if current_events.is_empty() {
+                            events: if current_events.is_empty() {
                                 None
                             } else {
                                 Some(current_events.clone())
@@ -317,7 +359,7 @@ impl Serializer {
                             text: text_content,
                             interpolated_parts: None,
                             condition: None,
-                        events: if current_events.is_empty() {
+                            events: if current_events.is_empty() {
                                 None
                             } else {
                                 Some(current_events.clone())
@@ -353,7 +395,7 @@ impl Serializer {
                             text: text_content,
                             interpolated_parts: None,
                             condition: None,
-                        events: if current_events.is_empty() {
+                            events: if current_events.is_empty() {
                                 None
                             } else {
                                 Some(current_events.clone())
@@ -368,6 +410,19 @@ impl Serializer {
                     }
                     choices = Some(json_choices);
                 }
+                NodeStmt::Run(_run_stmt) => {
+                    // Run statements are handled separately, skipping serialization for now
+                    // as they're meant for timeline execution
+                }
+                NodeStmt::WithEvents(_with_events) => {
+                    // WithEvents statements need special handling
+                    // They should associate events with the previous text
+                    // For now, we'll skip them in serialization
+                }
+                NodeStmt::VarDecl(_var_decl) => {
+                    // Variable declarations in node body are local scope
+                    // Skip them in serialization for now
+                }
             }
         }
 
@@ -377,7 +432,7 @@ impl Serializer {
                 text: text_content,
                 interpolated_parts: None,
                 condition: None,
-                        events: if current_events.is_empty() {
+                events: if current_events.is_empty() {
                     None
                 } else {
                     Some(current_events)
@@ -393,25 +448,32 @@ impl Serializer {
         Ok(JsonNode {
             name: node_def.name.clone(),
             texts,
-            branches: if branches_vec.is_empty() { None } else { Some(branches_vec) },
+            branches: if branches_vec.is_empty() {
+                None
+            } else {
+                Some(branches_vec)
+            },
             next,
             choice: choices,
         })
     }
-    
+
     fn convert_branch_def(branch_def: &BranchDef) -> Result<JsonBranchDef, String> {
-        let cases = branch_def.cases
+        let cases = branch_def
+            .cases
             .iter()
             .map(|case| {
                 let events = if let Some(event_list) = &case.events {
-                    Some(event_list
-                        .iter()
-                        .map(|e| Self::convert_event(e))
-                        .collect::<Result<Vec<_>, _>>()?)
+                    Some(
+                        event_list
+                            .iter()
+                            .map(|e| Self::convert_event(e))
+                            .collect::<Result<Vec<_>, _>>()?,
+                    )
                 } else {
                     None
                 };
-                
+
                 Ok(JsonBranchCase {
                     condition: case.condition.clone(),
                     text: case.text.clone(),
@@ -419,17 +481,17 @@ impl Serializer {
                 })
             })
             .collect::<Result<Vec<_>, String>>()?;
-        
+
         Ok(JsonBranchDef {
             name: branch_def.name.clone(),
             enum_type: branch_def.enum_type.clone(),
             cases,
         })
     }
-    
+
     fn process_if_else(if_else: &IfElseStmt, texts: &mut Vec<JsonText>) -> Result<(), String> {
         let condition_json = Self::convert_if_condition(&if_else.condition)?;
-        
+
         // Process then body
         for stmt in &if_else.then_body {
             match stmt {
@@ -453,7 +515,7 @@ impl Serializer {
                 _ => {}
             }
         }
-        
+
         // Process else body with negated condition
         if let Some(else_body) = &if_else.else_body {
             let negated_condition = JsonIfCondition {
@@ -464,7 +526,7 @@ impl Serializer {
                 operand: Some(Box::new(condition_json)),
                 value: None,
             };
-            
+
             for stmt in else_body {
                 match stmt {
                     NodeStmt::Text(text) => {
@@ -488,10 +550,10 @@ impl Serializer {
                 }
             }
         }
-        
+
         Ok(())
     }
-    
+
     fn convert_if_condition(cond: &IfCondition) -> Result<JsonIfCondition, String> {
         match cond {
             IfCondition::Binary(binary) => {
@@ -505,7 +567,7 @@ impl Serializer {
                     ComparisonOp::And => "&&",
                     ComparisonOp::Or => "||",
                 };
-                
+
                 Ok(JsonIfCondition {
                     cond_type: "binary".to_string(),
                     operator: Some(op_str.to_string()),
@@ -515,36 +577,30 @@ impl Serializer {
                     value: None,
                 })
             }
-            IfCondition::Unary(unary) => {
-                Ok(JsonIfCondition {
-                    cond_type: "unary".to_string(),
-                    operator: Some("!".to_string()),
-                    left: None,
-                    right: None,
-                    operand: Some(Box::new(Self::convert_if_condition(&unary.operand)?)),
-                    value: None,
-                })
-            }
-            IfCondition::Identifier(name) => {
-                Ok(JsonIfCondition {
-                    cond_type: "identifier".to_string(),
-                    operator: None,
-                    left: None,
-                    right: None,
-                    operand: None,
-                    value: Some(name.clone()),
-                })
-            }
-            IfCondition::Literal(val) => {
-                Ok(JsonIfCondition {
-                    cond_type: "literal".to_string(),
-                    operator: None,
-                    left: None,
-                    right: None,
-                    operand: None,
-                    value: Some(val.to_string()),
-                })
-            }
+            IfCondition::Unary(unary) => Ok(JsonIfCondition {
+                cond_type: "unary".to_string(),
+                operator: Some("!".to_string()),
+                left: None,
+                right: None,
+                operand: Some(Box::new(Self::convert_if_condition(&unary.operand)?)),
+                value: None,
+            }),
+            IfCondition::Identifier(name) => Ok(JsonIfCondition {
+                cond_type: "identifier".to_string(),
+                operator: None,
+                left: None,
+                right: None,
+                operand: None,
+                value: Some(name.clone()),
+            }),
+            IfCondition::Literal(val) => Ok(JsonIfCondition {
+                cond_type: "literal".to_string(),
+                operator: None,
+                left: None,
+                right: None,
+                operand: None,
+                value: Some(val.to_string()),
+            }),
         }
     }
 
@@ -732,7 +788,7 @@ impl Serializer {
                     // Placeholder will be resolved by branch definitions
                     let placeholder = format!("{{{}}}", name);
                     rendered_text.push_str(&placeholder);
-                    
+
                     parts.push(JsonStringPart {
                         part_type: "placeholder".to_string(),
                         content: placeholder,
@@ -746,5 +802,65 @@ impl Serializer {
         }
 
         Ok((rendered_text, parts))
+    }
+
+    fn convert_event_def(event_def: &EventDef) -> JsonEventDef {
+        JsonEventDef {
+            name: event_def.name.clone(),
+            index: event_def.index,
+            action: JsonAction {
+                action_type: event_def.action.call.name.clone(),
+                args: event_def
+                    .action
+                    .call
+                    .args
+                    .iter()
+                    .map(|arg| match arg {
+                        Arg::String(s) => format!("\"{}\"", s),
+                        Arg::Number(n) => n.to_string(),
+                        Arg::Boolean(b) => b.to_string(),
+                        Arg::Identifier(id) => id.clone(),
+                        Arg::FuncCall(fc) => format!("{}()", fc.name),
+                    })
+                    .collect(),
+            },
+            duration: event_def.duration,
+        }
+    }
+
+    fn convert_timeline_def(timeline_def: &TimelineDef) -> JsonTimelineDef {
+        let statements = timeline_def
+            .body
+            .iter()
+            .map(|stmt| match stmt {
+                TimelineStmt::Run(run_stmt) => JsonTimelineStmt {
+                    stmt_type: "run".to_string(),
+                    event_name: Some(run_stmt.event_name.clone()),
+                    args: run_stmt
+                        .args
+                        .iter()
+                        .map(|arg| match arg {
+                            Arg::String(s) => format!("\"{}\"", s),
+                            Arg::Number(n) => n.to_string(),
+                            Arg::Boolean(b) => b.to_string(),
+                            Arg::Identifier(id) => id.clone(),
+                            Arg::FuncCall(fc) => format!("{}()", fc.name),
+                        })
+                        .collect(),
+                    duration: None,
+                },
+                TimelineStmt::Wait(duration) => JsonTimelineStmt {
+                    stmt_type: "wait".to_string(),
+                    event_name: None,
+                    args: Vec::new(),
+                    duration: Some(*duration),
+                },
+            })
+            .collect();
+
+        JsonTimelineDef {
+            name: timeline_def.name.clone(),
+            statements,
+        }
     }
 }

@@ -1,4 +1,4 @@
-use crate::parser::{ParseHandler, TopLevel, NodeStmt, IfCondition, ComparisonOp};
+use crate::parser::{ComparisonOp, IfCondition, NodeStmt, ParseHandler, TopLevel};
 
 #[test]
 fn test_parse_simple_if() {
@@ -11,10 +11,10 @@ fn test_parse_simple_if() {
             }
         }
     "#;
-    
+
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
-    
+
     let program = result.unwrap();
     match &program.body[1] {
         TopLevel::NodeDef(node) => {
@@ -44,22 +44,20 @@ fn test_parse_if_else() {
             }
         }
     "#;
-    
+
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
-    
+
     let program = result.unwrap();
     match &program.body[1] {
-        TopLevel::NodeDef(node) => {
-            match &node.body[0] {
-                NodeStmt::IfElse(if_else) => {
-                    assert!(if_else.else_body.is_some());
-                    assert_eq!(if_else.then_body.len(), 1);
-                    assert_eq!(if_else.else_body.as_ref().unwrap().len(), 1);
-                }
-                _ => panic!("Expected IfElse"),
+        TopLevel::NodeDef(node) => match &node.body[0] {
+            NodeStmt::IfElse(if_else) => {
+                assert!(if_else.else_body.is_some());
+                assert_eq!(if_else.then_body.len(), 1);
+                assert_eq!(if_else.else_body.as_ref().unwrap().len(), 1);
             }
-        }
+            _ => panic!("Expected IfElse"),
+        },
         _ => panic!("Expected NodeDef"),
     }
 }
@@ -75,25 +73,21 @@ fn test_parse_boolean_condition() {
             }
         }
     "#;
-    
+
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
-    
+
     let program = result.unwrap();
     match &program.body[1] {
-        TopLevel::NodeDef(node) => {
-            match &node.body[0] {
-                NodeStmt::IfElse(if_else) => {
-                    match &if_else.condition {
-                        IfCondition::Identifier(name) => {
-                            assert_eq!(name, "is_winner");
-                        }
-                        _ => panic!("Expected Identifier condition"),
-                    }
+        TopLevel::NodeDef(node) => match &node.body[0] {
+            NodeStmt::IfElse(if_else) => match &if_else.condition {
+                IfCondition::Identifier(name) => {
+                    assert_eq!(name, "is_winner");
                 }
-                _ => panic!("Expected IfElse"),
-            }
-        }
+                _ => panic!("Expected Identifier condition"),
+            },
+            _ => panic!("Expected IfElse"),
+        },
         _ => panic!("Expected NodeDef"),
     }
 }
@@ -108,9 +102,10 @@ fn test_parse_comparison_operators() {
         ("==", ComparisonOp::Equal),
         ("!=", ComparisonOp::NotEqual),
     ];
-    
+
     for (op_str, expected_op) in test_cases {
-        let source = format!(r#"
+        let source = format!(
+            r#"
             let a: Number
             let b: Number
             
@@ -119,26 +114,24 @@ fn test_parse_comparison_operators() {
                     text: "test"
                 }}
             }}
-        "#, op_str);
-        
+        "#,
+            op_str
+        );
+
         let result = ParseHandler::parse_source_code(&source, false);
         assert!(result.is_ok(), "Failed to parse operator {}", op_str);
-        
+
         let program = result.unwrap();
         match &program.body[2] {
-            TopLevel::NodeDef(node) => {
-                match &node.body[0] {
-                    NodeStmt::IfElse(if_else) => {
-                        match &if_else.condition {
-                            IfCondition::Binary(binary) => {
-                                assert_eq!(binary.operator, expected_op);
-                            }
-                            _ => panic!("Expected Binary condition for {}", op_str),
-                        }
+            TopLevel::NodeDef(node) => match &node.body[0] {
+                NodeStmt::IfElse(if_else) => match &if_else.condition {
+                    IfCondition::Binary(binary) => {
+                        assert_eq!(binary.operator, expected_op);
                     }
-                    _ => panic!("Expected IfElse for {}", op_str),
-                }
-            }
+                    _ => panic!("Expected Binary condition for {}", op_str),
+                },
+                _ => panic!("Expected IfElse for {}", op_str),
+            },
             _ => panic!("Expected NodeDef for {}", op_str),
         }
     }
@@ -156,25 +149,21 @@ fn test_parse_logical_and() {
             }
         }
     "#;
-    
+
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
-    
+
     let program = result.unwrap();
     match &program.body[2] {
-        TopLevel::NodeDef(node) => {
-            match &node.body[0] {
-                NodeStmt::IfElse(if_else) => {
-                    match &if_else.condition {
-                        IfCondition::Binary(binary) => {
-                            assert_eq!(binary.operator, ComparisonOp::And);
-                        }
-                        _ => panic!("Expected Binary condition"),
-                    }
+        TopLevel::NodeDef(node) => match &node.body[0] {
+            NodeStmt::IfElse(if_else) => match &if_else.condition {
+                IfCondition::Binary(binary) => {
+                    assert_eq!(binary.operator, ComparisonOp::And);
                 }
-                _ => panic!("Expected IfElse"),
-            }
-        }
+                _ => panic!("Expected Binary condition"),
+            },
+            _ => panic!("Expected IfElse"),
+        },
         _ => panic!("Expected NodeDef"),
     }
 }
@@ -191,25 +180,21 @@ fn test_parse_logical_or() {
             }
         }
     "#;
-    
+
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
-    
+
     let program = result.unwrap();
     match &program.body[2] {
-        TopLevel::NodeDef(node) => {
-            match &node.body[0] {
-                NodeStmt::IfElse(if_else) => {
-                    match &if_else.condition {
-                        IfCondition::Binary(binary) => {
-                            assert_eq!(binary.operator, ComparisonOp::Or);
-                        }
-                        _ => panic!("Expected Binary condition"),
-                    }
+        TopLevel::NodeDef(node) => match &node.body[0] {
+            NodeStmt::IfElse(if_else) => match &if_else.condition {
+                IfCondition::Binary(binary) => {
+                    assert_eq!(binary.operator, ComparisonOp::Or);
                 }
-                _ => panic!("Expected IfElse"),
-            }
-        }
+                _ => panic!("Expected Binary condition"),
+            },
+            _ => panic!("Expected IfElse"),
+        },
         _ => panic!("Expected NodeDef"),
     }
 }
@@ -225,10 +210,10 @@ fn test_parse_not_operator() {
             }
         }
     "#;
-    
+
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
-    
+
     let program = result.unwrap();
     match &program.body[1] {
         TopLevel::NodeDef(node) => {
@@ -258,7 +243,7 @@ fn test_parse_not_operator() {
 fn test_serialize_if_else() {
     use crate::Serializer;
     use serde_json::Value;
-    
+
     let source = r#"
         let score: Number
         
@@ -270,25 +255,25 @@ fn test_serialize_if_else() {
             }
         }
     "#;
-    
+
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
-    
+
     let program = result.unwrap();
     let json_str = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_str).unwrap();
-    
+
     // Check that node has texts with conditions
     assert!(json["nodes"][0]["texts"].is_array());
     let texts = json["nodes"][0]["texts"].as_array().unwrap();
     assert_eq!(texts.len(), 2);
-    
+
     // Check first text (then body)
     assert_eq!(texts[0]["text"], "High score!");
     assert!(texts[0]["condition"].is_object());
     assert_eq!(texts[0]["condition"]["type"], "binary");
     assert_eq!(texts[0]["condition"]["operator"], ">");
-    
+
     // Check second text (else body with negated condition)
     assert_eq!(texts[1]["text"], "Low score.");
     assert!(texts[1]["condition"].is_object());

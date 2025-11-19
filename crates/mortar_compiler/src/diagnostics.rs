@@ -338,6 +338,9 @@ impl DiagnosticCollector {
                 TopLevel::VarDecl(_) | TopLevel::ConstDecl(_) | TopLevel::EnumDef(_) => {
                     // Variable, constant, and enum declarations don't need naming checks for now
                 }
+                TopLevel::EventDef(_) | TopLevel::TimelineDef(_) => {
+                    // Event and timeline definitions don't need naming checks for now
+                }
             }
         }
 
@@ -423,6 +426,15 @@ impl DiagnosticCollector {
                         declared_functions,
                         used_functions,
                     );
+                }
+                NodeStmt::Run(_) => {
+                    // Run statements don't need analysis for now
+                }
+                NodeStmt::WithEvents(_) => {
+                    // WithEvents statements don't need analysis for now
+                }
+                NodeStmt::VarDecl(_) => {
+                    // Variable declarations in node body are local scope
                 }
             }
         }

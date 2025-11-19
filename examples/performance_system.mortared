@@ -1,0 +1,263 @@
+{
+  "metadata": {
+    "version": "0.1.0",
+    "generated_at": "2025-11-19T13:22:31.605253672Z"
+  },
+  "nodes": [
+    {
+      "name": "BasicRunExample",
+      "texts": [
+        {
+          "text": "The scene begins..."
+        },
+        {
+          "text": "Alice appears in the forest."
+        }
+      ]
+    },
+    {
+      "name": "WithEventsExample",
+      "texts": [
+        {
+          "text": "Welcome to the adventure!"
+        },
+        {
+          "text": "The forest comes alive with sound and color."
+        }
+      ]
+    },
+    {
+      "name": "CustomIndexExample",
+      "texts": [
+        {
+          "text": "This text has a custom event timing."
+        }
+      ]
+    },
+    {
+      "name": "ReferenceExample",
+      "texts": [
+        {
+          "text": "Dynamic event timing."
+        }
+      ]
+    },
+    {
+      "name": "MixedExample",
+      "texts": [
+        {
+          "text": "A figure emerges from the shadows..."
+        },
+        {
+          "text": "It's Alice!"
+        }
+      ],
+      "choice": [
+        {
+          "text": "Approach Alice",
+          "next": "AliceRoute"
+        },
+        {
+          "text": "Hide",
+          "next": "HideRoute"
+        }
+      ]
+    },
+    {
+      "name": "TimelineExample",
+      "texts": [
+        {
+          "text": "Watch the opening cutscene..."
+        }
+      ]
+    },
+    {
+      "name": "AliceRoute",
+      "texts": [
+        {
+          "text": "You approach Alice..."
+        }
+      ]
+    },
+    {
+      "name": "HideRoute",
+      "texts": [
+        {
+          "text": "You hide behind a tree..."
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "set_background",
+      "params": [
+        {
+          "name": "file_name",
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "show_character",
+      "params": [
+        {
+          "name": "sprite",
+          "type": "String"
+        },
+        {
+          "name": "position",
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "play_music",
+      "params": [
+        {
+          "name": "file_name",
+          "type": "String"
+        },
+        {
+          "name": "volume",
+          "type": "Number"
+        }
+      ]
+    },
+    {
+      "name": "fade_to_black"
+    },
+    {
+      "name": "DialogueStart",
+      "params": [
+        {
+          "name": "node_name",
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "PlayMusic",
+      "params": [
+        {
+          "name": "file_name",
+          "type": "String"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "SetForestBackground",
+      "index": 0.0,
+      "action": {
+        "type": "set_background",
+        "args": [
+          "\"bg_forest.png\""
+        ]
+      }
+    },
+    {
+      "name": "ShowAlice",
+      "action": {
+        "type": "show_character",
+        "args": [
+          "\"alice.png\"",
+          "\"center\""
+        ]
+      },
+      "duration": 2.0
+    },
+    {
+      "name": "ShowBob",
+      "action": {
+        "type": "show_character",
+        "args": [
+          "\"bob.png\"",
+          "\"right\""
+        ]
+      },
+      "duration": 1.5
+    },
+    {
+      "name": "PlayBGM",
+      "action": {
+        "type": "play_music",
+        "args": [
+          "\"bgm_adventure.mp3\"",
+          "0.7"
+        ]
+      },
+      "duration": 0.0
+    },
+    {
+      "name": "FadeOut",
+      "action": {
+        "type": "fade_to_black"
+      },
+      "duration": 1.0
+    }
+  ],
+  "timelines": [
+    {
+      "name": "OpeningCutscene",
+      "statements": [
+        {
+          "type": "run",
+          "event_name": "ShowAlice"
+        },
+        {
+          "type": "wait",
+          "duration": 1.0
+        },
+        {
+          "type": "run",
+          "event_name": "ShowBob"
+        },
+        {
+          "type": "wait",
+          "duration": 0.5
+        },
+        {
+          "type": "run",
+          "event_name": "PlayBGM"
+        },
+        {
+          "type": "wait",
+          "duration": 2.0
+        },
+        {
+          "type": "run",
+          "event_name": "DialogueStart",
+          "args": [
+            "\"Welcome\""
+          ]
+        }
+      ]
+    },
+    {
+      "name": "EndingCutscene",
+      "statements": [
+        {
+          "type": "run",
+          "event_name": "FadeOut"
+        },
+        {
+          "type": "wait",
+          "duration": 1.5
+        },
+        {
+          "type": "run",
+          "event_name": "PlayMusic",
+          "args": [
+            "\"ending_theme.mp3\""
+          ]
+        },
+        {
+          "type": "wait",
+          "duration": 3.0
+        }
+      ]
+    }
+  ]
+}
