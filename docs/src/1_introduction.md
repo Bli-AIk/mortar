@@ -1,43 +1,73 @@
-# Mortar Language Guide
+# Welcome to Mortar 🦀
 
-Welcome to the official documentation for Mortar, a Domain Specific Language (DSL) designed for game dialogue and text event systems.
+Hello and welcome to the world of Mortar!
 
 ## What is Mortar?
 
-Mortar is a modern dialogue scripting language that emphasizes **strict separation between text content and event logic**. Unlike other dialogue systems, Mortar ensures that your narrative content remains clean and unpolluted by technical markup, while still providing powerful event-driven features.
+Imagine you're writing dialogue scripts for a game. You might encounter these frustrations:
 
-## Key Features
+- Text cluttered with various technical markup, making it messy
+- Wanting to play sound effects when certain characters appear, but not knowing how to annotate
+- Writers and programmers constantly "stepping on each other's toes"
 
-- **Content Separation**: Clean separation between narrative text and system events
-- **Clear Semantics**: Rust-style syntax that's intuitive and readable  
-- **Program Friendly**: Compiles to JSON for easy integration
-- **Static Typing**: Compile-time type checking for reliability
-- **Event-Driven**: Precise event timing based on character indices
+**Mortar was created to solve these problems.**
 
-## Who Should Use Mortar?
+It's a language specifically designed for writing game dialogue, with the core principle of achieving **strict separation between text content and event logic**.
 
-Mortar is perfect for:
+In essence, our philosophy is simple:
 
-- 🎮 **Game Developers** building dialogue systems for RPGs, visual novels, or adventure games
-- 📚 **Interactive Fiction Authors** creating branching narratives
-- 🎬 **Multimedia Creators** synchronizing text with audio, animations, or visual effects
-- 🤖 **Chat Bot Developers** designing structured conversation flows
+> **Let text be text, let code be code.**
 
-## Getting Started
+You can focus on writing stories, while the program focuses on handling game logic—the two don't interfere with each other, yet work together perfectly.
 
-Ready to dive in? Check out the [Quick Start](./quick-start.md) guide to write your first Mortar script, or jump to [Installation](./installation.md) to set up the tools.
+## What Can It Do?
 
-## Philosophy
+Mortar is particularly suitable for these scenarios:
 
-> "Mortar aims for strict separation of text content and event logic."
+- 🎮 **Game Dialogue Systems**: RPG dialogues, visual novels
+- 📖 **Interactive Fiction**: Text adventures, branching narratives
+- 📚 **Educational Content**: Interactive tutorials, guided learning scenarios
+- 🤖 **Chat Scripts**: Structured dialogue logic
+- 🖼️ **Multimedia Presentation**: Synchronization of text and media events
 
-This core principle drives every design decision in Mortar. Your writers can focus purely on crafting compelling narratives, while your developers can implement rich interactive features - all without stepping on each other's toes.
+## Why Choose Mortar?
 
-## Language Navigation
+Compared to other dialogue systems, Mortar has these features:
 
-- English: You're here! 🇺🇸
-- 简体中文: [访问中文文档](/zh-Hans/) 🇨🇳
+- **Clean and Clear**: No messy markup in the text
+- **Precise Control**: Can specify triggering events at specific character positions (like playing sound effects)
+- **Easy to Understand**: Syntax designed to feel as natural as everyday writing
+- **Easy Integration**: Compiles to JSON format, usable by any game engine
+
+## Quick Glance
+
+This is what Mortar code looks like:
+
+```mortar
+node OpeningScene {
+    text: "Welcome to the magical world!"
+    events: [
+        0, play_sound("magic_sound.wav")
+        7, sparkle_effect()
+    ]
+    
+    text: "Ready to start your adventure?"
+    
+    choice: [
+        "Yes, I'm ready!" -> AdventureStart,
+        "Let me think about it..." -> Hesitate
+    ]
+}
+```
+
+Looks intuitive, doesn't it?
+
+## Next Steps
+
+- Want to try it right away? Check out [Quick Start Guide](./2_quick-start.md)
+- Need to install tools? Go to [Installation](./3_installation.md)
+- Want to learn more? Start with [Core Concepts](./4_0_core-concepts.md)
 
 ---
 
-*Mortar is open source and available under the MIT/Apache-2.0 dual license.*
+*Mortar is an open-source project, licensed under MIT/Apache-2.0 dual license ❤️*

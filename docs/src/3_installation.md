@@ -1,142 +1,128 @@
 # Installation
 
-Get Mortar up and running on your system with these installation options.
+To use Mortar, you need to install the compilation tools. Don't worry, the process is simple!
 
-## Prerequisites
+## Method 1: Install with Cargo (Recommended)
 
-- **Rust**: Version 1.70 or later (if building from source)
-- **Git**: For cloning the repository (if building from source)
-
-## Option 1: Install from Crates.io (Recommended)
-
-The easiest way to install Mortar is from the official Rust package registry:
+If you already have [Rust](https://rust-lang.org/) installed, it's very convenient:
 
 ```bash
-# Install the complete Mortar CLI
 cargo install mortar_cli
+```
 
-# Verify installation
+Wait for the installation to complete, then check if it was successful:
+
+```bash
 mortar --version
 ```
 
-You can also install individual components:
+Seeing the version number means the installation was successful!
+
+## Method 2: Build from Source (Not for Average Users)
+
+Want to experience the latest development version? You can build from source (this also requires a Rust development environment):
 
 ```bash
-# Language Server for IDE support
-cargo install mortar_lsp
-
-# Core library only (for Rust projects)
-# Add to your Cargo.toml:
-[dependencies]
-mortar_language = "0.3"
-```
-
-## Option 2: Build from Source
-
-For the latest development features or to contribute:
-
-```bash
-# Clone the repository
+# Download source code
 git clone https://github.com/Bli-AIk/mortar.git
 cd mortar
 
-# Build all components
+# Build
 cargo build --release
 
-# Install CLI globally
-cargo install --path crates/mortar_cli
-
-# Install LSP server
-cargo install --path crates/mortar_lsp
+# The compiled program is here
+./target/release/mortar --version
 ```
 
-## Option 3: Download Pre-built Binaries
+**Tip**: The compiled executable is located at `target/release/mortar`, you can add it to your environment variables.
 
-Pre-built binaries are available on the [GitHub Releases page](https://github.com/Bli-AIk/mortar/releases):
+## Method 3: Download from GitHub Release (Not for Average Users)
 
-1. Download the appropriate binary for your platform
-2. Extract the archive
-3. Add the binary to your system PATH
+If you don't want to use Rust or Cargo, you can also download pre-compiled binaries directly from [Mortar's GitHub Release page](https://github.com/Bli-AIk/mortar/releases).
+
+### Linux / macOS
+
+1. Open the Release page and download the corresponding version, for example `mortar-x.x.x-linux-x64.tar.gz` or `mortar-x.x.x-macos-x64.tar.gz`.
+2. Extract to any directory:
+
+```bash
+tar -xzf mortar-x.x.x-linux-x64.tar.gz -C ~/mortar
+```
+
+3. Add the executable path to environment variables, for example:
+
+```bash
+export PATH="$HOME/mortar:$PATH"
+```
+
+4. Check if installation was successful:
+
+```bash
+mortar --version
+```
+
+### Windows
+
+1. Download the corresponding version of `mortar-x.x.x-windows-x64.zip`.
+2. Extract to any directory, for example `D:\mortar`.
+3. Add the directory to system environment variable PATH:
+    * Right-click "This PC" → "Properties" → "Advanced system settings" → "Environment Variables"
+    * Find `Path` in "System variables" or "User variables" → Edit → Add `D:\mortar`
+4. Open a new command prompt and check installation:
+
+```cmd
+mortar --version
+```
+
+⚠️ **Note**:
+
+* Need to manually set environment variables
+* May encounter issues when opening new terminals or modifying system configuration
+* Not very user-friendly for average users
+
+Therefore, we recommend **Method 1 (Cargo)** for a smoother installation experience.
 
 ## Verify Installation
 
-Test that Mortar is correctly installed:
+Run this command to test:
 
 ```bash
-# Check CLI version
-mortar --version
-
-# Try compiling a simple script
-echo 'node Test { text: "Hello World!" }' > test.mortar
-mortar test.mortar --pretty
+mortar --help
 ```
 
-## IDE Support Setup
+You should see help information explaining various usage options.
 
-### Visual Studio Code
+## Editor Support (Optional but Recommended)
 
-1. Install the Mortar extension from the VS Code marketplace
-2. The extension automatically uses your installed `mortar_lsp` server
-
-### Other IDEs
-
-For IDEs with Language Server Protocol support:
-
-1. Install `mortar_lsp`:
-   ```bash
-   cargo install mortar_lsp
-   ```
-
-2. Configure your IDE to use `mortar_lsp` for `.mortar` files
-3. Set the language ID to `mortar`
-
-## Development Dependencies (Optional)
-
-For contributing to Mortar development:
+For a better writing experience, you can install the language server:
 
 ```bash
-# Install development tools
-cargo install mdbook          # For documentation
-cargo install cargo-tarpaulin # For test coverage
-cargo install cargo-audit     # For security audits
-
-# Run development commands
-cargo test                    # Run tests
-cargo clippy                  # Lint code
-cargo fmt                     # Format code
+cargo install mortar_lsp
 ```
 
-## Troubleshooting
+Then configure it in your favorite editor.
 
-### Common Issues
+Check [Editor Support](./6_2_ide-support.md) to learn how to configure your editor.
 
-**`mortar` command not found**
-- Ensure `~/.cargo/bin` is in your PATH
-- Run `source ~/.bashrc` or restart your terminal
+## Encountering Problems?
 
-**Build fails on older Rust versions**
-- Update Rust: `rustup update stable`
-- Minimum required version is Rust 1.70
+### "cargo command not found"
 
-**LSP not working in IDE**
-- Verify `mortar_lsp` is installed: `which mortar_lsp`
-- Check IDE LSP configuration
-- Restart your IDE after installation
+You need to install Rust first. Visit [https://rust-lang.org/](https://rust-lang.org/) and follow the installation guide.
 
-**Permission denied on Unix systems**
-- Ensure the binary is executable: `chmod +x mortar`
+### "Build failed"
 
-### Getting Help
+Make sure your Rust version is new enough:
 
-- **GitHub Issues**: [Report bugs or ask questions](https://github.com/Bli-AIk/mortar/issues)
-- **Discussions**: [Community support](https://github.com/Bli-AIk/mortar/discussions)
-- **Documentation**: You're reading it!
+```bash
+rustup update
+```
+
+### Other Issues
+
+- Check [GitHub Issues](https://github.com/Bli-AIk/mortar/issues)
+- Or ask in [Discussions](https://github.com/Bli-AIk/mortar/discussions)
 
 ## Next Steps
 
-Now that Mortar is installed:
-
-1. Try the [Quick Start](./quick-start.md) guide
-2. Explore [Basic Concepts](./basic-concepts.md)
-3. Set up your [IDE Support](./ide-support.md)
-4. Read about [Best Practices](./best-practices.md)
+Installed? Then go try out [Quick Start Guide](./2_quick-start.md)!
