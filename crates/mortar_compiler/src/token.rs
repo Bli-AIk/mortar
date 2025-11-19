@@ -51,6 +51,12 @@ pub enum Token<'a> {
     // Branch interpolation keyword
     #[token("branch")]
     Branch,
+    
+    // Control flow keywords
+    #[token("if")]
+    If,
+    #[token("else")]
+    Else,
 
     // Type keywords
     #[token("String")]
@@ -97,6 +103,20 @@ pub enum Token<'a> {
     Less,
     #[token(">")]
     Greater,
+    #[token("<=")]
+    LessEqual,
+    #[token(">=")]
+    GreaterEqual,
+    #[token("==")]
+    EqualEqual,
+    #[token("!=")]
+    NotEqual,
+    #[token("&&")]
+    And,
+    #[token("||")]
+    Or,
+    #[token("!")]
+    Not,
     // endregion
 
     // region Literals
@@ -189,6 +209,8 @@ impl fmt::Display for Token<'_> {
             Pub => write!(f, "pub"),
             Enum => write!(f, "enum"),
             Branch => write!(f, "branch"),
+            If => write!(f, "if"),
+            Else => write!(f, "else"),
 
             StringType => write!(f, "String"),
             NumberType => write!(f, "Number"),
@@ -210,6 +232,13 @@ impl fmt::Display for Token<'_> {
             Equals => write!(f, "="),
             Less => write!(f, "<"),
             Greater => write!(f, ">"),
+            LessEqual => write!(f, "<="),
+            GreaterEqual => write!(f, ">="),
+            EqualEqual => write!(f, "=="),
+            NotEqual => write!(f, "!="),
+            And => write!(f, "&&"),
+            Or => write!(f, "||"),
+            Not => write!(f, "!"),
 
             String(s) => write!(f, "\"{}\"", s),
             InterpolatedString(s) => write!(f, "$\"{}\"", s),

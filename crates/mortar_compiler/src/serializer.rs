@@ -58,6 +58,24 @@ struct JsonText {
     interpolated_parts: Option<Vec<JsonStringPart>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     events: Option<Vec<JsonEvent>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    condition: Option<JsonIfCondition>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct JsonIfCondition {
+    #[serde(rename = "type")]
+    cond_type: String, // "binary", "unary", "identifier", "literal"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    operator: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    left: Option<Box<JsonIfCondition>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    right: Option<Box<JsonIfCondition>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    operand: Option<Box<JsonIfCondition>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    value: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -250,6 +268,26 @@ impl Serializer {
 
         for stmt in &node_def.body {
             match stmt {
+                NodeStmt::IfElse(if_else) => {
+                    // Save current text if any
+                    if let Some(text_content) = current_text.take() {
+                        texts.push(JsonText {
+                            text: text_content,
+                            interpolated_parts: None,
+                            condition: None,
+                        events: if current_events.is_empty() {
+                                None
+                            } else {
+                                Some(current_events.clone())
+                            },
+                        });
+                        current_events.clear();
+                    }
+                    
+                    // Process if-else as conditional texts
+                    Self::process_if_else(if_else, &mut texts)?;
+                    continue;
+                }
                 NodeStmt::Branch(branch_def) => {
                     // Collect branch definitions
                     branches_vec.push(Self::convert_branch_def(branch_def)?);
@@ -261,7 +299,8 @@ impl Serializer {
                         texts.push(JsonText {
                             text: text_content,
                             interpolated_parts: None,
-                            events: if current_events.is_empty() {
+                            condition: None,
+                        events: if current_events.is_empty() {
                                 None
                             } else {
                                 Some(current_events.clone())
@@ -277,7 +316,8 @@ impl Serializer {
                         texts.push(JsonText {
                             text: text_content,
                             interpolated_parts: None,
-                            events: if current_events.is_empty() {
+                            condition: None,
+                        events: if current_events.is_empty() {
                                 None
                             } else {
                                 Some(current_events.clone())
@@ -291,6 +331,7 @@ impl Serializer {
                     texts.push(JsonText {
                         text: rendered_text,
                         interpolated_parts: Some(parts),
+                        condition: None,
                         events: if current_events.is_empty() {
                             None
                         } else {
@@ -311,7 +352,8 @@ impl Serializer {
                         texts.push(JsonText {
                             text: text_content,
                             interpolated_parts: None,
-                            events: if current_events.is_empty() {
+                            condition: None,
+                        events: if current_events.is_empty() {
                                 None
                             } else {
                                 Some(current_events.clone())
@@ -334,7 +376,8 @@ impl Serializer {
             texts.push(JsonText {
                 text: text_content,
                 interpolated_parts: None,
-                events: if current_events.is_empty() {
+                condition: None,
+                        events: if current_events.is_empty() {
                     None
                 } else {
                     Some(current_events)
@@ -382,6 +425,127 @@ impl Serializer {
             enum_type: branch_def.enum_type.clone(),
             cases,
         })
+    }
+    
+    fn process_if_else(if_else: &IfElseStmt, texts: &mut Vec<JsonText>) -> Result<(), String> {
+        let condition_json = Self::convert_if_condition(&if_else.condition)?;
+        
+        // Process then body
+        for stmt in &if_else.then_body {
+            match stmt {
+                NodeStmt::Text(text) => {
+                    texts.push(JsonText {
+                        text: text.clone(),
+                        interpolated_parts: None,
+                        events: None,
+                        condition: Some(condition_json.clone()),
+                    });
+                }
+                NodeStmt::InterpolatedText(interp) => {
+                    let (rendered, parts) = Self::convert_interpolated_string(interp)?;
+                    texts.push(JsonText {
+                        text: rendered,
+                        interpolated_parts: Some(parts),
+                        events: None,
+                        condition: Some(condition_json.clone()),
+                    });
+                }
+                _ => {}
+            }
+        }
+        
+        // Process else body with negated condition
+        if let Some(else_body) = &if_else.else_body {
+            let negated_condition = JsonIfCondition {
+                cond_type: "unary".to_string(),
+                operator: Some("!".to_string()),
+                left: None,
+                right: None,
+                operand: Some(Box::new(condition_json)),
+                value: None,
+            };
+            
+            for stmt in else_body {
+                match stmt {
+                    NodeStmt::Text(text) => {
+                        texts.push(JsonText {
+                            text: text.clone(),
+                            interpolated_parts: None,
+                            events: None,
+                            condition: Some(negated_condition.clone()),
+                        });
+                    }
+                    NodeStmt::InterpolatedText(interp) => {
+                        let (rendered, parts) = Self::convert_interpolated_string(interp)?;
+                        texts.push(JsonText {
+                            text: rendered,
+                            interpolated_parts: Some(parts),
+                            events: None,
+                            condition: Some(negated_condition.clone()),
+                        });
+                    }
+                    _ => {}
+                }
+            }
+        }
+        
+        Ok(())
+    }
+    
+    fn convert_if_condition(cond: &IfCondition) -> Result<JsonIfCondition, String> {
+        match cond {
+            IfCondition::Binary(binary) => {
+                let op_str = match binary.operator {
+                    ComparisonOp::Greater => ">",
+                    ComparisonOp::Less => "<",
+                    ComparisonOp::GreaterEqual => ">=",
+                    ComparisonOp::LessEqual => "<=",
+                    ComparisonOp::Equal => "==",
+                    ComparisonOp::NotEqual => "!=",
+                    ComparisonOp::And => "&&",
+                    ComparisonOp::Or => "||",
+                };
+                
+                Ok(JsonIfCondition {
+                    cond_type: "binary".to_string(),
+                    operator: Some(op_str.to_string()),
+                    left: Some(Box::new(Self::convert_if_condition(&binary.left)?)),
+                    right: Some(Box::new(Self::convert_if_condition(&binary.right)?)),
+                    operand: None,
+                    value: None,
+                })
+            }
+            IfCondition::Unary(unary) => {
+                Ok(JsonIfCondition {
+                    cond_type: "unary".to_string(),
+                    operator: Some("!".to_string()),
+                    left: None,
+                    right: None,
+                    operand: Some(Box::new(Self::convert_if_condition(&unary.operand)?)),
+                    value: None,
+                })
+            }
+            IfCondition::Identifier(name) => {
+                Ok(JsonIfCondition {
+                    cond_type: "identifier".to_string(),
+                    operator: None,
+                    left: None,
+                    right: None,
+                    operand: None,
+                    value: Some(name.clone()),
+                })
+            }
+            IfCondition::Literal(val) => {
+                Ok(JsonIfCondition {
+                    cond_type: "literal".to_string(),
+                    operator: None,
+                    left: None,
+                    right: None,
+                    operand: None,
+                    value: Some(val.to_string()),
+                })
+            }
+        }
     }
 
     fn convert_event(event: &Event) -> Result<JsonEvent, String> {

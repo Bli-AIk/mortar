@@ -133,6 +133,8 @@ impl Backend {
             | Token::Pub
             | Token::Enum
             | Token::Branch
+            | Token::If
+            | Token::Else
             | Token::StringType
             | Token::NumberType
             | Token::BooleanType
@@ -157,7 +159,14 @@ impl Backend {
             | Token::RightParen
             | Token::Equals
             | Token::Less
-            | Token::Greater => PUNCTUATION,
+            | Token::Greater
+            | Token::LessEqual
+            | Token::GreaterEqual
+            | Token::EqualEqual
+            | Token::NotEqual
+            | Token::And
+            | Token::Or
+            | Token::Not => PUNCTUATION,
 
             Token::Identifier(_) => {
                 // Check if it's an identifier after node/nd or fn (function/node definition)

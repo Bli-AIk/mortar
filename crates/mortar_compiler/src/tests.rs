@@ -5,6 +5,7 @@ mod variable_test;
 mod token_test;
 mod diagnostics_test;
 mod branch_test;
+mod control_flow_test;
 
 // Placeholder for future tests
 // mod interpolation_test;

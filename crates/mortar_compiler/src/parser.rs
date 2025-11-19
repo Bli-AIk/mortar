@@ -30,6 +30,52 @@ pub enum NodeStmt {
     Events(Vec<Event>),
     Choice(Vec<ChoiceItem>),
     Branch(BranchDef),
+    IfElse(IfElseStmt),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct IfElseStmt {
+    pub condition: IfCondition,
+    pub then_body: Vec<NodeStmt>,
+    pub else_body: Option<Vec<NodeStmt>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum IfCondition {
+    Binary(Box<BinaryCondition>),
+    Unary(Box<UnaryCondition>),
+    Identifier(String),
+    Literal(bool),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BinaryCondition {
+    pub left: IfCondition,
+    pub operator: ComparisonOp,
+    pub right: IfCondition,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct UnaryCondition {
+    pub operator: UnaryOp,
+    pub operand: IfCondition,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ComparisonOp {
+    Greater,      // >
+    Less,         // <
+    GreaterEqual, // >=
+    LessEqual,    // <=
+    Equal,        // ==
+    NotEqual,     // !=
+    And,          // &&
+    Or,           // ||
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum UnaryOp {
+    Not, // !
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -443,6 +489,7 @@ impl<'a> Parser<'a> {
 
     fn parse_node_stmt(&mut self) -> Result<NodeStmt, String> {
         match self.peek().map(|t| &t.token) {
+            Some(Token::If) => Ok(NodeStmt::IfElse(self.parse_if_else()?)),
             Some(Token::Text) => Ok(self.parse_text_stmt()?),
             Some(Token::Events) => Ok(NodeStmt::Events(self.parse_events_stmt()?)),
             Some(Token::Choice) => Ok(NodeStmt::Choice(self.parse_choice_stmt()?)),
@@ -692,6 +739,170 @@ impl<'a> Parser<'a> {
         self.consume(&Token::RightBracket, "Expected ']' to end events")?;
         
         Ok(events)
+    }
+    
+    fn parse_if_else(&mut self) -> Result<IfElseStmt, String> {
+        self.consume(&Token::If, "Expected 'if'")?;
+        
+        // Parse condition
+        let condition = self.parse_if_condition()?;
+        
+        // Parse then body
+        self.consume(&Token::LeftBrace, "Expected '{' after if condition")?;
+        
+        let mut then_body = Vec::new();
+        while !self.check(&Token::RightBrace) && !self.is_at_end() {
+            self.skip_comments_and_separators();
+            if self.check(&Token::RightBrace) {
+                break;
+            }
+            then_body.push(self.parse_node_stmt()?);
+        }
+        
+        self.consume(&Token::RightBrace, "Expected '}' to end if body")?;
+        
+        // Parse optional else body
+        let else_body = if self.check(&Token::Else) {
+            self.advance(); // consume 'else'
+            self.consume(&Token::LeftBrace, "Expected '{' after else")?;
+            
+            let mut body = Vec::new();
+            while !self.check(&Token::RightBrace) && !self.is_at_end() {
+                self.skip_comments_and_separators();
+                if self.check(&Token::RightBrace) {
+                    break;
+                }
+                body.push(self.parse_node_stmt()?);
+            }
+            
+            self.consume(&Token::RightBrace, "Expected '}' to end else body")?;
+            Some(body)
+        } else {
+            None
+        };
+        
+        Ok(IfElseStmt {
+            condition,
+            then_body,
+            else_body,
+        })
+    }
+    
+    fn parse_if_condition(&mut self) -> Result<IfCondition, String> {
+        self.parse_or_expression()
+    }
+    
+    fn parse_or_expression(&mut self) -> Result<IfCondition, String> {
+        let mut left = self.parse_and_expression()?;
+        
+        while self.check(&Token::Or) {
+            self.advance();
+            let right = self.parse_and_expression()?;
+            left = IfCondition::Binary(Box::new(BinaryCondition {
+                left,
+                operator: ComparisonOp::Or,
+                right,
+            }));
+        }
+        
+        Ok(left)
+    }
+    
+    fn parse_and_expression(&mut self) -> Result<IfCondition, String> {
+        let mut left = self.parse_comparison_expression()?;
+        
+        while self.check(&Token::And) {
+            self.advance();
+            let right = self.parse_comparison_expression()?;
+            left = IfCondition::Binary(Box::new(BinaryCondition {
+                left,
+                operator: ComparisonOp::And,
+                right,
+            }));
+        }
+        
+        Ok(left)
+    }
+    
+    fn parse_comparison_expression(&mut self) -> Result<IfCondition, String> {
+        let mut left = self.parse_unary_expression()?;
+        
+        while let Some(op) = self.peek_comparison_op() {
+            self.advance(); // consume operator
+            let right = self.parse_unary_expression()?;
+            left = IfCondition::Binary(Box::new(BinaryCondition {
+                left,
+                operator: op,
+                right,
+            }));
+        }
+        
+        Ok(left)
+    }
+    
+    fn parse_unary_expression(&mut self) -> Result<IfCondition, String> {
+        if self.check(&Token::Not) {
+            self.advance();
+            let operand = self.parse_unary_expression()?;
+            return Ok(IfCondition::Unary(Box::new(UnaryCondition {
+                operator: UnaryOp::Not,
+                operand,
+            })));
+        }
+        
+        self.parse_primary_if_condition()
+    }
+    
+    fn parse_primary_if_condition(&mut self) -> Result<IfCondition, String> {
+        // Handle parenthesized expressions
+        if self.check(&Token::LeftParen) {
+            self.advance();
+            let cond = self.parse_if_condition()?;
+            self.consume(&Token::RightParen, "Expected ')' after condition")?;
+            return Ok(cond);
+        }
+        
+        // Handle boolean literals
+        if self.check(&Token::True) {
+            self.advance();
+            return Ok(IfCondition::Literal(true));
+        }
+        
+        if self.check(&Token::False) {
+            self.advance();
+            return Ok(IfCondition::Literal(false));
+        }
+        
+        // Handle identifiers (variables) and numbers
+        if let Some(token_info) = self.peek() {
+            match &token_info.token {
+                Token::Identifier(name) => {
+                    let name = name.to_string();
+                    self.advance();
+                    return Ok(IfCondition::Identifier(name));
+                }
+                Token::Number(num) => {
+                    let num = num.to_string();
+                    self.advance();
+                    return Ok(IfCondition::Identifier(num));
+                }
+                _ => {}
+            }
+        }
+        
+        Err("Expected condition expression".to_string())
+    }
+    
+    fn peek_comparison_op(&self) -> Option<ComparisonOp> {
+        match self.peek().map(|t| &t.token) {
+            Some(Token::Greater) => Some(ComparisonOp::Greater),
+            Some(Token::Less) => Some(ComparisonOp::Less),
+            Some(Token::GreaterEqual) => Some(ComparisonOp::GreaterEqual),
+            Some(Token::LessEqual) => Some(ComparisonOp::LessEqual),
+            Some(Token::EqualEqual) => Some(ComparisonOp::Equal),
+            Some(Token::NotEqual) => Some(ComparisonOp::NotEqual),
+            _ => None,
+        }
     }
 
     fn parse_events_stmt(&mut self) -> Result<Vec<Event>, String> {

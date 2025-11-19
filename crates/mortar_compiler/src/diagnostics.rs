@@ -388,6 +388,9 @@ impl DiagnosticCollector {
         // Analyze statements
         for stmt in &node.body {
             match stmt {
+                NodeStmt::IfElse(_) => {
+                    // If-else statements don't need special analysis for now
+                }
                 NodeStmt::Branch(_) => {
                     // Branch definitions don't need analysis here
                 }
