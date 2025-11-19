@@ -34,18 +34,8 @@ jobs:
       with:
         mdbook-version: 'latest'
 
-    - name: Install mdBook plugins
-      run: |
-        cargo install mdbook-mermaid
-        cargo install mdbook-admonish
-
     - name: Setup Pages
       uses: actions/configure-pages@v4
-
-    - name: Initialize admonish
-      run: |
-        cd docs
-        mdbook-admonish install
 
     - name: Build English docs
       run: |
@@ -57,7 +47,6 @@ jobs:
         # Copy theme to Chinese docs directory for proper path resolution
         cp -r docs/theme docs/zh-Hans/
         cd docs/zh-Hans
-        mdbook-admonish install
         mdbook build
 
     - name: Prepare deployment structure
