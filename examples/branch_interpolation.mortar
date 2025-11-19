@@ -1,7 +1,18 @@
-// Branch Interpolation Example
-// Demonstrates non-symmetric localization using enum-based text variants
+// Branch Interpolation Example - Non-symmetric Localization
+// Syntax according to plan.md
 
-// ===== Define Enums for Branching =====
+// ===== Define Variables and Enums =====
+
+let is_forest: Bool
+let is_city: Bool
+let is_male: Bool
+let is_female: Bool
+
+enum Location {
+    forest
+    city
+    town
+}
 
 enum Gender {
     male
@@ -9,73 +20,75 @@ enum Gender {
     other
 }
 
-enum Quantity {
-    zero
-    one
-    two
-    few
-    many
-}
-
-enum PlayerStatus {
-    online
-    away
-    busy
-    offline
-}
-
-// ===== Variables =====
-
-let player_gender: Gender
-let item_count: Number
-let player_status: PlayerStatus
-
-// ===== Constants =====
-
-pub const game_title: String = "Mortar RPG"
-
-// ===== Story Nodes with Branch Interpolation =====
+// ===== Node with Branch Interpolation =====
 
 node Welcome {
-    text: $"Welcome to {game_title()}, {branch<Gender>(get_player_gender()) { male: \"Sir\", female: \"Madam\", other: \"Traveler\" }}!"
+    text: $"欢迎来到{place}，{greet}！"
     
-    text: $"{branch<Gender>(get_player_gender()) { male: \"He\", female: \"She\", other: \"They\" }} {branch<Quantity>(check_items()) { zero: \"has no items\", one: \"has one item\", two: \"has two items\", few: \"has a few items\", many: \"has many items\" }}."
+    // Boolean-based branch
+    place: branch [
+        is_forest, "森林"
+        is_city, "城市"
+    ]
     
-    choice: [
-        "Check Status" -> StatusNode,
-        "View Inventory" -> InventoryNode,
-        "Continue" -> GameNode
+    // Boolean-based branch with different condition
+    greet: branch [
+        is_male, "勇士"
+        is_female, "女士"
     ]
 }
 
-node StatusNode {
-    text: $"Your status is: {branch<PlayerStatus>(get_status()) { online: \"🟢 Online\", away: \"🟡 Away\", busy: \"🔴 Busy\", offline: \"⚫ Offline\" }}"
+node LocationDesc {
+    text: $"你现在在{location}，周围有{object}。"
     
-    text: "You can change your status in settings."
+    // Enum-based branch
+    location: branch<Location> [
+        forest, "森林深处"
+        city, "繁华都市"
+        town, "宁静小镇"
+    ]
     
-    choice: [
-        "Back" -> Welcome
+    // Enum-based branch with events (for text effects)
+    object: branch<Location> [
+        forest, "树木", events: [
+            0, set_color("green")
+        ]
+        city, "高楼", events: [
+            0, set_color("gray")
+            1, set_color("blue")
+        ]
+        town, "房屋", events: [
+            0, set_color("brown")
+        ]
     ]
 }
 
-node InventoryNode {
-    text: $"Inventory: {branch<Quantity>(count_inventory()) { zero: \"Empty\", one: \"1 item\", two: \"2 items\", few: \"3-5 items\", many: \"6+ items\" }}"
-    
-    choice: [
-        "Back" -> Welcome
+// Example combining text events and branch events
+node ComplexScene {
+    // Main text with events (indices refer to non-interpolated parts only)
+    text: $"你看见{object}后，感到惊讶！"
+    events: [
+        1, shake()
+        2, shake()
+        3, flash()
     ]
-}
-
-node GameNode {
-    text: $"Let's start the game, {branch<Gender>(get_player_gender()) { male: \"brave warrior\", female: \"brave warrior\", other: \"brave soul\" }}!"
     
-    text: "Your adventure begins..."
+    // Branch definition with its own events
+    object: branch<Location> [
+        forest, "野兽", events: [
+            0, set_color("red")
+            1, set_color("orange")
+        ]
+        city, "警车", events: [
+            0, set_color("blue")
+            1, set_color("red")
+        ]
+        town, "老人"
+    ]
 }
 
 // ===== Function Declarations =====
 
-fn game_title() -> String
-fn get_player_gender() -> Gender
-fn check_items() -> Quantity
-fn get_status() -> PlayerStatus
-fn count_inventory() -> Quantity
+fn set_color(color: String)
+fn shake()
+fn flash()

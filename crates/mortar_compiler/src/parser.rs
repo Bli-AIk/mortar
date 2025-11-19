@@ -29,6 +29,7 @@ pub enum NodeStmt {
     InterpolatedText(InterpolatedString),
     Events(Vec<Event>),
     Choice(Vec<ChoiceItem>),
+    Branch(BranchDef),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -40,20 +41,22 @@ pub struct InterpolatedString {
 pub enum StringPart {
     Text(String),
     Expression(FuncCall),
-    Branch(BranchInterpolation),
+    Placeholder(String), // e.g., {place}, {object}
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct BranchInterpolation {
-    pub enum_type: String,
-    pub enum_value_expr: Box<FuncCall>,
-    pub branches: Vec<BranchCase>,
+pub struct BranchDef {
+    pub name: String,  // e.g., "place", "object"
+    pub name_span: Option<(usize, usize)>,
+    pub enum_type: Option<String>,  // Some("ExampleEnum") or None for bool branches
+    pub cases: Vec<BranchCase>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BranchCase {
-    pub variant: String,
+    pub condition: String,  // e.g., "is_forest", "tree"
     pub text: String,
+    pub events: Option<Vec<Event>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -297,6 +300,30 @@ impl<'a> Parser<'a> {
             ))
         }
     }
+    
+    fn consume_identifier(&mut self, error_msg: &str) -> Result<String, String> {
+        if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                Ok(name.to_string())
+            } else {
+                Err(format!("{}: expected identifier, found {:?}", error_msg, token_info.token))
+            }
+        } else {
+            Err(format!("{}: unexpected end of input", error_msg))
+        }
+    }
+    
+    fn consume_string(&mut self, error_msg: &str) -> Result<String, String> {
+        if let Some(token_info) = self.advance() {
+            if let Token::String(s) = &token_info.token {
+                Ok(s.to_string())
+            } else {
+                Err(format!("{}: expected string, found {:?}", error_msg, token_info.token))
+            }
+        } else {
+            Err(format!("{}: unexpected end of input", error_msg))
+        }
+    }
 
     /// Skip optional separators (commas and semicolons)
     fn skip_optional_separators(&mut self) {
@@ -419,8 +446,24 @@ impl<'a> Parser<'a> {
             Some(Token::Text) => Ok(self.parse_text_stmt()?),
             Some(Token::Events) => Ok(NodeStmt::Events(self.parse_events_stmt()?)),
             Some(Token::Choice) => Ok(NodeStmt::Choice(self.parse_choice_stmt()?)),
+            Some(Token::Identifier(_)) => {
+                // Could be a branch definition (name: branch [...])
+                // Peek ahead to see if there's a colon followed by 'branch'
+                if self.current + 1 < self.tokens.len() {
+                    if matches!(self.tokens[self.current + 1].token, Token::Colon) {
+                        if self.current + 2 < self.tokens.len() {
+                            if matches!(self.tokens[self.current + 2].token, Token::Branch) {
+                                return Ok(NodeStmt::Branch(self.parse_branch_def()?));
+                            }
+                        }
+                    }
+                }
+                Err(format!(
+                    "Unexpected identifier in node body. Expected 'text', 'events', 'choice', or branch definition"
+                ))
+            }
             _ => Err(format!(
-                "Expected 'text', 'events', or 'choice', found {:?}",
+                "Expected 'text', 'events', 'choice', or branch definition, found {:?}",
                 self.peek().map(|t| &t.token)
             )),
         }
@@ -481,14 +524,15 @@ impl<'a> Parser<'a> {
                     return Err("Unmatched '{' in interpolated string".to_string());
                 }
 
-                // Check if this is a branch interpolation
-                if expr_text.trim().starts_with("branch") {
-                    let branch = self.parse_branch_from_string(&expr_text)?;
-                    parts.push(StringPart::Branch(branch));
-                } else {
-                    // Parse the expression as a function call
+                // Check if this is a simple placeholder (identifier) or function call
+                let expr_trimmed = expr_text.trim();
+                if expr_trimmed.contains('(') {
+                    // It's a function call
                     let func_call = self.parse_expression_from_string(&expr_text)?;
                     parts.push(StringPart::Expression(func_call));
+                } else {
+                    // It's a simple placeholder
+                    parts.push(StringPart::Placeholder(expr_trimmed.to_string()));
                 }
             } else {
                 current_text.push(ch);
@@ -554,140 +598,100 @@ impl<'a> Parser<'a> {
         Ok(args)
     }
 
-    fn parse_branch_from_string(&mut self, branch_text: &str) -> Result<BranchInterpolation, String> {
-        // Expected format: branch<EnumType>(get_value()) { variant1: "text1", variant2: "text2" }
-        let branch_text = branch_text.trim();
+    fn parse_branch_def(&mut self) -> Result<BranchDef, String> {
+        // Parse: name: branch [condition, text, ...]
+        // or: name: branch<EnumType> [variant, text, ...]
         
-        if !branch_text.starts_with("branch") {
-            return Err("Expected 'branch' keyword".to_string());
-        }
+        let name_token = self.consume_identifier("Expected branch name")?;
+        let name = name_token.clone();
+        let name_span = Some((0, name.len())); // Approximate
         
-        let rest = &branch_text[6..].trim(); // Skip "branch"
+        self.consume(&Token::Colon, "Expected ':' after branch name")?;
+        self.consume(&Token::Branch, "Expected 'branch' keyword")?;
         
-        // Parse enum type in angle brackets: <EnumType>
-        if !rest.starts_with('<') {
-            return Err("Expected '<' after 'branch'".to_string());
-        }
+        // Check for optional enum type: <EnumType>
+        let enum_type = if self.check(&Token::Less) {
+            self.advance(); // consume <
+            let type_token = self.consume_identifier("Expected enum type name")?;
+            self.consume(&Token::Greater, "Expected '>' after enum type")?;
+            Some(type_token)
+        } else {
+            None
+        };
         
-        let gt_pos = rest.find('>').ok_or("Expected '>' for enum type")?;
-        let enum_type = rest[1..gt_pos].trim().to_string();
-        let rest = &rest[gt_pos + 1..].trim();
+        // Parse cases in brackets: [condition, text, ...]
+        self.consume(&Token::LeftBracket, "Expected '[' to start branch cases")?;
         
-        // Parse function call in parentheses: (get_value())
-        if !rest.starts_with('(') {
-            return Err("Expected '(' after enum type".to_string());
-        }
+        let mut cases = Vec::new();
         
-        let mut paren_count = 0;
-        let mut func_end = 0;
-        for (i, ch) in rest.chars().enumerate() {
-            if ch == '(' {
-                paren_count += 1;
-            } else if ch == ')' {
-                paren_count -= 1;
-                if paren_count == 0 {
-                    func_end = i;
-                    break;
-                }
+        while !self.check(&Token::RightBracket) && !self.is_at_end() {
+            let case = self.parse_branch_case()?;
+            cases.push(case);
+            
+            // Cases can be separated by newlines or commas (optional)
+            if self.check(&Token::Comma) {
+                self.advance();
             }
         }
         
-        if func_end == 0 {
-            return Err("Expected ')' after function call".to_string());
-        }
+        self.consume(&Token::RightBracket, "Expected ']' to end branch cases")?;
         
-        let func_text = &rest[1..func_end]; // Content inside parentheses
-        let enum_value_expr = Box::new(self.parse_expression_from_string(func_text)?);
-        let rest = &rest[func_end + 1..].trim();
-        
-        // Parse branches in curly braces: { variant1: "text1", variant2: "text2" }
-        if !rest.starts_with('{') {
-            return Err("Expected '{' before branch cases".to_string());
-        }
-        
-        if !rest.ends_with('}') {
-            return Err("Expected '}' after branch cases".to_string());
-        }
-        
-        let cases_text = &rest[1..rest.len() - 1].trim();
-        let mut branches = Vec::new();
-        
-        // Split by comma, but be careful with quoted strings
-        for case in self.split_branch_cases(cases_text)? {
-            let case = case.trim();
-            if case.is_empty() {
-                continue;
-            }
-            
-            // Parse "variant: \"text\"" or variant: "text"
-            let colon_pos = case.find(':').ok_or("Expected ':' in branch case")?;
-            let variant = case[..colon_pos].trim().to_string();
-            let text_part = case[colon_pos + 1..].trim();
-            
-            // Handle escaped quotes or regular quotes
-            let text = if text_part.starts_with("\\\"") && text_part.ends_with("\\\"") {
-                // Escaped quotes: \"text\"
-                text_part[2..text_part.len() - 2].to_string()
-            } else if text_part.starts_with('"') && text_part.ends_with('"') {
-                // Regular quotes: "text"
-                text_part[1..text_part.len() - 1].to_string()
-            } else {
-                return Err(format!("Branch case text must be quoted: {}", text_part));
-            };
-            
-            branches.push(BranchCase { variant, text });
-        }
-        
-        if branches.is_empty() {
-            return Err("Branch must have at least one case".to_string());
-        }
-        
-        Ok(BranchInterpolation {
+        Ok(BranchDef {
+            name,
+            name_span,
             enum_type,
-            enum_value_expr,
-            branches,
+            cases,
         })
     }
     
-    fn split_branch_cases(&self, cases_text: &str) -> Result<Vec<String>, String> {
-        let mut cases = Vec::new();
-        let mut current = String::new();
-        let mut in_quotes = false;
-        let mut escape_next = false;
+    fn parse_branch_case(&mut self) -> Result<BranchCase, String> {
+        // Parse: condition, text
+        // or: condition, text, events: [...]
         
-        for ch in cases_text.chars() {
-            if escape_next {
-                current.push(ch);
-                escape_next = false;
-                continue;
-            }
+        let condition = self.consume_identifier("Expected condition or variant")?;
+        self.consume(&Token::Comma, "Expected ',' after condition")?;
+        
+        let text = self.consume_string("Expected text for branch case")?;
+        
+        // Check for optional events
+        let events = if self.check(&Token::Comma) {
+            self.advance(); // consume comma
             
-            match ch {
-                '\\' => {
-                    escape_next = true;
-                    current.push(ch);
-                }
-                '"' => {
-                    in_quotes = !in_quotes;
-                    current.push(ch);
-                }
-                ',' if !in_quotes => {
-                    if !current.trim().is_empty() {
-                        cases.push(current.trim().to_string());
-                    }
-                    current.clear();
-                }
-                _ => {
-                    current.push(ch);
-                }
+            if self.check(&Token::Events) {
+                self.advance(); // consume 'events'
+                self.consume(&Token::Colon, "Expected ':' after 'events'")?;
+                Some(self.parse_event_list()?)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        
+        Ok(BranchCase {
+            condition,
+            text,
+            events,
+        })
+    }
+    
+    fn parse_event_list(&mut self) -> Result<Vec<Event>, String> {
+        self.consume(&Token::LeftBracket, "Expected '[' to start events")?;
+        
+        let mut events = Vec::new();
+        
+        while !self.check(&Token::RightBracket) && !self.is_at_end() {
+            let event = self.parse_event()?;
+            events.push(event);
+            
+            if self.check(&Token::Comma) {
+                self.advance();
             }
         }
         
-        if !current.trim().is_empty() {
-            cases.push(current.trim().to_string());
-        }
+        self.consume(&Token::RightBracket, "Expected ']' to end events")?;
         
-        Ok(cases)
+        Ok(events)
     }
 
     fn parse_events_stmt(&mut self) -> Result<Vec<Event>, String> {

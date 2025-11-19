@@ -388,6 +388,9 @@ impl DiagnosticCollector {
         // Analyze statements
         for stmt in &node.body {
             match stmt {
+                NodeStmt::Branch(_) => {
+                    // Branch definitions don't need analysis here
+                }
                 NodeStmt::Events(events) => {
                     for event in events {
                         self.analyze_event_action(

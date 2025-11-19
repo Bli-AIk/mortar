@@ -1,56 +1,41 @@
 {
   "metadata": {
     "version": "0.1.0",
-    "generated_at": "2025-11-19T09:46:53.073935142Z"
+    "generated_at": "2025-11-19T10:02:16.367060419Z"
   },
   "variables": [
     {
-      "name": "player_gender",
-      "type": "Gender"
+      "name": "is_forest",
+      "type": "Boolean"
     },
     {
-      "name": "item_count",
-      "type": "Number"
+      "name": "is_city",
+      "type": "Boolean"
     },
     {
-      "name": "player_status",
-      "type": "PlayerStatus"
-    }
-  ],
-  "constants": [
+      "name": "is_male",
+      "type": "Boolean"
+    },
     {
-      "name": "game_title",
-      "type": "String",
-      "value": "Mortar RPG",
-      "public": true
+      "name": "is_female",
+      "type": "Boolean"
     }
   ],
   "enums": [
+    {
+      "name": "Location",
+      "variants": [
+        "forest",
+        "city",
+        "town"
+      ]
+    },
     {
       "name": "Gender",
       "variants": [
         "male",
         "female",
         "other"
-      ]
-    },
-    {
-      "name": "Quantity",
-      "variants": [
-        "zero",
-        "one",
-        "two",
-        "few",
-        "many"
-      ]
-    },
-    {
-      "name": "PlayerStatus",
-      "variants": [
-        "online",
-        "away",
-        "busy",
-        "offline"
       ]
     }
   ],
@@ -59,281 +44,284 @@
       "name": "Welcome",
       "texts": [
         {
-          "text": "Welcome to {game_title}, Sir!",
+          "text": "欢迎来到{place}，{greet}！",
           "interpolated_parts": [
             {
               "type": "text",
-              "content": "Welcome to "
+              "content": "欢迎来到"
             },
             {
-              "type": "expression",
-              "content": "{game_title}",
-              "function_name": "game_title"
-            },
-            {
-              "type": "text",
-              "content": ", "
-            },
-            {
-              "type": "branch",
-              "content": "{branch<Gender>(get_player_gender)}",
-              "function_name": "get_player_gender",
-              "enum_type": "Gender",
-              "branches": [
-                {
-                  "variant": "male",
-                  "text": "Sir"
-                },
-                {
-                  "variant": "female",
-                  "text": "Madam"
-                },
-                {
-                  "variant": "other",
-                  "text": "Traveler"
-                }
-              ]
+              "type": "placeholder",
+              "content": "{place}"
             },
             {
               "type": "text",
-              "content": "!"
-            }
-          ]
-        },
-        {
-          "text": "He has no items.",
-          "interpolated_parts": [
+              "content": "，"
+            },
             {
-              "type": "branch",
-              "content": "{branch<Gender>(get_player_gender)}",
-              "function_name": "get_player_gender",
-              "enum_type": "Gender",
-              "branches": [
-                {
-                  "variant": "male",
-                  "text": "He"
-                },
-                {
-                  "variant": "female",
-                  "text": "She"
-                },
-                {
-                  "variant": "other",
-                  "text": "They"
-                }
-              ]
+              "type": "placeholder",
+              "content": "{greet}"
             },
             {
               "type": "text",
-              "content": " "
-            },
-            {
-              "type": "branch",
-              "content": "{branch<Quantity>(check_items)}",
-              "function_name": "check_items",
-              "enum_type": "Quantity",
-              "branches": [
-                {
-                  "variant": "zero",
-                  "text": "has no items"
-                },
-                {
-                  "variant": "one",
-                  "text": "has one item"
-                },
-                {
-                  "variant": "two",
-                  "text": "has two items"
-                },
-                {
-                  "variant": "few",
-                  "text": "has a few items"
-                },
-                {
-                  "variant": "many",
-                  "text": "has many items"
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "content": "."
+              "content": "！"
             }
           ]
         }
       ],
-      "choice": [
+      "branches": [
         {
-          "text": "Check Status",
-          "next": "StatusNode"
-        },
-        {
-          "text": "View Inventory",
-          "next": "InventoryNode"
-        },
-        {
-          "text": "Continue",
-          "next": "GameNode"
-        }
-      ]
-    },
-    {
-      "name": "StatusNode",
-      "texts": [
-        {
-          "text": "Your status is: 🟢 Online",
-          "interpolated_parts": [
+          "name": "place",
+          "cases": [
             {
-              "type": "text",
-              "content": "Your status is: "
+              "condition": "is_forest",
+              "text": "森林"
             },
             {
-              "type": "branch",
-              "content": "{branch<PlayerStatus>(get_status)}",
-              "function_name": "get_status",
-              "enum_type": "PlayerStatus",
-              "branches": [
-                {
-                  "variant": "online",
-                  "text": "🟢 Online"
-                },
-                {
-                  "variant": "away",
-                  "text": "🟡 Away"
-                },
-                {
-                  "variant": "busy",
-                  "text": "🔴 Busy"
-                },
-                {
-                  "variant": "offline",
-                  "text": "⚫ Offline"
-                }
-              ]
+              "condition": "is_city",
+              "text": "城市"
             }
           ]
         },
         {
-          "text": "You can change your status in settings."
-        }
-      ],
-      "choice": [
-        {
-          "text": "Back",
-          "next": "Welcome"
+          "name": "greet",
+          "cases": [
+            {
+              "condition": "is_male",
+              "text": "勇士"
+            },
+            {
+              "condition": "is_female",
+              "text": "女士"
+            }
+          ]
         }
       ]
     },
     {
-      "name": "InventoryNode",
+      "name": "LocationDesc",
       "texts": [
         {
-          "text": "Inventory: Empty",
+          "text": "你现在在{location}，周围有{object}。",
           "interpolated_parts": [
             {
               "type": "text",
-              "content": "Inventory: "
+              "content": "你现在在"
             },
             {
-              "type": "branch",
-              "content": "{branch<Quantity>(count_inventory)}",
-              "function_name": "count_inventory",
-              "enum_type": "Quantity",
-              "branches": [
-                {
-                  "variant": "zero",
-                  "text": "Empty"
-                },
-                {
-                  "variant": "one",
-                  "text": "1 item"
-                },
-                {
-                  "variant": "two",
-                  "text": "2 items"
-                },
-                {
-                  "variant": "few",
-                  "text": "3-5 items"
-                },
-                {
-                  "variant": "many",
-                  "text": "6+ items"
-                }
-              ]
+              "type": "placeholder",
+              "content": "{location}"
+            },
+            {
+              "type": "text",
+              "content": "，周围有"
+            },
+            {
+              "type": "placeholder",
+              "content": "{object}"
+            },
+            {
+              "type": "text",
+              "content": "。"
             }
           ]
         }
       ],
-      "choice": [
+      "branches": [
         {
-          "text": "Back",
-          "next": "Welcome"
-        }
-      ]
-    },
-    {
-      "name": "GameNode",
-      "texts": [
-        {
-          "text": "Let's start the game, brave warrior!",
-          "interpolated_parts": [
+          "name": "location",
+          "enum_type": "Location",
+          "cases": [
             {
-              "type": "text",
-              "content": "Let's start the game, "
+              "condition": "forest",
+              "text": "森林深处"
             },
             {
-              "type": "branch",
-              "content": "{branch<Gender>(get_player_gender)}",
-              "function_name": "get_player_gender",
-              "enum_type": "Gender",
-              "branches": [
-                {
-                  "variant": "male",
-                  "text": "brave warrior"
-                },
-                {
-                  "variant": "female",
-                  "text": "brave warrior"
-                },
-                {
-                  "variant": "other",
-                  "text": "brave soul"
-                }
-              ]
+              "condition": "city",
+              "text": "繁华都市"
             },
             {
-              "type": "text",
-              "content": "!"
+              "condition": "town",
+              "text": "宁静小镇"
             }
           ]
         },
         {
-          "text": "Your adventure begins..."
+          "name": "object",
+          "enum_type": "Location",
+          "cases": [
+            {
+              "condition": "forest",
+              "text": "树木",
+              "events": [
+                {
+                  "index": 0.0,
+                  "actions": [
+                    {
+                      "type": "set_color",
+                      "args": [
+                        "green"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "condition": "city",
+              "text": "高楼",
+              "events": [
+                {
+                  "index": 0.0,
+                  "actions": [
+                    {
+                      "type": "set_color",
+                      "args": [
+                        "gray"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "index": 1.0,
+                  "actions": [
+                    {
+                      "type": "set_color",
+                      "args": [
+                        "blue"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "condition": "town",
+              "text": "房屋",
+              "events": [
+                {
+                  "index": 0.0,
+                  "actions": [
+                    {
+                      "type": "set_color",
+                      "args": [
+                        "brown"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ComplexScene",
+      "texts": [
+        {
+          "text": "你看见{object}后，感到惊讶！",
+          "interpolated_parts": [
+            {
+              "type": "text",
+              "content": "你看见"
+            },
+            {
+              "type": "placeholder",
+              "content": "{object}"
+            },
+            {
+              "type": "text",
+              "content": "后，感到惊讶！"
+            }
+          ]
+        }
+      ],
+      "branches": [
+        {
+          "name": "object",
+          "enum_type": "Location",
+          "cases": [
+            {
+              "condition": "forest",
+              "text": "野兽",
+              "events": [
+                {
+                  "index": 0.0,
+                  "actions": [
+                    {
+                      "type": "set_color",
+                      "args": [
+                        "red"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "index": 1.0,
+                  "actions": [
+                    {
+                      "type": "set_color",
+                      "args": [
+                        "orange"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "condition": "city",
+              "text": "警车",
+              "events": [
+                {
+                  "index": 0.0,
+                  "actions": [
+                    {
+                      "type": "set_color",
+                      "args": [
+                        "blue"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "index": 1.0,
+                  "actions": [
+                    {
+                      "type": "set_color",
+                      "args": [
+                        "red"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "condition": "town",
+              "text": "老人"
+            }
+          ]
         }
       ]
     }
   ],
   "functions": [
     {
-      "name": "game_title",
-      "return": "String"
+      "name": "set_color",
+      "params": [
+        {
+          "name": "color",
+          "type": "String"
+        }
+      ]
     },
     {
-      "name": "get_player_gender",
-      "return": "Gender"
+      "name": "shake"
     },
     {
-      "name": "check_items",
-      "return": "Quantity"
-    },
-    {
-      "name": "get_status",
-      "return": "PlayerStatus"
-    },
-    {
-      "name": "count_inventory",
-      "return": "Quantity"
+      "name": "flash"
     }
   ]
 }

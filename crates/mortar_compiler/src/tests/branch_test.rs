@@ -1,47 +1,193 @@
 use crate::parser::{ParseHandler, TopLevel, NodeStmt, StringPart};
 
 #[test]
-fn test_parse_branch_interpolation_simple() {
+fn test_parse_placeholder_in_text() {
     let source = r#"
-        enum Gender { male, female }
-        
         node Test {
-            text: $"Hello {branch<Gender>(get_gender()) { male: \"Mr.\", female: \"Ms.\" }}"
+            text: $"Hello {name}!"
         }
-        
-        fn get_gender() -> Gender
     "#;
     
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
     
     let program = result.unwrap();
+    match &program.body[0] {
+        TopLevel::NodeDef(node) => {
+            match &node.body[0] {
+                NodeStmt::InterpolatedText(interp) => {
+                    assert_eq!(interp.parts.len(), 3);
+                    assert!(matches!(&interp.parts[0], StringPart::Text(_)));
+                    assert!(matches!(&interp.parts[1], StringPart::Placeholder(_)));
+                    assert!(matches!(&interp.parts[2], StringPart::Text(_)));
+                    
+                    if let StringPart::Placeholder(name) = &interp.parts[1] {
+                        assert_eq!(name, "name");
+                    }
+                }
+                _ => panic!("Expected InterpolatedText"),
+            }
+        }
+        _ => panic!("Expected NodeDef"),
+    }
+}
+
+#[test]
+fn test_parse_simple_branch() {
+    let source = r#"
+        let is_forest: Bool
+        
+        node Test {
+            text: $"Location: {place}"
+            
+            place: branch [
+                is_forest, "森林"
+                is_city, "城市"
+            ]
+        }
+    "#;
     
-    // Check enum definition
-    assert!(matches!(&program.body[0], TopLevel::EnumDef(_)));
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
     
-    // Check node with branch interpolation
+    let program = result.unwrap();
     match &program.body[1] {
         TopLevel::NodeDef(node) => {
-            assert_eq!(node.name, "Test");
+            // Should have text and branch
+            assert_eq!(node.body.len(), 2);
+            
+            match &node.body[1] {
+                NodeStmt::Branch(branch) => {
+                    assert_eq!(branch.name, "place");
+                    assert!(branch.enum_type.is_none());
+                    assert_eq!(branch.cases.len(), 2);
+                    assert_eq!(branch.cases[0].condition, "is_forest");
+                    assert_eq!(branch.cases[0].text, "森林");
+                    assert_eq!(branch.cases[1].condition, "is_city");
+                    assert_eq!(branch.cases[1].text, "城市");
+                }
+                _ => panic!("Expected Branch"),
+            }
+        }
+        _ => panic!("Expected NodeDef"),
+    }
+}
+
+#[test]
+fn test_parse_branch_with_enum() {
+    let source = r#"
+        enum GameState { active, paused, stopped }
+        
+        node Test {
+            text: $"Status: {status}"
+            
+            status: branch<GameState> [
+                active, "运行中"
+                paused, "已暂停"
+                stopped, "已停止"
+            ]
+        }
+    "#;
+    
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+    
+    let program = result.unwrap();
+    match &program.body[1] {
+        TopLevel::NodeDef(node) => {
+            match &node.body[1] {
+                NodeStmt::Branch(branch) => {
+                    assert_eq!(branch.name, "status");
+                    assert_eq!(branch.enum_type.as_ref().unwrap(), "GameState");
+                    assert_eq!(branch.cases.len(), 3);
+                }
+                _ => panic!("Expected Branch"),
+            }
+        }
+        _ => panic!("Expected NodeDef"),
+    }
+}
+
+#[test]
+fn test_parse_branch_with_events() {
+    let source = r#"
+        enum Color { red, blue }
+        
+        node Test {
+            text: $"Color: {color}"
+            
+            color: branch<Color> [
+                red, "红色", events: [
+                    0, set_color("red")
+                ]
+                blue, "蓝色", events: [
+                    0, set_color("blue")
+                ]
+            ]
+        }
+        
+        fn set_color(c: String)
+    "#;
+    
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+    
+    let program = result.unwrap();
+    match &program.body[1] {
+        TopLevel::NodeDef(node) => {
+            match &node.body[1] {
+                NodeStmt::Branch(branch) => {
+                    assert_eq!(branch.name, "color");
+                    assert_eq!(branch.cases.len(), 2);
+                    
+                    // Check that events are captured
+                    assert!(branch.cases[0].events.is_some());
+                    assert!(branch.cases[1].events.is_some());
+                    
+                    let events = branch.cases[0].events.as_ref().unwrap();
+                    assert_eq!(events.len(), 1);
+                }
+                _ => panic!("Expected Branch"),
+            }
+        }
+        _ => panic!("Expected NodeDef"),
+    }
+}
+
+#[test]
+fn test_multiple_placeholders() {
+    let source = r#"
+        node Test {
+            text: $"Hello {name}, you are in {place}."
+            
+            name: branch [
+                is_male, "先生"
+                is_female, "女士"
+            ]
+            
+            place: branch [
+                is_forest, "森林"
+                is_city, "城市"
+            ]
+        }
+    "#;
+    
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+    
+    let program = result.unwrap();
+    match &program.body[0] {
+        TopLevel::NodeDef(node) => {
+            // Should have 1 text and 2 branches
+            assert_eq!(node.body.len(), 3);
             
             match &node.body[0] {
                 NodeStmt::InterpolatedText(interp) => {
-                    // Should have 3 parts: text, branch, text
-                    assert_eq!(interp.parts.len(), 2); // "Hello " and branch
-                    
-                    match &interp.parts[1] {
-                        StringPart::Branch(branch) => {
-                            assert_eq!(branch.enum_type, "Gender");
-                            assert_eq!(branch.enum_value_expr.name, "get_gender");
-                            assert_eq!(branch.branches.len(), 2);
-                            assert_eq!(branch.branches[0].variant, "male");
-                            assert_eq!(branch.branches[0].text, "Mr.");
-                            assert_eq!(branch.branches[1].variant, "female");
-                            assert_eq!(branch.branches[1].text, "Ms.");
-                        }
-                        _ => panic!("Expected Branch part"),
-                    }
+                    // Count placeholders
+                    let placeholder_count = interp.parts.iter()
+                        .filter(|p| matches!(p, StringPart::Placeholder(_)))
+                        .count();
+                    assert_eq!(placeholder_count, 2);
                 }
                 _ => panic!("Expected InterpolatedText"),
             }
@@ -51,129 +197,21 @@ fn test_parse_branch_interpolation_simple() {
 }
 
 #[test]
-fn test_parse_branch_with_multiple_cases() {
-    let source = r#"
-        enum Count { zero, one, two, many }
-        
-        node Test {
-            text: $"Items: {branch<Count>(get_count()) { zero: \"none\", one: \"1\", two: \"2\", many: \"lots\" }}"
-        }
-        
-        fn get_count() -> Count
-    "#;
-    
-    let result = ParseHandler::parse_source_code(source, false);
-    assert!(result.is_ok());
-    
-    let program = result.unwrap();
-    
-    match &program.body[1] {
-        TopLevel::NodeDef(node) => {
-            match &node.body[0] {
-                NodeStmt::InterpolatedText(interp) => {
-                    match &interp.parts[1] {
-                        StringPart::Branch(branch) => {
-                            assert_eq!(branch.enum_type, "Count");
-                            assert_eq!(branch.branches.len(), 4);
-                            assert_eq!(branch.branches[0].variant, "zero");
-                            assert_eq!(branch.branches[0].text, "none");
-                            assert_eq!(branch.branches[3].variant, "many");
-                            assert_eq!(branch.branches[3].text, "lots");
-                        }
-                        _ => panic!("Expected Branch"),
-                    }
-                }
-                _ => panic!("Expected InterpolatedText"),
-            }
-        }
-        _ => panic!("Expected NodeDef"),
-    }
-}
-
-#[test]
-fn test_branch_with_empty_text() {
-    let source = r#"
-        enum Type { a, b, c }
-        
-        node Test {
-            text: $"Text {branch<Type>(get_type()) { a: \"A\", b: \"\", c: \"C\" }} end"
-        }
-        
-        fn get_type() -> Type
-    "#;
-    
-    let result = ParseHandler::parse_source_code(source, false);
-    assert!(result.is_ok());
-    
-    let program = result.unwrap();
-    
-    match &program.body[1] {
-        TopLevel::NodeDef(node) => {
-            match &node.body[0] {
-                NodeStmt::InterpolatedText(interp) => {
-                    match &interp.parts[1] {
-                        StringPart::Branch(branch) => {
-                            assert_eq!(branch.branches[1].text, ""); // Empty text for 'b'
-                        }
-                        _ => panic!("Expected Branch"),
-                    }
-                }
-                _ => panic!("Expected InterpolatedText"),
-            }
-        }
-        _ => panic!("Expected NodeDef"),
-    }
-}
-
-#[test]
-fn test_branch_mixed_with_regular_interpolation() {
-    let source = r#"
-        enum Gender { male, female }
-        
-        node Test {
-            text: $"Hello {get_title()} {branch<Gender>(get_gender()) { male: \"Mr.\", female: \"Ms.\" }} {get_name()}"
-        }
-        
-        fn get_gender() -> Gender
-        fn get_title() -> String
-        fn get_name() -> String
-    "#;
-    
-    let result = ParseHandler::parse_source_code(source, false);
-    assert!(result.is_ok());
-    
-    let program = result.unwrap();
-    
-    match &program.body[1] {
-        TopLevel::NodeDef(node) => {
-            match &node.body[0] {
-                NodeStmt::InterpolatedText(interp) => {
-                    // Should have: text, expression, text, branch, text, expression
-                    assert!(interp.parts.len() >= 5);
-                    assert!(matches!(&interp.parts[1], StringPart::Expression(_)));
-                    assert!(matches!(&interp.parts[3], StringPart::Branch(_)));
-                    assert!(matches!(&interp.parts[5], StringPart::Expression(_)));
-                }
-                _ => panic!("Expected InterpolatedText"),
-            }
-        }
-        _ => panic!("Expected NodeDef"),
-    }
-}
-
-#[test]
-fn test_serialize_branch_interpolation() {
+fn test_serialize_branch() {
     use crate::Serializer;
     use serde_json::Value;
     
     let source = r#"
-        enum Gender { male, female }
+        enum Status { online, offline }
         
         node Test {
-            text: $"Hello {branch<Gender>(get_gender()) { male: \"Sir\", female: \"Madam\" }}"
+            text: $"Status: {status}"
+            
+            status: branch<Status> [
+                online, "在线"
+                offline, "离线"
+            ]
         }
-        
-        fn get_gender() -> Gender
     "#;
     
     let result = ParseHandler::parse_source_code(source, false);
@@ -183,104 +221,47 @@ fn test_serialize_branch_interpolation() {
     let json_str = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_str).unwrap();
     
-    // Check that branch interpolation is in JSON
-    let text = &json["nodes"][0]["texts"][0];
-    assert!(text["interpolated_parts"].is_array());
+    // Check branches in JSON
+    assert!(json["nodes"][0]["branches"].is_array());
     
-    let parts = text["interpolated_parts"].as_array().unwrap();
-    assert!(parts.len() >= 2);
+    let branches = json["nodes"][0]["branches"].as_array().unwrap();
+    assert_eq!(branches.len(), 1);
     
-    // Find the branch part
-    let branch_part = parts.iter().find(|p| p["type"] == "branch");
-    assert!(branch_part.is_some());
+    let branch = &branches[0];
+    assert_eq!(branch["name"], "status");
+    assert_eq!(branch["enum_type"], "Status");
     
-    let branch = branch_part.unwrap();
-    assert_eq!(branch["enum_type"], "Gender");
-    assert_eq!(branch["function_name"], "get_gender");
-    assert!(branch["branches"].is_array());
-    
-    let branches = branch["branches"].as_array().unwrap();
-    assert_eq!(branches.len(), 2);
-    assert_eq!(branches[0]["variant"], "male");
-    assert_eq!(branches[0]["text"], "Sir");
-    assert_eq!(branches[1]["variant"], "female");
-    assert_eq!(branches[1]["text"], "Madam");
+    let cases = branch["cases"].as_array().unwrap();
+    assert_eq!(cases.len(), 2);
+    assert_eq!(cases[0]["condition"], "online");
+    assert_eq!(cases[0]["text"], "在线");
 }
 
 #[test]
-fn test_branch_error_no_enum_type() {
+fn test_branch_without_enum_type() {
     let source = r#"
-        node Test {
-            text: $"Hello {branch(get_gender()) { male: \"Mr.\" }}"
-        }
-    "#;
-    
-    let result = ParseHandler::parse_source_code(source, false);
-    // Should fail because branch needs <EnumType>
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_branch_error_no_cases() {
-    let source = r#"
-        enum Gender { male, female }
+        let flag: Bool
         
         node Test {
-            text: $"Hello {branch<Gender>(get_gender()) { }}"
+            text: $"Value: {value}"
+            
+            value: branch [
+                flag, "是"
+            ]
         }
-        
-        fn get_gender() -> Gender
-    "#;
-    
-    let result = ParseHandler::parse_source_code(source, false);
-    // Should fail because branch needs at least one case
-    assert!(result.is_err());
-}
-
-#[test]
-fn test_branch_with_complex_enum_names() {
-    let source = r#"
-        enum PlayerStatus { active, inactive, banned }
-        
-        node Test {
-            text: $"Status: {branch<PlayerStatus>(check_status()) { active: \"Active\", inactive: \"Inactive\", banned: \"Banned\" }}"
-        }
-        
-        fn check_status() -> PlayerStatus
-    "#;
-    
-    let result = ParseHandler::parse_source_code(source, false);
-    assert!(result.is_ok());
-}
-
-#[test]
-fn test_multiple_branches_in_one_text() {
-    let source = r#"
-        enum Gender { male, female }
-        enum Count { one, many }
-        
-        node Test {
-            text: $"{branch<Gender>(get_gender()) { male: \"He\", female: \"She\" }} has {branch<Count>(get_count()) { one: \"1 item\", many: \"many items\" }}"
-        }
-        
-        fn get_gender() -> Gender
-        fn get_count() -> Count
     "#;
     
     let result = ParseHandler::parse_source_code(source, false);
     assert!(result.is_ok());
     
     let program = result.unwrap();
-    
-    match &program.body[2] {
+    match &program.body[1] {
         TopLevel::NodeDef(node) => {
-            match &node.body[0] {
-                NodeStmt::InterpolatedText(interp) => {
-                    // Count branch parts
-                    let branch_count = interp.parts.iter().filter(|p| matches!(p, StringPart::Branch(_))).count();
-                    assert_eq!(branch_count, 2);
+            match &node.body[1] {
+                NodeStmt::Branch(branch) => {
+                    assert!(branch.enum_type.is_none());
                 }
-                _ => panic!("Expected InterpolatedText"),
+                _ => panic!("Expected Branch"),
             }
         }
         _ => panic!("Expected NodeDef"),
