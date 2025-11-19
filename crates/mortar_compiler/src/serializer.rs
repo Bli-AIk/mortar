@@ -53,12 +53,22 @@ struct JsonText {
 #[derive(Serialize, Deserialize)]
 struct JsonStringPart {
     #[serde(rename = "type")]
-    part_type: String, // "text" or "expression"
+    part_type: String, // "text", "expression", or "branch"
     content: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     function_name: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     args: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enum_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    branches: Option<Vec<JsonBranchCase>>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonBranchCase {
+    variant: String,
+    text: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -474,6 +484,8 @@ impl Serializer {
                         content: text.clone(),
                         function_name: None,
                         args: Vec::new(),
+                        enum_type: None,
+                        branches: None,
                     });
                 }
                 StringPart::Expression(func_call) => {
@@ -501,6 +513,39 @@ impl Serializer {
                         content: placeholder.clone(),
                         function_name: Some(func_call.name.clone()),
                         args,
+                        enum_type: None,
+                        branches: None,
+                    });
+                }
+                StringPart::Branch(branch) => {
+                    // For rendering, use first variant as default
+                    let default_text = if !branch.branches.is_empty() {
+                        &branch.branches[0].text
+                    } else {
+                        ""
+                    };
+                    rendered_text.push_str(default_text);
+                    
+                    let placeholder = format!("{{branch<{}>({})}}", 
+                        branch.enum_type, 
+                        branch.enum_value_expr.name
+                    );
+                    
+                    let json_branches: Vec<JsonBranchCase> = branch.branches
+                        .iter()
+                        .map(|case| JsonBranchCase {
+                            variant: case.variant.clone(),
+                            text: case.text.clone(),
+                        })
+                        .collect();
+                    
+                    parts.push(JsonStringPart {
+                        part_type: "branch".to_string(),
+                        content: placeholder,
+                        function_name: Some(branch.enum_value_expr.name.clone()),
+                        args: Vec::new(),
+                        enum_type: Some(branch.enum_type.clone()),
+                        branches: Some(json_branches),
                     });
                 }
             }

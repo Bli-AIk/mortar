@@ -40,6 +40,20 @@ pub struct InterpolatedString {
 pub enum StringPart {
     Text(String),
     Expression(FuncCall),
+    Branch(BranchInterpolation),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BranchInterpolation {
+    pub enum_type: String,
+    pub enum_value_expr: Box<FuncCall>,
+    pub branches: Vec<BranchCase>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BranchCase {
+    pub variant: String,
+    pub text: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -467,9 +481,15 @@ impl<'a> Parser<'a> {
                     return Err("Unmatched '{' in interpolated string".to_string());
                 }
 
-                // Parse the expression as a function call
-                let func_call = self.parse_expression_from_string(&expr_text)?;
-                parts.push(StringPart::Expression(func_call));
+                // Check if this is a branch interpolation
+                if expr_text.trim().starts_with("branch") {
+                    let branch = self.parse_branch_from_string(&expr_text)?;
+                    parts.push(StringPart::Branch(branch));
+                } else {
+                    // Parse the expression as a function call
+                    let func_call = self.parse_expression_from_string(&expr_text)?;
+                    parts.push(StringPart::Expression(func_call));
+                }
             } else {
                 current_text.push(ch);
             }
@@ -532,6 +552,142 @@ impl<'a> Parser<'a> {
         }
 
         Ok(args)
+    }
+
+    fn parse_branch_from_string(&mut self, branch_text: &str) -> Result<BranchInterpolation, String> {
+        // Expected format: branch<EnumType>(get_value()) { variant1: "text1", variant2: "text2" }
+        let branch_text = branch_text.trim();
+        
+        if !branch_text.starts_with("branch") {
+            return Err("Expected 'branch' keyword".to_string());
+        }
+        
+        let rest = &branch_text[6..].trim(); // Skip "branch"
+        
+        // Parse enum type in angle brackets: <EnumType>
+        if !rest.starts_with('<') {
+            return Err("Expected '<' after 'branch'".to_string());
+        }
+        
+        let gt_pos = rest.find('>').ok_or("Expected '>' for enum type")?;
+        let enum_type = rest[1..gt_pos].trim().to_string();
+        let rest = &rest[gt_pos + 1..].trim();
+        
+        // Parse function call in parentheses: (get_value())
+        if !rest.starts_with('(') {
+            return Err("Expected '(' after enum type".to_string());
+        }
+        
+        let mut paren_count = 0;
+        let mut func_end = 0;
+        for (i, ch) in rest.chars().enumerate() {
+            if ch == '(' {
+                paren_count += 1;
+            } else if ch == ')' {
+                paren_count -= 1;
+                if paren_count == 0 {
+                    func_end = i;
+                    break;
+                }
+            }
+        }
+        
+        if func_end == 0 {
+            return Err("Expected ')' after function call".to_string());
+        }
+        
+        let func_text = &rest[1..func_end]; // Content inside parentheses
+        let enum_value_expr = Box::new(self.parse_expression_from_string(func_text)?);
+        let rest = &rest[func_end + 1..].trim();
+        
+        // Parse branches in curly braces: { variant1: "text1", variant2: "text2" }
+        if !rest.starts_with('{') {
+            return Err("Expected '{' before branch cases".to_string());
+        }
+        
+        if !rest.ends_with('}') {
+            return Err("Expected '}' after branch cases".to_string());
+        }
+        
+        let cases_text = &rest[1..rest.len() - 1].trim();
+        let mut branches = Vec::new();
+        
+        // Split by comma, but be careful with quoted strings
+        for case in self.split_branch_cases(cases_text)? {
+            let case = case.trim();
+            if case.is_empty() {
+                continue;
+            }
+            
+            // Parse "variant: \"text\"" or variant: "text"
+            let colon_pos = case.find(':').ok_or("Expected ':' in branch case")?;
+            let variant = case[..colon_pos].trim().to_string();
+            let text_part = case[colon_pos + 1..].trim();
+            
+            // Handle escaped quotes or regular quotes
+            let text = if text_part.starts_with("\\\"") && text_part.ends_with("\\\"") {
+                // Escaped quotes: \"text\"
+                text_part[2..text_part.len() - 2].to_string()
+            } else if text_part.starts_with('"') && text_part.ends_with('"') {
+                // Regular quotes: "text"
+                text_part[1..text_part.len() - 1].to_string()
+            } else {
+                return Err(format!("Branch case text must be quoted: {}", text_part));
+            };
+            
+            branches.push(BranchCase { variant, text });
+        }
+        
+        if branches.is_empty() {
+            return Err("Branch must have at least one case".to_string());
+        }
+        
+        Ok(BranchInterpolation {
+            enum_type,
+            enum_value_expr,
+            branches,
+        })
+    }
+    
+    fn split_branch_cases(&self, cases_text: &str) -> Result<Vec<String>, String> {
+        let mut cases = Vec::new();
+        let mut current = String::new();
+        let mut in_quotes = false;
+        let mut escape_next = false;
+        
+        for ch in cases_text.chars() {
+            if escape_next {
+                current.push(ch);
+                escape_next = false;
+                continue;
+            }
+            
+            match ch {
+                '\\' => {
+                    escape_next = true;
+                    current.push(ch);
+                }
+                '"' => {
+                    in_quotes = !in_quotes;
+                    current.push(ch);
+                }
+                ',' if !in_quotes => {
+                    if !current.trim().is_empty() {
+                        cases.push(current.trim().to_string());
+                    }
+                    current.clear();
+                }
+                _ => {
+                    current.push(ch);
+                }
+            }
+        }
+        
+        if !current.trim().is_empty() {
+            cases.push(current.trim().to_string());
+        }
+        
+        Ok(cases)
     }
 
     fn parse_events_stmt(&mut self) -> Result<Vec<Event>, String> {

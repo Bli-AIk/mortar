@@ -1,0 +1,81 @@
+// Branch Interpolation Example
+// Demonstrates non-symmetric localization using enum-based text variants
+
+// ===== Define Enums for Branching =====
+
+enum Gender {
+    male
+    female
+    other
+}
+
+enum Quantity {
+    zero
+    one
+    two
+    few
+    many
+}
+
+enum PlayerStatus {
+    online
+    away
+    busy
+    offline
+}
+
+// ===== Variables =====
+
+let player_gender: Gender
+let item_count: Number
+let player_status: PlayerStatus
+
+// ===== Constants =====
+
+pub const game_title: String = "Mortar RPG"
+
+// ===== Story Nodes with Branch Interpolation =====
+
+node Welcome {
+    text: $"Welcome to {game_title()}, {branch<Gender>(get_player_gender()) { male: \"Sir\", female: \"Madam\", other: \"Traveler\" }}!"
+    
+    text: $"{branch<Gender>(get_player_gender()) { male: \"He\", female: \"She\", other: \"They\" }} {branch<Quantity>(check_items()) { zero: \"has no items\", one: \"has one item\", two: \"has two items\", few: \"has a few items\", many: \"has many items\" }}."
+    
+    choice: [
+        "Check Status" -> StatusNode,
+        "View Inventory" -> InventoryNode,
+        "Continue" -> GameNode
+    ]
+}
+
+node StatusNode {
+    text: $"Your status is: {branch<PlayerStatus>(get_status()) { online: \"🟢 Online\", away: \"🟡 Away\", busy: \"🔴 Busy\", offline: \"⚫ Offline\" }}"
+    
+    text: "You can change your status in settings."
+    
+    choice: [
+        "Back" -> Welcome
+    ]
+}
+
+node InventoryNode {
+    text: $"Inventory: {branch<Quantity>(count_inventory()) { zero: \"Empty\", one: \"1 item\", two: \"2 items\", few: \"3-5 items\", many: \"6+ items\" }}"
+    
+    choice: [
+        "Back" -> Welcome
+    ]
+}
+
+node GameNode {
+    text: $"Let's start the game, {branch<Gender>(get_player_gender()) { male: \"brave warrior\", female: \"brave warrior\", other: \"brave soul\" }}!"
+    
+    text: "Your adventure begins..."
+}
+
+// ===== Function Declarations =====
+
+fn game_title() -> String
+fn get_player_gender() -> Gender
+fn check_items() -> Quantity
+fn get_status() -> PlayerStatus
+fn count_inventory() -> Quantity

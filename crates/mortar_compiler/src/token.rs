@@ -47,6 +47,10 @@ pub enum Token<'a> {
     Pub,
     #[token("enum")]
     Enum,
+    
+    // Branch interpolation keyword
+    #[token("branch")]
+    Branch,
 
     // Type keywords
     #[token("String")]
@@ -89,6 +93,10 @@ pub enum Token<'a> {
     RightParen,
     #[token("=")]
     Equals,
+    #[token("<")]
+    Less,
+    #[token(">")]
+    Greater,
     // endregion
 
     // region Literals
@@ -180,6 +188,7 @@ impl fmt::Display for Token<'_> {
             Const => write!(f, "const"),
             Pub => write!(f, "pub"),
             Enum => write!(f, "enum"),
+            Branch => write!(f, "branch"),
 
             StringType => write!(f, "String"),
             NumberType => write!(f, "Number"),
@@ -199,6 +208,8 @@ impl fmt::Display for Token<'_> {
             LeftParen => write!(f, "("),
             RightParen => write!(f, ")"),
             Equals => write!(f, "="),
+            Less => write!(f, "<"),
+            Greater => write!(f, ">"),
 
             String(s) => write!(f, "\"{}\"", s),
             InterpolatedString(s) => write!(f, "$\"{}\"", s),

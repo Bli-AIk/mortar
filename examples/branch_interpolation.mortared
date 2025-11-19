@@ -1,0 +1,339 @@
+{
+  "metadata": {
+    "version": "0.1.0",
+    "generated_at": "2025-11-19T09:46:53.073935142Z"
+  },
+  "variables": [
+    {
+      "name": "player_gender",
+      "type": "Gender"
+    },
+    {
+      "name": "item_count",
+      "type": "Number"
+    },
+    {
+      "name": "player_status",
+      "type": "PlayerStatus"
+    }
+  ],
+  "constants": [
+    {
+      "name": "game_title",
+      "type": "String",
+      "value": "Mortar RPG",
+      "public": true
+    }
+  ],
+  "enums": [
+    {
+      "name": "Gender",
+      "variants": [
+        "male",
+        "female",
+        "other"
+      ]
+    },
+    {
+      "name": "Quantity",
+      "variants": [
+        "zero",
+        "one",
+        "two",
+        "few",
+        "many"
+      ]
+    },
+    {
+      "name": "PlayerStatus",
+      "variants": [
+        "online",
+        "away",
+        "busy",
+        "offline"
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Welcome",
+      "texts": [
+        {
+          "text": "Welcome to {game_title}, Sir!",
+          "interpolated_parts": [
+            {
+              "type": "text",
+              "content": "Welcome to "
+            },
+            {
+              "type": "expression",
+              "content": "{game_title}",
+              "function_name": "game_title"
+            },
+            {
+              "type": "text",
+              "content": ", "
+            },
+            {
+              "type": "branch",
+              "content": "{branch<Gender>(get_player_gender)}",
+              "function_name": "get_player_gender",
+              "enum_type": "Gender",
+              "branches": [
+                {
+                  "variant": "male",
+                  "text": "Sir"
+                },
+                {
+                  "variant": "female",
+                  "text": "Madam"
+                },
+                {
+                  "variant": "other",
+                  "text": "Traveler"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "content": "!"
+            }
+          ]
+        },
+        {
+          "text": "He has no items.",
+          "interpolated_parts": [
+            {
+              "type": "branch",
+              "content": "{branch<Gender>(get_player_gender)}",
+              "function_name": "get_player_gender",
+              "enum_type": "Gender",
+              "branches": [
+                {
+                  "variant": "male",
+                  "text": "He"
+                },
+                {
+                  "variant": "female",
+                  "text": "She"
+                },
+                {
+                  "variant": "other",
+                  "text": "They"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "content": " "
+            },
+            {
+              "type": "branch",
+              "content": "{branch<Quantity>(check_items)}",
+              "function_name": "check_items",
+              "enum_type": "Quantity",
+              "branches": [
+                {
+                  "variant": "zero",
+                  "text": "has no items"
+                },
+                {
+                  "variant": "one",
+                  "text": "has one item"
+                },
+                {
+                  "variant": "two",
+                  "text": "has two items"
+                },
+                {
+                  "variant": "few",
+                  "text": "has a few items"
+                },
+                {
+                  "variant": "many",
+                  "text": "has many items"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "content": "."
+            }
+          ]
+        }
+      ],
+      "choice": [
+        {
+          "text": "Check Status",
+          "next": "StatusNode"
+        },
+        {
+          "text": "View Inventory",
+          "next": "InventoryNode"
+        },
+        {
+          "text": "Continue",
+          "next": "GameNode"
+        }
+      ]
+    },
+    {
+      "name": "StatusNode",
+      "texts": [
+        {
+          "text": "Your status is: 🟢 Online",
+          "interpolated_parts": [
+            {
+              "type": "text",
+              "content": "Your status is: "
+            },
+            {
+              "type": "branch",
+              "content": "{branch<PlayerStatus>(get_status)}",
+              "function_name": "get_status",
+              "enum_type": "PlayerStatus",
+              "branches": [
+                {
+                  "variant": "online",
+                  "text": "🟢 Online"
+                },
+                {
+                  "variant": "away",
+                  "text": "🟡 Away"
+                },
+                {
+                  "variant": "busy",
+                  "text": "🔴 Busy"
+                },
+                {
+                  "variant": "offline",
+                  "text": "⚫ Offline"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "You can change your status in settings."
+        }
+      ],
+      "choice": [
+        {
+          "text": "Back",
+          "next": "Welcome"
+        }
+      ]
+    },
+    {
+      "name": "InventoryNode",
+      "texts": [
+        {
+          "text": "Inventory: Empty",
+          "interpolated_parts": [
+            {
+              "type": "text",
+              "content": "Inventory: "
+            },
+            {
+              "type": "branch",
+              "content": "{branch<Quantity>(count_inventory)}",
+              "function_name": "count_inventory",
+              "enum_type": "Quantity",
+              "branches": [
+                {
+                  "variant": "zero",
+                  "text": "Empty"
+                },
+                {
+                  "variant": "one",
+                  "text": "1 item"
+                },
+                {
+                  "variant": "two",
+                  "text": "2 items"
+                },
+                {
+                  "variant": "few",
+                  "text": "3-5 items"
+                },
+                {
+                  "variant": "many",
+                  "text": "6+ items"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "choice": [
+        {
+          "text": "Back",
+          "next": "Welcome"
+        }
+      ]
+    },
+    {
+      "name": "GameNode",
+      "texts": [
+        {
+          "text": "Let's start the game, brave warrior!",
+          "interpolated_parts": [
+            {
+              "type": "text",
+              "content": "Let's start the game, "
+            },
+            {
+              "type": "branch",
+              "content": "{branch<Gender>(get_player_gender)}",
+              "function_name": "get_player_gender",
+              "enum_type": "Gender",
+              "branches": [
+                {
+                  "variant": "male",
+                  "text": "brave warrior"
+                },
+                {
+                  "variant": "female",
+                  "text": "brave warrior"
+                },
+                {
+                  "variant": "other",
+                  "text": "brave soul"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "content": "!"
+            }
+          ]
+        },
+        {
+          "text": "Your adventure begins..."
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "game_title",
+      "return": "String"
+    },
+    {
+      "name": "get_player_gender",
+      "return": "Gender"
+    },
+    {
+      "name": "check_items",
+      "return": "Quantity"
+    },
+    {
+      "name": "get_status",
+      "return": "PlayerStatus"
+    },
+    {
+      "name": "count_inventory",
+      "return": "Quantity"
+    }
+  ]
+}

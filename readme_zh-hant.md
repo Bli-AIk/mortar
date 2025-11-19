@@ -183,13 +183,13 @@ mortar hello.mortar -o custom.json --pretty
 * ✅ **JSON 输出**：标准化输出格式
 * ✅ **语言服务器**：IDE 集成与语法高亮
 * ✅ **变量系统**：变量声明、常量定义、枚举类型
+* ✅ **分支插值**：支持非对称文本（参考 [Fluent](https://github.com/projectfluent/fluent) 设计）
 
 计划中功能：
-* 🚧 **分支插值**：支持非对称本地化
 * 🚧 **演出系统**：将events 提取成 独立节点
 * 🚧 **条件表达式**：与、或、非，比较
-* 🚧 **判断、循环语句**：if，else，while
-* 🚧 **本地化支持**：参考 [Fluent](https://github.com/projectfluent/fluent) 实现本地化支持
+* 🚧 **判断、循环语句**：if，else，while...
+* 🚧 **本地化支持**：多文件本地化支持
 
 ## 参与贡献
 

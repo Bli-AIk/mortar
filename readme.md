@@ -193,14 +193,13 @@ Features:
 * ✅ **JSON Output**: Standardized output format
 * ✅ **Language Server**: IDE integration and syntax highlighting
 * ✅ **Variable System**: Variable declarations, constants, and enums
+* ✅ **Branch Interpolation**: Non-symmetric text support (inspired by [Fluent](https://github.com/projectfluent/fluent))
 
 Planned Features:
-
-* 🚧 **Branch Interpolation**: Non-symmetric localization support
 * 🚧 **Event System**: Extracts events into independent nodes
 * 🚧 **Conditional Expressions**: AND, OR, NOT, comparisons
-* 🚧 **Control Flow Statements**: if, else, while
-* 🚧 **Localization Support**: Implement localization based on [Fluent](https://github.com/projectfluent/fluent)
+* 🚧 **Control Flow Statements**: if, else, while...
+* 🚧 **Localization Support**: Multiple file localization support
 
 ## Contributing
 
