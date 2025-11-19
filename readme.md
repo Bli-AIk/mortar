@@ -191,12 +191,14 @@ Features:
 * ✅ **JSON Output**: Standardized output format
 * ✅ **Language Server**: IDE integration and syntax highlighting
 
-Planned features:
+Planned Features:
 
-* 🚧 **Advanced Syntax Parsing**: Full event and choice syntax
-* 🚧 **Conditional Expressions**: Support for complex logic
-* 🚧 **Variable System**: Global and local variable management
-* 🚧 **Function Calls**: Built-in and custom functions
+* 🚧 **Key-Value Parsing**: Supports writing non-dialogue text
+* 🚧 **Event System**: Extracts events into independent nodes
+* 🚧 **Conditional Expressions**: AND, OR, NOT, comparisons
+* 🚧 **Control Flow Statements**: if, else, while
+* 🚧 **Localization Support**: Implement localization based on [Fluent](https://github.com/projectfluent/fluent)
+
 ## Contributing
 
 Community contributions are welcome\! Please see
