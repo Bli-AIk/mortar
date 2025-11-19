@@ -36,6 +36,17 @@ pub enum Token<'a> {
     Break,
     #[token("when")]
     When,
+    
+    // Variable and constant keywords
+    #[token("let")]
+    Let,
+    #[token("const")]
+    Const,
+    #[token("pub")]
+    #[token("public")]
+    Pub,
+    #[token("enum")]
+    Enum,
 
     // Type keywords
     #[token("String")]
@@ -76,6 +87,8 @@ pub enum Token<'a> {
     LeftParen,
     #[token(")")]
     RightParen,
+    #[token("=")]
+    Equals,
     // endregion
 
     // region Literals
@@ -163,6 +176,10 @@ impl fmt::Display for Token<'_> {
             Return => write!(f, "return"),
             Break => write!(f, "break"),
             When => write!(f, "when"),
+            Let => write!(f, "let"),
+            Const => write!(f, "const"),
+            Pub => write!(f, "pub"),
+            Enum => write!(f, "enum"),
 
             StringType => write!(f, "String"),
             NumberType => write!(f, "Number"),
@@ -181,6 +198,7 @@ impl fmt::Display for Token<'_> {
             RightBracket => write!(f, "]"),
             LeftParen => write!(f, "("),
             RightParen => write!(f, ")"),
+            Equals => write!(f, "="),
 
             String(s) => write!(f, "\"{}\"", s),
             InterpolatedString(s) => write!(f, "$\"{}\"", s),

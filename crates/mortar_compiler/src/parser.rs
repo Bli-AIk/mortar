@@ -10,6 +10,9 @@ pub struct Program {
 pub enum TopLevel {
     NodeDef(NodeDef),
     FunctionDecl(FunctionDecl),
+    VarDecl(VarDecl),
+    ConstDecl(ConstDecl),
+    EnumDef(EnumDef),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -104,8 +107,40 @@ pub struct FuncCall {
 pub enum Arg {
     String(String),
     Number(f64),
+    Boolean(bool),
     Identifier(String),
     FuncCall(Box<FuncCall>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct VarDecl {
+    pub name: String,
+    pub name_span: Option<(usize, usize)>,
+    pub type_name: String,
+    pub value: Option<VarValue>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ConstDecl {
+    pub is_public: bool,
+    pub name: String,
+    pub name_span: Option<(usize, usize)>,
+    pub type_name: String,
+    pub value: VarValue,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumDef {
+    pub name: String,
+    pub name_span: Option<(usize, usize)>,
+    pub variants: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum VarValue {
+    String(String),
+    Number(f64),
+    Boolean(bool),
 }
 
 pub struct ParseHandler;
@@ -314,8 +349,11 @@ impl<'a> Parser<'a> {
         match self.peek().map(|t| &t.token) {
             Some(Token::Node) => Ok(TopLevel::NodeDef(self.parse_node_def()?)),
             Some(Token::Fn) => Ok(TopLevel::FunctionDecl(self.parse_function_decl()?)),
+            Some(Token::Let) => Ok(TopLevel::VarDecl(self.parse_var_decl()?)),
+            Some(Token::Const) | Some(Token::Pub) => Ok(TopLevel::ConstDecl(self.parse_const_decl()?)),
+            Some(Token::Enum) => Ok(TopLevel::EnumDef(self.parse_enum_def()?)),
             _ => Err(format!(
-                "Expected 'node' or 'fn', found {:?}",
+                "Expected 'node', 'fn', 'let', 'const', 'pub', or 'enum', found {:?}",
                 self.peek().map(|t| &t.token)
             )),
         }
@@ -790,6 +828,148 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_var_decl(&mut self) -> Result<VarDecl, String> {
+        self.consume(&Token::Let, "Expected 'let'")?;
+
+        let (name, name_span) = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                (name.to_string(), Some((token_info.start, token_info.end)))
+            } else {
+                return Err("Expected variable name".to_string());
+            }
+        } else {
+            return Err("Expected variable name".to_string());
+        };
+
+        self.consume(&Token::Colon, "Expected ':' after variable name")?;
+
+        let type_name = self.parse_type()?;
+
+        let value = if self.check(&Token::Equals) {
+            self.advance(); // consume '='
+            Some(self.parse_var_value()?)
+        } else {
+            None
+        };
+
+        Ok(VarDecl {
+            name,
+            name_span,
+            type_name,
+            value,
+        })
+    }
+
+    fn parse_const_decl(&mut self) -> Result<ConstDecl, String> {
+        let is_public = if self.check(&Token::Pub) {
+            self.advance();
+            true
+        } else {
+            false
+        };
+
+        self.consume(&Token::Const, "Expected 'const'")?;
+
+        let (name, name_span) = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                (name.to_string(), Some((token_info.start, token_info.end)))
+            } else {
+                return Err("Expected constant name".to_string());
+            }
+        } else {
+            return Err("Expected constant name".to_string());
+        };
+
+        self.consume(&Token::Colon, "Expected ':' after constant name")?;
+
+        let type_name = self.parse_type()?;
+
+        self.consume(&Token::Equals, "Expected '=' after constant type")?;
+
+        let value = self.parse_var_value()?;
+
+        Ok(ConstDecl {
+            is_public,
+            name,
+            name_span,
+            type_name,
+            value,
+        })
+    }
+
+    fn parse_enum_def(&mut self) -> Result<EnumDef, String> {
+        self.consume(&Token::Enum, "Expected 'enum'")?;
+
+        let (name, name_span) = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                (name.to_string(), Some((token_info.start, token_info.end)))
+            } else {
+                return Err("Expected enum name".to_string());
+            }
+        } else {
+            return Err("Expected enum name".to_string());
+        };
+
+        self.consume(&Token::LeftBrace, "Expected '{'")?;
+
+        let mut variants = Vec::new();
+
+        while !self.check(&Token::RightBrace) && !self.is_at_end() {
+            self.skip_comments_and_separators();
+
+            if self.check(&Token::RightBrace) {
+                break;
+            }
+
+            if let Some(token_info) = self.advance() {
+                if let Token::Identifier(variant) = &token_info.token {
+                    variants.push(variant.to_string());
+                } else {
+                    return Err("Expected enum variant name".to_string());
+                }
+            } else {
+                return Err("Expected enum variant name".to_string());
+            }
+
+            self.skip_optional_separators();
+        }
+
+        self.consume(&Token::RightBrace, "Expected '}'")?;
+
+        Ok(EnumDef {
+            name,
+            name_span,
+            variants,
+        })
+    }
+
+    fn parse_var_value(&mut self) -> Result<VarValue, String> {
+        match self.peek().map(|t| &t.token) {
+            Some(Token::String(s)) => {
+                let value = s.to_string();
+                self.advance();
+                Ok(VarValue::String(value))
+            }
+            Some(Token::Number(n)) => {
+                let value = n.parse::<f64>().map_err(|_| "Invalid number")?;
+                self.advance();
+                Ok(VarValue::Number(value))
+            }
+            Some(Token::True) => {
+                self.advance();
+                Ok(VarValue::Boolean(true))
+            }
+            Some(Token::False) => {
+                self.advance();
+                Ok(VarValue::Boolean(false))
+            }
+            _ => Err(format!(
+                "Expected value (string, number, or boolean), found {:?}",
+                self.peek().map(|t| &t.token)
+            )),
+        }
+    }
+
     fn parse_func_call(&mut self) -> Result<FuncCall, String> {
         let (name, name_span) = if let Some(token_info) = self.advance() {
             if let Token::Identifier(name) = &token_info.token {
@@ -834,6 +1014,14 @@ impl<'a> Parser<'a> {
                 let n = n.parse::<f64>().map_err(|_| "Invalid number")?;
                 self.advance();
                 Ok(Arg::Number(n))
+            }
+            Some(Token::True) => {
+                self.advance();
+                Ok(Arg::Boolean(true))
+            }
+            Some(Token::False) => {
+                self.advance();
+                Ok(Arg::Boolean(false))
             }
             Some(Token::Identifier(name)) => {
                 // Look ahead to see if it's a function call

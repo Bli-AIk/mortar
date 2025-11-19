@@ -15,6 +15,12 @@ fn get_text(key: &str, language: Language) -> &'static str {
 #[derive(Serialize, Deserialize)]
 pub struct MortaredOutput {
     metadata: Metadata,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    variables: Vec<JsonVariable>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    constants: Vec<JsonConstant>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    enums: Vec<JsonEnum>,
     nodes: Vec<JsonNode>,
     functions: Vec<JsonFunction>,
 }
@@ -107,6 +113,30 @@ struct JsonParam {
     param_type: String,
 }
 
+#[derive(Serialize, Deserialize)]
+struct JsonVariable {
+    name: String,
+    #[serde(rename = "type")]
+    var_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    value: Option<serde_json::Value>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonConstant {
+    name: String,
+    #[serde(rename = "type")]
+    const_type: String,
+    value: serde_json::Value,
+    public: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonEnum {
+    name: String,
+    variants: Vec<String>,
+}
+
 pub struct Serializer;
 
 impl Serializer {
@@ -151,6 +181,9 @@ impl Serializer {
             generated_at: Utc::now(),
         };
 
+        let mut variables = Vec::new();
+        let mut constants = Vec::new();
+        let mut enums = Vec::new();
         let mut nodes = Vec::new();
         let mut functions = Vec::new();
 
@@ -162,11 +195,23 @@ impl Serializer {
                 TopLevel::FunctionDecl(func_decl) => {
                     functions.push(Self::convert_function_decl(func_decl));
                 }
+                TopLevel::VarDecl(var_decl) => {
+                    variables.push(Self::convert_var_decl(var_decl));
+                }
+                TopLevel::ConstDecl(const_decl) => {
+                    constants.push(Self::convert_const_decl(const_decl));
+                }
+                TopLevel::EnumDef(enum_def) => {
+                    enums.push(Self::convert_enum_def(enum_def));
+                }
             }
         }
 
         Ok(MortaredOutput {
             metadata,
+            variables,
+            constants,
+            enums,
             nodes,
             functions,
         })
@@ -303,6 +348,7 @@ impl Serializer {
             match arg {
                 Arg::String(s) => args.push(s.clone()),
                 Arg::Number(n) => args.push(n.to_string()),
+                Arg::Boolean(b) => args.push(b.to_string()),
                 Arg::Identifier(id) => args.push(id.clone()),
                 Arg::FuncCall(_) => {
                     return Err(
@@ -333,6 +379,7 @@ impl Serializer {
                     .map(|arg| match arg {
                         Arg::String(s) => s.clone(),
                         Arg::Number(n) => n.to_string(),
+                        Arg::Boolean(b) => b.to_string(),
                         Arg::Identifier(id) => id.clone(),
                         Arg::FuncCall(_) => "nested_call".to_string(), // Simplified
                     })
@@ -380,6 +427,38 @@ impl Serializer {
         }
     }
 
+    fn convert_var_decl(var_decl: &VarDecl) -> JsonVariable {
+        JsonVariable {
+            name: var_decl.name.clone(),
+            var_type: var_decl.type_name.clone(),
+            value: var_decl.value.as_ref().map(Self::convert_var_value),
+        }
+    }
+
+    fn convert_const_decl(const_decl: &ConstDecl) -> JsonConstant {
+        JsonConstant {
+            name: const_decl.name.clone(),
+            const_type: const_decl.type_name.clone(),
+            value: Self::convert_var_value(&const_decl.value),
+            public: const_decl.is_public,
+        }
+    }
+
+    fn convert_enum_def(enum_def: &EnumDef) -> JsonEnum {
+        JsonEnum {
+            name: enum_def.name.clone(),
+            variants: enum_def.variants.clone(),
+        }
+    }
+
+    fn convert_var_value(value: &VarValue) -> serde_json::Value {
+        match value {
+            VarValue::String(s) => serde_json::Value::String(s.clone()),
+            VarValue::Number(n) => serde_json::json!(n),
+            VarValue::Boolean(b) => serde_json::Value::Bool(*b),
+        }
+    }
+
     fn convert_interpolated_string(
         interpolated: &InterpolatedString,
     ) -> Result<(String, Vec<JsonStringPart>), String> {
@@ -410,6 +489,7 @@ impl Serializer {
                             match arg {
                                 Arg::String(s) => format!("\"{}\"", s),
                                 Arg::Number(n) => n.to_string(),
+                                Arg::Boolean(b) => b.to_string(),
                                 Arg::Identifier(id) => id.clone(),
                                 Arg::FuncCall(nested) => format!("{}()", nested.name), // Simplified
                             }

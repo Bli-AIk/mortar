@@ -128,6 +128,10 @@ impl Backend {
             | Token::Return
             | Token::Break
             | Token::When
+            | Token::Let
+            | Token::Const
+            | Token::Pub
+            | Token::Enum
             | Token::StringType
             | Token::NumberType
             | Token::BooleanType
@@ -149,7 +153,8 @@ impl Backend {
             | Token::LeftBracket
             | Token::RightBracket
             | Token::LeftParen
-            | Token::RightParen => PUNCTUATION,
+            | Token::RightParen
+            | Token::Equals => PUNCTUATION,
 
             Token::Identifier(_) => {
                 // Check if it's an identifier after node/nd or fn (function/node definition)

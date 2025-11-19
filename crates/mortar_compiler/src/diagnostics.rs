@@ -335,6 +335,9 @@ impl DiagnosticCollector {
 
                     declared_nodes.insert(node.name.clone(), node);
                 }
+                TopLevel::VarDecl(_) | TopLevel::ConstDecl(_) | TopLevel::EnumDef(_) => {
+                    // Variable, constant, and enum declarations don't need naming checks for now
+                }
             }
         }
 
@@ -626,6 +629,7 @@ impl DiagnosticCollector {
         match arg {
             Arg::String(_) => "String".to_string(),
             Arg::Number(_) => "Number".to_string(),
+            Arg::Boolean(_) => "Boolean".to_string(),
             Arg::Identifier(_) => "Unknown".to_string(), // Could be enhanced with variable tracking
             Arg::FuncCall(func_call) => {
                 if let Some(func_decl) = declared_functions.get(&func_call.name) {

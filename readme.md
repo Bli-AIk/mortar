@@ -192,10 +192,11 @@ Features:
 * ✅ **Error Handling**: `ariadne` friendly error reporting
 * ✅ **JSON Output**: Standardized output format
 * ✅ **Language Server**: IDE integration and syntax highlighting
+* ✅ **Variable System**: Variable declarations, constants, and enums
 
 Planned Features:
 
-* 🚧 **Key-Value Parsing**: Supports writing non-dialogue text
+* 🚧 **Branch Interpolation**: Non-symmetric localization support
 * 🚧 **Event System**: Extracts events into independent nodes
 * 🚧 **Conditional Expressions**: AND, OR, NOT, comparisons
 * 🚧 **Control Flow Statements**: if, else, while
