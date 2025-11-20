@@ -33,7 +33,7 @@ node Welcome {
     
     // Boolean-based branch with different condition
     greet: branch [
-        is_male, "勇士"
+        is_male, "先生"
         is_female, "女士"
     ]
 }
