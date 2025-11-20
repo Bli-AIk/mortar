@@ -166,7 +166,10 @@ fn test_deserialize_with_variables() {
     assert_eq!(data.variables[0].name, "player_name");
     assert!(data.variables[0].value.is_none());
     assert_eq!(data.variables[1].name, "score");
-    assert_eq!(data.variables[1].value.as_ref().unwrap().as_f64().unwrap(), 100.0);
+    assert_eq!(
+        data.variables[1].value.as_ref().unwrap().as_f64().unwrap(),
+        100.0
+    );
 }
 
 #[test]

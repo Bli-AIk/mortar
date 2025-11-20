@@ -166,10 +166,7 @@ fn access_nodes(data: &MortaredData) {
                 for event in events {
                     println!("      事件 @ {}", event.index);
                     for action in &event.actions {
-                        println!(
-                            "        - {}({:?})",
-                            action.action_type, action.args
-                        );
+                        println!("        - {}({:?})", action.action_type, action.args);
                     }
                 }
             }
@@ -273,10 +270,7 @@ fn simulate_dialogue(data: &MortaredData) {
                 if let Some(events) = &text.events {
                     for event in events {
                         for action in &event.actions {
-                            println!(
-                                "  [触发事件: {}({:?})]",
-                                action.action_type, action.args
-                            );
+                            println!("  [触发事件: {}({:?})]", action.action_type, action.args);
                         }
                     }
                 }
