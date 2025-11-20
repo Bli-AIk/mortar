@@ -62,7 +62,7 @@ fn test_serialize_program() {
     let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
-    assert_eq!(json["metadata"]["version"], "0.1.0");
+    assert_eq!(json["metadata"]["version"], env!("CARGO_PKG_VERSION"));
     assert!(json["metadata"]["generated_at"].is_string());
 
     assert_eq!(json["functions"].as_array().unwrap().len(), 1);

@@ -249,7 +249,7 @@ impl Serializer {
 
     fn convert_program_to_mortared(program: &Program) -> Result<MortaredOutput, String> {
         let metadata = Metadata {
-            version: "0.1.0".to_string(),
+            version: env!("CARGO_PKG_VERSION").to_string(),
             generated_at: Utc::now(),
         };
 
