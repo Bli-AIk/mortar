@@ -1,6 +1,7 @@
 // Test modules
 mod branch_test;
 mod control_flow_test;
+mod deserializer_test;
 mod diagnostics_test;
 mod parser_test;
 mod performance_serialization_test;
