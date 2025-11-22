@@ -295,7 +295,7 @@ fn test_parse_branch_variable_with_enum() {
     match &program.body[2] {
         TopLevel::VarDecl(var_decl) => {
             assert_eq!(var_decl.name, "status");
-            assert_eq!(var_decl.type_name, "branch");
+            assert_eq!(var_decl.type_name, "Branch");
 
             if let Some(VarValue::Branch(branch_value)) = &var_decl.value {
                 assert_eq!(branch_value.enum_type.as_ref().unwrap(), "current_state");
@@ -330,7 +330,7 @@ fn test_parse_branch_variable_with_bool() {
     match &program.body[1] {
         TopLevel::VarDecl(var_decl) => {
             assert_eq!(var_decl.name, "place");
-            assert_eq!(var_decl.type_name, "branch");
+            assert_eq!(var_decl.type_name, "Branch");
 
             if let Some(VarValue::Branch(branch_value)) = &var_decl.value {
                 assert!(branch_value.enum_type.is_none());
@@ -376,7 +376,7 @@ fn test_serialize_branch_variable() {
         .find(|v| v["name"] == "status_text")
         .unwrap();
 
-    assert_eq!(branch_var["type"], "branch");
+    assert_eq!(branch_var["type"], "Branch");
     assert_eq!(branch_var["value"]["enum_type"], "current_status");
 
     let cases = branch_var["value"]["cases"].as_array().unwrap();

@@ -553,6 +553,27 @@ impl Serializer {
                         condition: Some(condition_json.clone()),
                     });
                 }
+                NodeStmt::IfElse(nested_if) => {
+                    // Handle nested if-else: combine conditions with AND
+                    let mut nested_texts = Vec::new();
+                    Self::process_if_else(nested_if, &mut nested_texts)?;
+
+                    // Add the outer condition to all nested texts
+                    for mut text in nested_texts {
+                        if let Some(nested_cond) = text.condition {
+                            // Combine: outer_condition AND nested_condition
+                            text.condition = Some(JsonIfCondition {
+                                cond_type: "binary".to_string(),
+                                operator: Some("&&".to_string()),
+                                left: Some(Box::new(condition_json.clone())),
+                                right: Some(Box::new(nested_cond)),
+                                operand: None,
+                                value: None,
+                            });
+                        }
+                        texts.push(text);
+                    }
+                }
                 _ => {}
             }
         }
@@ -586,6 +607,27 @@ impl Serializer {
                             events: None,
                             condition: Some(negated_condition.clone()),
                         });
+                    }
+                    NodeStmt::IfElse(nested_if) => {
+                        // Handle nested if-else in else branch
+                        let mut nested_texts = Vec::new();
+                        Self::process_if_else(nested_if, &mut nested_texts)?;
+
+                        // Add the negated outer condition to all nested texts
+                        for mut text in nested_texts {
+                            if let Some(nested_cond) = text.condition {
+                                // Combine: !outer_condition AND nested_condition
+                                text.condition = Some(JsonIfCondition {
+                                    cond_type: "binary".to_string(),
+                                    operator: Some("&&".to_string()),
+                                    left: Some(Box::new(negated_condition.clone())),
+                                    right: Some(Box::new(nested_cond)),
+                                    operand: None,
+                                    value: None,
+                                });
+                            }
+                            texts.push(text);
+                        }
                     }
                     _ => {}
                 }

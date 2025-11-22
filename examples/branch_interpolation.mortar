@@ -1,5 +1,4 @@
 // Branch Interpolation Example - Non-symmetric Localization
-// 按照 plan.md 第6点的新语法
 
 // ===== Define Variables and Enums =====
 
@@ -60,40 +59,39 @@ let object: branch<current_location> [
 
 // ===== Node with Branch Interpolation =====
 
-node Welcome {
+node Start {
     text: $"欢迎来到{place}，{greet}！"
-}
+} -> LocationDesc
 
 node LocationDesc {
     text: $"你现在在{location}，周围有{object}。"
-}
+} -> ComplexScene
 
+// 定义另一个 branch 变量用于此场景
+let scene_object: branch<current_location> [
+    forest, "野兽", events: [
+        0, set_color("#FF0000")
+        1, set_color("#FF7F00")
+        ]
+    city, "警车", events: [
+        0, set_color("#0000FF")
+        1, set_color("#FF00FF")
+    ]
+    town, "老人"
+]
 // Example combining text events and branch events
 node ComplexScene {
-    // 定义另一个 branch 变量用于此场景
-    let scene_object: branch<current_location> [
-        forest, "野兽", events: [
-            0, set_color("red")
-            1, set_color("orange")
-        ]
-        city, "警车", events: [
-            0, set_color("blue")
-            1, set_color("red")
-        ]
-        town, "老人"
-    ]
-    
+
+
     // Main text with events (indices refer to non-interpolated parts only)
     text: $"你看见{scene_object}后，感到惊讶！"
     with events: [
-        1, shake()
-        2, shake()
-        3, flash()
+        0, set_color("#00FF00")
+        5, set_color("#FF33FF")
+        9, set_color("33FF22")
     ]
 }
 
 // ===== Function Declarations =====
 
 fn set_color(color: String)
-fn shake()
-fn flash()

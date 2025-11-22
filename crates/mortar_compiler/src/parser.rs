@@ -1349,7 +1349,7 @@ impl<'a> Parser<'a> {
             Ok(VarDecl {
                 name,
                 name_span,
-                type_name: "branch".to_string(),
+                type_name: "Branch".to_string(),
                 value: Some(VarValue::Branch(BranchValue { enum_type, cases })),
             })
         } else {

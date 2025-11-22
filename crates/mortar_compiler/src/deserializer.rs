@@ -35,6 +35,8 @@ pub struct Node {
     pub texts: Vec<Text>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub branches: Option<Vec<BranchDef>>,
+    #[serde(default)]
+    pub variables: Vec<Variable>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub next: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
