@@ -14,9 +14,9 @@ let is_live: Bool
 // 复杂变量类型
 // 目前仅支持枚举
 enum GameState {
-    start
-    playing
-    game_over
+start
+playing
+game_over
 }
 
 // 非对话文本的键值对通过 pub const xxx: String 变量来实现
@@ -87,13 +87,13 @@ enum ExampleEnum {
 fn set_color(color_code: String)
 ```
 
-
 // ------
 // 3.本地化
 使用多个语言文件来实现。外部库根据语言代码文件夹加载不同的文本资源。
 
 // ------
 // 4.控制流
+
 ```mortar
 let player_score: Number = 123
 
@@ -175,3 +175,33 @@ event PlayMusic {
 fn show_character(image: String, position: String)
 fn play_music(file: String, volume: Number)
 ```
+
+// ------
+// 6.枚举 —— 对 1 的补充
+
+// 我们可以定义枚举。
+
+enum GameState {
+start
+playing
+game_over
+}
+
+// 但是，要使用枚举，我们需要定义一个枚举变量。
+
+let current_state: GameState
+
+// 以及一个branch类型，来根据枚举值选择文本。
+
+let status: branch<current_state> [
+    forest, "森林深处"
+    city, "繁华都市"
+    town, "宁静小镇"
+]
+
+// 然后，在实际使用中：
+node Status {
+    text: $"游戏状态是 {status}。"
+}
+
+// 请注意，所有变量应该定义在节点/方法外部……我们没有作用域的概念。
