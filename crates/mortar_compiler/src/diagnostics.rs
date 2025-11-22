@@ -428,6 +428,9 @@ impl DiagnosticCollector {
                 NodeStmt::VarDecl(_) => {
                     // Variable declarations in node body are local scope
                 }
+                NodeStmt::Assignment(_) => {
+                    // Assignment statements don't need special analysis for now
+                }
             }
         }
     }

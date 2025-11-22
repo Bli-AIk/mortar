@@ -3,12 +3,13 @@
 // ===== Define Variables and Enums =====
 
 // Boolean 变量（用于简单的 branch）
-let is_forest: Bool
+let is_forest: Bool = true
 let is_city: Bool
-let is_male: Bool
+let is_male: Bool = true
 let is_female: Bool
 
 // 定义枚举
+// 枚举是按照类似 C# 的方式设计的。每个成员都是且只是一个标识符。
 enum Location {
     forest
     city
@@ -22,7 +23,8 @@ enum Gender {
 }
 
 // 定义枚举变量
-let current_location: Location
+let current_location: Location = Location.city;
+// current_gender，则使用 Gender 的第一个成员 male 作为默认值
 let current_gender: Gender
 
 // 定义 branch 类型变量（基于 Boolean）
@@ -81,8 +83,6 @@ let scene_object: branch<current_location> [
 ]
 // Example combining text events and branch events
 node ComplexScene {
-
-
     // Main text with events (indices refer to non-interpolated parts only)
     text: $"你看见{scene_object}后，感到惊讶！"
     with events: [
@@ -90,6 +90,18 @@ node ComplexScene {
         5, set_color("#FF33FF")
         9, set_color("33FF22")
     ]
+    text: $"于是你从{location}..."
+
+    if (current_location != Location.town)
+    {
+        current_location = Location.town
+    }
+    else
+    {
+        current_location = Location.forest
+    }
+
+    text: $"跑到了{location}。"
 }
 
 // ===== Function Declarations =====

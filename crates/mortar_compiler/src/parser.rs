@@ -35,6 +35,7 @@ pub enum NodeStmt {
     Run(RunStmt),
     WithEvents(WithEventsStmt),
     VarDecl(VarDecl),
+    Assignment(Assignment),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -49,6 +50,7 @@ pub enum IfCondition {
     Binary(Box<BinaryCondition>),
     Unary(Box<UnaryCondition>),
     Identifier(String),
+    EnumMember(String, String), // EnumName.member
     Literal(bool),
 }
 
@@ -258,6 +260,23 @@ pub enum VarValue {
     Number(f64),
     Boolean(bool),
     Branch(BranchValue),
+    EnumMember(String, String), // EnumName.member
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Assignment {
+    pub var_name: String,
+    pub var_name_span: Option<(usize, usize)>,
+    pub value: AssignValue,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum AssignValue {
+    EnumMember(String, String), // EnumName.member
+    Identifier(String),
+    Number(f64),
+    Boolean(bool),
+    String(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -567,19 +586,26 @@ impl<'a> Parser<'a> {
             Some(Token::With) => Ok(NodeStmt::WithEvents(self.parse_with_events_stmt()?)),
             Some(Token::Let) => Ok(NodeStmt::VarDecl(self.parse_var_decl()?)),
             Some(Token::Identifier(_)) => {
-                // Could be a branch definition (name: branch [...])
-                // Peek ahead to see if there's a colon followed by 'branch'
+                // Could be:
+                // 1. Assignment (name = value)
+                // 2. Branch definition (name: branch [...])
                 if self.current + 1 < self.tokens.len() {
-                    if matches!(self.tokens[self.current + 1].token, Token::Colon) {
-                        if self.current + 2 < self.tokens.len() {
-                            if matches!(self.tokens[self.current + 2].token, Token::Branch) {
-                                return Ok(NodeStmt::Branch(self.parse_branch_def()?));
+                    match &self.tokens[self.current + 1].token {
+                        Token::Equals => {
+                            return Ok(NodeStmt::Assignment(self.parse_assignment()?));
+                        }
+                        Token::Colon => {
+                            if self.current + 2 < self.tokens.len() {
+                                if matches!(self.tokens[self.current + 2].token, Token::Branch) {
+                                    return Ok(NodeStmt::Branch(self.parse_branch_def()?));
+                                }
                             }
                         }
+                        _ => {}
                     }
                 }
                 Err(format!(
-                    "Unexpected identifier in node body. Expected 'text', 'choice', 'run', 'with', 'let', or branch definition"
+                    "Unexpected identifier in node body. Expected 'text', 'choice', 'run', 'with', 'let', assignment, or branch definition"
                 ))
             }
             _ => Err(format!(
@@ -974,12 +1000,19 @@ impl<'a> Parser<'a> {
             return Ok(IfCondition::Literal(false));
         }
 
-        // Handle identifiers (variables) and numbers
+        // Handle identifiers (variables, enum members) and numbers
         if let Some(token_info) = self.peek() {
             match &token_info.token {
                 Token::Identifier(name) => {
                     let name = name.to_string();
                     self.advance();
+                    // Check for enum member access (EnumName.member)
+                    if self.check(&Token::Dot) {
+                        self.advance(); // consume '.'
+                        let member =
+                            self.consume_identifier("Expected enum member name after '.'")?;
+                        return Ok(IfCondition::EnumMember(name, member));
+                    }
                     return Ok(IfCondition::Identifier(name));
                 }
                 Token::Number(num) => {
@@ -1372,6 +1405,67 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_assignment(&mut self) -> Result<Assignment, String> {
+        let (var_name, var_name_span) = if let Some(token_info) = self.advance() {
+            if let Token::Identifier(name) = &token_info.token {
+                (name.to_string(), Some((token_info.start, token_info.end)))
+            } else {
+                return Err("Expected variable name".to_string());
+            }
+        } else {
+            return Err("Expected variable name".to_string());
+        };
+
+        self.consume(&Token::Equals, "Expected '=' after variable name")?;
+
+        let value = self.parse_assign_value()?;
+
+        Ok(Assignment {
+            var_name,
+            var_name_span,
+            value,
+        })
+    }
+
+    fn parse_assign_value(&mut self) -> Result<AssignValue, String> {
+        match self.peek().map(|t| &t.token) {
+            Some(Token::String(s)) => {
+                let value = s.to_string();
+                self.advance();
+                Ok(AssignValue::String(value))
+            }
+            Some(Token::Number(n)) => {
+                let value = n.parse::<f64>().map_err(|_| "Invalid number")?;
+                self.advance();
+                Ok(AssignValue::Number(value))
+            }
+            Some(Token::True) => {
+                self.advance();
+                Ok(AssignValue::Boolean(true))
+            }
+            Some(Token::False) => {
+                self.advance();
+                Ok(AssignValue::Boolean(false))
+            }
+            Some(Token::Identifier(name)) => {
+                let first_name = name.to_string();
+                self.advance();
+                // Check for enum member access (EnumName.member)
+                if self.check(&Token::Dot) {
+                    self.advance(); // consume '.'
+                    let member = self.consume_identifier("Expected enum member name after '.'")?;
+                    Ok(AssignValue::EnumMember(first_name, member))
+                } else {
+                    Ok(AssignValue::Identifier(first_name))
+                }
+            }
+            _ => Err(format!(
+                "Expected value (string, number, boolean, identifier, or enum member), found {:?}",
+                self.peek().map(|t| &t.token)
+            )),
+        }
+    }
+
     fn parse_const_decl(&mut self) -> Result<ConstDecl, String> {
         let is_public = if self.check(&Token::Pub) {
             self.advance();
@@ -1475,8 +1569,23 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Ok(VarValue::Boolean(false))
             }
+            Some(Token::Identifier(name)) => {
+                let enum_name = name.to_string();
+                self.advance();
+                // Check for enum member access (EnumName.member)
+                if self.check(&Token::Dot) {
+                    self.advance(); // consume '.'
+                    let member = self.consume_identifier("Expected enum member name after '.'")?;
+                    Ok(VarValue::EnumMember(enum_name, member))
+                } else {
+                    Err(format!(
+                        "Unexpected identifier '{}' in variable value",
+                        enum_name
+                    ))
+                }
+            }
             _ => Err(format!(
-                "Expected value (string, number, or boolean), found {:?}",
+                "Expected value (string, number, boolean, or enum member), found {:?}",
                 self.peek().map(|t| &t.token)
             )),
         }

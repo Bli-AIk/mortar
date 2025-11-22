@@ -452,6 +452,10 @@ impl Serializer {
                     // Add them to local_variables
                     local_variables.push(Self::convert_var_decl(var_decl));
                 }
+                NodeStmt::Assignment(_assignment) => {
+                    // Assignments are runtime operations, not serialized into JSON
+                    // They will be handled by the runtime executor
+                }
             }
         }
 
@@ -676,6 +680,14 @@ impl Serializer {
                 operand: None,
                 value: Some(name.clone()),
             }),
+            IfCondition::EnumMember(enum_name, member) => Ok(JsonIfCondition {
+                cond_type: "enum_member".to_string(),
+                operator: None,
+                left: None,
+                right: None,
+                operand: None,
+                value: Some(format!("{}.{}", enum_name, member)),
+            }),
             IfCondition::Literal(val) => Ok(JsonIfCondition {
                 cond_type: "literal".to_string(),
                 operator: None,
@@ -816,6 +828,9 @@ impl Serializer {
             VarValue::String(s) => serde_json::Value::String(s.clone()),
             VarValue::Number(n) => serde_json::json!(n),
             VarValue::Boolean(b) => serde_json::Value::Bool(*b),
+            VarValue::EnumMember(enum_name, member) => {
+                serde_json::Value::String(format!("{}.{}", enum_name, member))
+            }
             VarValue::Branch(branch_value) => {
                 let cases: Vec<_> = branch_value
                     .cases
