@@ -37,10 +37,31 @@ pub struct Node {
     pub branches: Option<Vec<BranchDef>>,
     #[serde(default)]
     pub variables: Vec<Variable>,
+    #[serde(default)]
+    pub runs: Vec<RunStmt>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub next: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub choice: Option<Vec<Choice>>,
+}
+
+/// A run statement
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RunStmt {
+    pub event_name: String,
+    #[serde(default)]
+    pub args: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub index_override: Option<IndexOverride>,
+    pub position: usize,
+}
+
+/// Index override for run statements
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct IndexOverride {
+    #[serde(rename = "type")]
+    pub override_type: String,
+    pub value: String,
 }
 
 /// A branch definition for asymmetric text interpolation

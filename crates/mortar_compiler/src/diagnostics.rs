@@ -357,7 +357,11 @@ impl DiagnosticCollector {
                     );
                 }
                 TopLevel::EventDef(event_def) => {
-                    self.analyze_event_action(&event_def.action, &declared_functions, &mut used_functions);
+                    self.analyze_event_action(
+                        &event_def.action,
+                        &declared_functions,
+                        &mut used_functions,
+                    );
                 }
                 TopLevel::TimelineDef(timeline_def) => {
                     for stmt in &timeline_def.body {

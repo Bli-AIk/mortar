@@ -43,6 +43,8 @@ struct JsonNode {
     branches: Option<Vec<JsonBranchDef>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     variables: Vec<JsonVariable>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    runs: Vec<JsonRunStmt>,
     #[serde(skip_serializing_if = "Option::is_none")]
     next: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -152,6 +154,23 @@ struct JsonCondition {
     condition_type: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     args: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct JsonRunStmt {
+    event_name: String,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    args: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    index_override: Option<JsonIndexOverride>,
+    position: usize, // Position in the node body for proper ordering
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct JsonIndexOverride {
+    #[serde(rename = "type")]
+    override_type: String, // "value" or "variable"
+    value: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -329,6 +348,7 @@ impl Serializer {
         let mut choices = None;
         let mut branches_vec = Vec::new();
         let mut local_variables = Vec::new();
+        let mut runs = Vec::new();
 
         // Group texts and events, separate choices and branches
         let mut current_text: Option<String> = None;
@@ -372,7 +392,7 @@ impl Serializer {
                 }
             };
 
-        for stmt in &node_def.body {
+        for (position, stmt) in node_def.body.iter().enumerate() {
             match stmt {
                 NodeStmt::IfElse(if_else) => {
                     // Save current text if any
@@ -434,9 +454,50 @@ impl Serializer {
                     }
                     choices = Some(json_choices);
                 }
-                NodeStmt::Run(_run_stmt) => {
-                    // Run statements are handled separately, skipping serialization for now
-                    // as they're meant for timeline execution
+                NodeStmt::Run(run_stmt) => {
+                    // Convert run statement to JSON
+                    let args: Vec<String> = run_stmt
+                        .args
+                        .iter()
+                        .map(|arg| {
+                            match arg {
+                                Arg::String(s) => format!("\"{}\"", s),
+                                Arg::Number(n) => n.to_string(),
+                                Arg::Boolean(b) => b.to_string(),
+                                Arg::Identifier(id) => id.clone(),
+                                Arg::FuncCall(func_call) => {
+                                    // Serialize function call as "func_name(...)"
+                                    format!("{}(...)", func_call.name)
+                                }
+                            }
+                        })
+                        .collect();
+
+                    let index_override =
+                        run_stmt
+                            .index_override
+                            .as_ref()
+                            .map(|override_val| match override_val {
+                                IndexOverride::Value(v) => JsonIndexOverride {
+                                    override_type: "value".to_string(),
+                                    value: v.to_string(),
+                                },
+                                IndexOverride::Variable(var) => JsonIndexOverride {
+                                    override_type: "variable".to_string(),
+                                    value: var.clone(),
+                                },
+                                IndexOverride::Reference(var) => JsonIndexOverride {
+                                    override_type: "reference".to_string(),
+                                    value: var.clone(),
+                                },
+                            });
+
+                    runs.push(JsonRunStmt {
+                        event_name: run_stmt.event_name.clone(),
+                        args,
+                        index_override,
+                        position,
+                    });
                 }
                 NodeStmt::WithEvents(with_events) => {
                     // WithEvents statements associate events with the previous text
@@ -534,6 +595,7 @@ impl Serializer {
                 Some(branches_vec)
             },
             variables: local_variables,
+            runs,
             next,
             choice: choices,
         })
