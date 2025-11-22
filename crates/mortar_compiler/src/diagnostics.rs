@@ -397,15 +397,7 @@ impl DiagnosticCollector {
                 NodeStmt::Branch(_) => {
                     // Branch definitions don't need analysis here
                 }
-                NodeStmt::Events(events) => {
-                    for event in events {
-                        self.analyze_event_action(
-                            &event.action,
-                            declared_functions,
-                            used_functions,
-                        );
-                    }
-                }
+
                 NodeStmt::Choice(choices) => {
                     self.analyze_choices(
                         choices,

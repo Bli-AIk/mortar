@@ -261,10 +261,18 @@ impl Serializer {
         let mut events = Vec::new();
         let mut timelines = Vec::new();
 
+        // Build event definitions map for reference resolution
+        let mut event_map = std::collections::HashMap::new();
+        for top_level in &program.body {
+            if let TopLevel::EventDef(event_def) = top_level {
+                event_map.insert(event_def.name.clone(), event_def);
+            }
+        }
+
         for top_level in &program.body {
             match top_level {
                 TopLevel::NodeDef(node_def) => {
-                    nodes.push(Self::convert_node_def(node_def)?);
+                    nodes.push(Self::convert_node_def(node_def, &event_map)?);
                 }
                 TopLevel::FunctionDecl(func_decl) => {
                     functions.push(Self::convert_function_decl(func_decl));
@@ -299,32 +307,62 @@ impl Serializer {
         })
     }
 
-    fn convert_node_def(node_def: &NodeDef) -> Result<JsonNode, String> {
+    fn convert_node_def(
+        node_def: &NodeDef,
+        event_map: &std::collections::HashMap<String, &EventDef>,
+    ) -> Result<JsonNode, String> {
         let mut texts = Vec::new();
         let mut choices = None;
         let mut branches_vec = Vec::new();
 
         // Group texts and events, separate choices and branches
         let mut current_text: Option<String> = None;
+        let mut current_interpolated: Option<(String, Vec<JsonStringPart>)> = None;
         let mut current_events: Vec<JsonEvent> = Vec::new();
+
+        // Helper closure to save pending text
+        let save_pending_text =
+            |texts: &mut Vec<JsonText>,
+             current_text: &mut Option<String>,
+             current_interpolated: &mut Option<(String, Vec<JsonStringPart>)>,
+             current_events: &mut Vec<JsonEvent>| {
+                if let Some(text_content) = current_text.take() {
+                    texts.push(JsonText {
+                        text: text_content,
+                        interpolated_parts: None,
+                        condition: None,
+                        events: if current_events.is_empty() {
+                            None
+                        } else {
+                            Some(current_events.clone())
+                        },
+                    });
+                    current_events.clear();
+                } else if let Some((text_content, parts)) = current_interpolated.take() {
+                    texts.push(JsonText {
+                        text: text_content,
+                        interpolated_parts: Some(parts),
+                        condition: None,
+                        events: if current_events.is_empty() {
+                            None
+                        } else {
+                            Some(current_events.clone())
+                        },
+                    });
+                    current_events.clear();
+                }
+            };
 
         for stmt in &node_def.body {
             match stmt {
                 NodeStmt::IfElse(if_else) => {
                     // Save current text if any
-                    if let Some(text_content) = current_text.take() {
-                        texts.push(JsonText {
-                            text: text_content,
-                            interpolated_parts: None,
-                            condition: None,
-                            events: if current_events.is_empty() {
-                                None
-                            } else {
-                                Some(current_events.clone())
-                            },
-                        });
-                        current_events.clear();
-                    }
+                    save_pending_text(
+                        &mut texts,
+                        &mut current_text,
+                        &mut current_interpolated,
+                        &mut current_events,
+                    );
 
                     // Process if-else as conditional texts
                     Self::process_if_else(if_else, &mut texts)?;
@@ -336,73 +374,36 @@ impl Serializer {
                     continue;
                 }
                 NodeStmt::Text(text) => {
-                    // If we have a current text, save it first
-                    if let Some(text_content) = current_text.take() {
-                        texts.push(JsonText {
-                            text: text_content,
-                            interpolated_parts: None,
-                            condition: None,
-                            events: if current_events.is_empty() {
-                                None
-                            } else {
-                                Some(current_events.clone())
-                            },
-                        });
-                        current_events.clear();
-                    }
+                    // Save any pending text/interpolated text first (they're done, won't have more WithEvents)
+                    save_pending_text(
+                        &mut texts,
+                        &mut current_text,
+                        &mut current_interpolated,
+                        &mut current_events,
+                    );
+                    // Store new text for later
                     current_text = Some(text.clone());
                 }
                 NodeStmt::InterpolatedText(interpolated) => {
-                    // If we have a current text, save it first
-                    if let Some(text_content) = current_text.take() {
-                        texts.push(JsonText {
-                            text: text_content,
-                            interpolated_parts: None,
-                            condition: None,
-                            events: if current_events.is_empty() {
-                                None
-                            } else {
-                                Some(current_events.clone())
-                            },
-                        });
-                        current_events.clear();
-                    }
-
-                    // Convert interpolated string
+                    // Save any pending text/interpolated text first (they're done, won't have more WithEvents)
+                    save_pending_text(
+                        &mut texts,
+                        &mut current_text,
+                        &mut current_interpolated,
+                        &mut current_events,
+                    );
+                    // Store new interpolated text for later (waiting for potential WithEvents)
                     let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
-                    texts.push(JsonText {
-                        text: rendered_text,
-                        interpolated_parts: Some(parts),
-                        condition: None,
-                        events: if current_events.is_empty() {
-                            None
-                        } else {
-                            Some(current_events.clone())
-                        },
-                    });
-                    current_events.clear();
-                }
-                NodeStmt::Events(events) => {
-                    // Convert events and associate with current text
-                    for event in events {
-                        current_events.push(Self::convert_event(event)?);
-                    }
+                    current_interpolated = Some((rendered_text, parts));
                 }
                 NodeStmt::Choice(choice_items) => {
                     // Save any pending text first
-                    if let Some(text_content) = current_text.take() {
-                        texts.push(JsonText {
-                            text: text_content,
-                            interpolated_parts: None,
-                            condition: None,
-                            events: if current_events.is_empty() {
-                                None
-                            } else {
-                                Some(current_events.clone())
-                            },
-                        });
-                        current_events.clear();
-                    }
+                    save_pending_text(
+                        &mut texts,
+                        &mut current_text,
+                        &mut current_interpolated,
+                        &mut current_events,
+                    );
 
                     let mut json_choices = Vec::new();
                     for item in choice_items {
@@ -414,10 +415,34 @@ impl Serializer {
                     // Run statements are handled separately, skipping serialization for now
                     // as they're meant for timeline execution
                 }
-                NodeStmt::WithEvents(_with_events) => {
-                    // WithEvents statements need special handling
-                    // They should associate events with the previous text
-                    // For now, we'll skip them in serialization
+                NodeStmt::WithEvents(with_events) => {
+                    // WithEvents statements associate events with the previous text
+                    // Process inline events and event references
+                    for item in &with_events.events {
+                        match item {
+                            WithEventItem::InlineEvent(event) => {
+                                // Convert inline event and add to current_events
+                                current_events.push(Self::convert_event(event)?);
+                            }
+                            WithEventItem::EventRef(name, _span) => {
+                                // Resolve event reference to actual event definition
+                                if let Some(event_def) = event_map.get(name) {
+                                    // Convert the event definition's action to Event
+                                    let event = Event {
+                                        index: event_def.index.unwrap_or(0.0),
+                                        action: event_def.action.clone(),
+                                    };
+                                    current_events.push(Self::convert_event(&event)?);
+                                } else {
+                                    return Err(format!("Event '{}' not found", name));
+                                }
+                            }
+                            WithEventItem::EventList(_) => {
+                                // Nested event lists - for future complex scenarios
+                                // TODO: Handle nested event lists if needed
+                            }
+                        }
+                    }
                 }
                 NodeStmt::VarDecl(_var_decl) => {
                     // Variable declarations in node body are local scope
@@ -431,6 +456,17 @@ impl Serializer {
             texts.push(JsonText {
                 text: text_content,
                 interpolated_parts: None,
+                condition: None,
+                events: if current_events.is_empty() {
+                    None
+                } else {
+                    Some(current_events.clone())
+                },
+            });
+        } else if let Some((text_content, parts)) = current_interpolated {
+            texts.push(JsonText {
+                text: text_content,
+                interpolated_parts: Some(parts),
                 condition: None,
                 events: if current_events.is_empty() {
                     None

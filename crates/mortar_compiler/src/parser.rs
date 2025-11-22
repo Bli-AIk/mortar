@@ -29,7 +29,6 @@ pub struct NodeDef {
 pub enum NodeStmt {
     Text(String),
     InterpolatedText(InterpolatedString),
-    Events(Vec<Event>),
     Choice(Vec<ChoiceItem>),
     Branch(BranchDef),
     IfElse(IfElseStmt),
@@ -174,6 +173,7 @@ pub struct WithEventsStmt {
 #[derive(Debug, Clone, PartialEq)]
 pub enum WithEventItem {
     EventRef(String, Option<(usize, usize)>),
+    InlineEvent(Event),
     EventList(Vec<WithEventItem>),
 }
 
@@ -554,7 +554,7 @@ impl<'a> Parser<'a> {
         match self.peek().map(|t| &t.token) {
             Some(Token::If) => Ok(NodeStmt::IfElse(self.parse_if_else()?)),
             Some(Token::Text) => Ok(self.parse_text_stmt()?),
-            Some(Token::Events) => Ok(NodeStmt::Events(self.parse_events_stmt()?)),
+            Some(Token::Events) => Err("Standalone 'events:' is deprecated. Use 'with events:' after a text statement instead.".to_string()),
             Some(Token::Choice) => Ok(NodeStmt::Choice(self.parse_choice_stmt()?)),
             Some(Token::Run) => Ok(NodeStmt::Run(self.parse_run_stmt()?)),
             Some(Token::With) => Ok(NodeStmt::WithEvents(self.parse_with_events_stmt()?)),
@@ -572,11 +572,11 @@ impl<'a> Parser<'a> {
                     }
                 }
                 Err(format!(
-                    "Unexpected identifier in node body. Expected 'text', 'events', 'choice', 'run', 'with', 'let', or branch definition"
+                    "Unexpected identifier in node body. Expected 'text', 'choice', 'run', 'with', 'let', or branch definition"
                 ))
             }
             _ => Err(format!(
-                "Expected 'text', 'events', 'choice', 'run', 'with', 'let', or branch definition, found {:?}",
+                "Expected 'text', 'choice', 'run', 'with', 'let', or branch definition, found {:?}",
                 self.peek().map(|t| &t.token)
             )),
         }
@@ -1632,8 +1632,18 @@ impl<'a> Parser<'a> {
 
         let mut events = Vec::new();
 
-        // Check if it's "with events: [...]" or "with EventName"
-        if self.check(&Token::Events) {
+        // Check if it's:
+        // - "with event { index, action }" (single inline event) - check FIRST
+        // - "with events: [...]" (multiple events)
+        // - "with EventName" (single event reference)
+        if self.check(&Token::Event) {
+            // "with event { index, action }" - single inline event
+            self.advance();
+            self.consume(&Token::LeftBrace, "Expected '{' after 'event'")?;
+            let event = self.parse_event()?;
+            events.push(WithEventItem::InlineEvent(event));
+            self.consume(&Token::RightBrace, "Expected '}' after event")?;
+        } else if self.check(&Token::Events) {
             self.advance();
             self.consume(&Token::Colon, "Expected ':' after 'events'")?;
             self.consume(&Token::LeftBracket, "Expected '['")?;
@@ -1645,13 +1655,20 @@ impl<'a> Parser<'a> {
                     break;
                 }
 
-                if let Some(Token::Identifier(name)) = self.peek().map(|t| &t.token) {
+                // Check if this is an inline event (starts with a number) or an event reference (identifier)
+                if let Some(Token::Number(_)) = self.peek().map(|t| &t.token) {
+                    // Inline event: index, action
+                    let event = self.parse_event()?;
+                    events.push(WithEventItem::InlineEvent(event));
+                } else if let Some(Token::Identifier(name)) = self.peek().map(|t| &t.token) {
                     let name = name.to_string();
                     let span = self.peek().map(|t| (t.start, t.end));
                     self.advance();
                     events.push(WithEventItem::EventRef(name, span));
                 } else {
-                    return Err("Expected event name in 'with events' list".to_string());
+                    return Err(
+                        "Expected event index or event name in 'with events' list".to_string()
+                    );
                 }
 
                 self.skip_optional_separators();
@@ -1664,7 +1681,7 @@ impl<'a> Parser<'a> {
             self.advance();
             events.push(WithEventItem::EventRef(name, span));
         } else {
-            return Err("Expected 'events' or event name after 'with'".to_string());
+            return Err("Expected 'events', 'event', or event name after 'with'".to_string());
         }
 
         Ok(WithEventsStmt { events })

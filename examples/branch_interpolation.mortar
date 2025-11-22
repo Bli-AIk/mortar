@@ -67,7 +67,7 @@ node LocationDesc {
 node ComplexScene {
     // Main text with events (indices refer to non-interpolated parts only)
     text: $"你看见{object}后，感到惊讶！"
-    events: [
+    with events: [
         1, shake()
         2, shake()
         3, flash()
