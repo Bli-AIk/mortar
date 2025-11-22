@@ -1,6 +1,6 @@
 use crate::parser::{
     Arg, ChoiceDest, ChoiceItem, Condition, Event, EventAction, FuncCall, FunctionDecl, NodeDef,
-    NodeJump, NodeStmt, Param, ParseHandler, Program, TopLevel,
+    NodeJump, NodeStmt, Param, ParseHandler, Program, TopLevel, WithEventItem, WithEventsStmt,
 };
 
 fn check_parsing(source: &str, expected_program: Program) {
@@ -65,7 +65,8 @@ fn test_parse_function_decl() {
 fn test_parse_node_with_events() {
     let source = r#"
         node event_node {
-            events: [
+            text: "Hello"
+            with events: [
                 0, say("hello")
                 1.5, say("world").wait(1)
             ]
@@ -75,34 +76,39 @@ fn test_parse_node_with_events() {
         body: vec![TopLevel::NodeDef(NodeDef {
             name: "event_node".to_string(),
             name_span: Some((14, 24)), // Approximate span
-            body: vec![NodeStmt::Events(vec![
-                Event {
-                    index: 0.0,
-                    action: EventAction {
-                        call: FuncCall {
-                            name: "say".to_string(),
-                            name_span: Some((68, 71)), // Updated to actual span
-                            args: vec![Arg::String("hello".to_string())],
-                        },
-                        chains: vec![],
-                    },
-                },
-                Event {
-                    index: 1.5,
-                    action: EventAction {
-                        call: FuncCall {
-                            name: "say".to_string(),
-                            name_span: Some((102, 105)), // Updated to actual span
-                            args: vec![Arg::String("world".to_string())],
-                        },
-                        chains: vec![FuncCall {
-                            name: "wait".to_string(),
-                            name_span: Some((115, 119)), // Updated to actual span
-                            args: vec![Arg::Number(1.0)],
-                        }],
-                    },
-                },
-            ])],
+            body: vec![
+                NodeStmt::Text("Hello".to_string()),
+                NodeStmt::WithEvents(WithEventsStmt {
+                    events: vec![
+                        WithEventItem::InlineEvent(Event {
+                            index: 0.0,
+                            action: EventAction {
+                                call: FuncCall {
+                                    name: "say".to_string(),
+                                    name_span: Some((99, 102)),
+                                    args: vec![Arg::String("hello".to_string())],
+                                },
+                                chains: vec![],
+                            },
+                        }),
+                        WithEventItem::InlineEvent(Event {
+                            index: 1.5,
+                            action: EventAction {
+                                call: FuncCall {
+                                    name: "say".to_string(),
+                                    name_span: Some((133, 136)),
+                                    args: vec![Arg::String("world".to_string())],
+                                },
+                                chains: vec![FuncCall {
+                                    name: "wait".to_string(),
+                                    name_span: Some((146, 150)),
+                                    args: vec![Arg::Number(1.0)],
+                                }],
+                            },
+                        }),
+                    ],
+                }),
+            ],
             jump: None,
         })],
     };

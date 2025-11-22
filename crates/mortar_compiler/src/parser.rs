@@ -257,6 +257,13 @@ pub enum VarValue {
     String(String),
     Number(f64),
     Boolean(bool),
+    Branch(BranchValue),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct BranchValue {
+    pub enum_type: Option<String>, // Some("EnumType") for enum-based, None for bool-based
+    pub cases: Vec<BranchCase>,
 }
 
 pub struct ParseHandler;
@@ -1308,21 +1315,61 @@ impl<'a> Parser<'a> {
 
         self.consume(&Token::Colon, "Expected ':' after variable name")?;
 
-        let type_name = self.parse_type()?;
+        // Check if this is a branch type variable
+        if self.check(&Token::Branch) {
+            self.advance(); // consume 'branch'
 
-        let value = if self.check(&Token::Equals) {
-            self.advance(); // consume '='
-            Some(self.parse_var_value()?)
+            // Check for optional enum type: branch<EnumType>
+            let enum_type = if self.check(&Token::Less) {
+                self.advance(); // consume <
+                let type_token = self.consume_identifier("Expected enum type or variable name")?;
+                self.consume(&Token::Greater, "Expected '>' after type")?;
+                Some(type_token)
+            } else {
+                None
+            };
+
+            // Parse branch cases in brackets: [condition, text, ...]
+            self.consume(&Token::LeftBracket, "Expected '[' to start branch cases")?;
+
+            let mut cases = Vec::new();
+
+            while !self.check(&Token::RightBracket) && !self.is_at_end() {
+                let case = self.parse_branch_case()?;
+                cases.push(case);
+
+                // Cases can be separated by newlines or commas (optional)
+                if self.check(&Token::Comma) {
+                    self.advance();
+                }
+            }
+
+            self.consume(&Token::RightBracket, "Expected ']' to end branch cases")?;
+
+            Ok(VarDecl {
+                name,
+                name_span,
+                type_name: "branch".to_string(),
+                value: Some(VarValue::Branch(BranchValue { enum_type, cases })),
+            })
         } else {
-            None
-        };
+            // Regular variable declaration
+            let type_name = self.parse_type()?;
 
-        Ok(VarDecl {
-            name,
-            name_span,
-            type_name,
-            value,
-        })
+            let value = if self.check(&Token::Equals) {
+                self.advance(); // consume '='
+                Some(self.parse_var_value()?)
+            } else {
+                None
+            };
+
+            Ok(VarDecl {
+                name,
+                name_span,
+                type_name,
+                value,
+            })
+        }
     }
 
     fn parse_const_decl(&mut self) -> Result<ConstDecl, String> {

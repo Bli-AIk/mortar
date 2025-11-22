@@ -1,6 +1,6 @@
 use crate::parser::{
     Arg, ChoiceDest, ChoiceItem, Condition, Event, EventAction, FuncCall, FunctionDecl, NodeDef,
-    NodeJump, NodeStmt, Param, Program, TopLevel,
+    NodeJump, NodeStmt, Param, Program, TopLevel, WithEventItem, WithEventsStmt,
 };
 use crate::serializer::Serializer;
 use serde_json::Value;
@@ -22,17 +22,19 @@ fn create_test_program() -> Program {
                 name_span: Some((0, 10)), // Approximate span
                 body: vec![
                     NodeStmt::Text("This is the first line.".to_string()),
-                    NodeStmt::Events(vec![Event {
-                        index: 0.5,
-                        action: EventAction {
-                            call: FuncCall {
-                                name: "play_sound".to_string(),
-                                name_span: Some((0, 10)), // Approximate span
-                                args: vec![Arg::String("music.mp3".to_string())],
+                    NodeStmt::WithEvents(WithEventsStmt {
+                        events: vec![WithEventItem::InlineEvent(Event {
+                            index: 0.5,
+                            action: EventAction {
+                                call: FuncCall {
+                                    name: "play_sound".to_string(),
+                                    name_span: Some((0, 10)), // Approximate span
+                                    args: vec![Arg::String("music.mp3".to_string())],
+                                },
+                                chains: vec![],
                             },
-                            chains: vec![],
-                        },
-                    }]),
+                        })],
+                    }),
                     NodeStmt::Text("This is the second line.".to_string()),
                     NodeStmt::Choice(vec![
                         ChoiceItem {

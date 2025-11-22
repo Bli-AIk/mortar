@@ -41,6 +41,8 @@ struct JsonNode {
     texts: Vec<JsonText>,
     #[serde(skip_serializing_if = "Option::is_none")]
     branches: Option<Vec<JsonBranchDef>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    variables: Vec<JsonVariable>,
     #[serde(skip_serializing_if = "Option::is_none")]
     next: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -314,6 +316,7 @@ impl Serializer {
         let mut texts = Vec::new();
         let mut choices = None;
         let mut branches_vec = Vec::new();
+        let mut local_variables = Vec::new();
 
         // Group texts and events, separate choices and branches
         let mut current_text: Option<String> = None;
@@ -444,9 +447,10 @@ impl Serializer {
                         }
                     }
                 }
-                NodeStmt::VarDecl(_var_decl) => {
+                NodeStmt::VarDecl(var_decl) => {
                     // Variable declarations in node body are local scope
-                    // Skip them in serialization for now
+                    // Add them to local_variables
+                    local_variables.push(Self::convert_var_decl(var_decl));
                 }
             }
         }
@@ -489,6 +493,7 @@ impl Serializer {
             } else {
                 Some(branches_vec)
             },
+            variables: local_variables,
             next,
             choice: choices,
         })
@@ -769,6 +774,30 @@ impl Serializer {
             VarValue::String(s) => serde_json::Value::String(s.clone()),
             VarValue::Number(n) => serde_json::json!(n),
             VarValue::Boolean(b) => serde_json::Value::Bool(*b),
+            VarValue::Branch(branch_value) => {
+                let cases: Vec<_> = branch_value
+                    .cases
+                    .iter()
+                    .map(|case| {
+                        let events = case.events.as_ref().and_then(|events| {
+                            let converted: Result<Vec<_>, _> =
+                                events.iter().map(|e| Self::convert_event(e)).collect();
+                            converted.ok()
+                        });
+
+                        serde_json::json!({
+                            "condition": case.condition,
+                            "text": case.text,
+                            "events": events
+                        })
+                    })
+                    .collect();
+
+                serde_json::json!({
+                    "enum_type": branch_value.enum_type,
+                    "cases": cases
+                })
+            }
         }
     }
 

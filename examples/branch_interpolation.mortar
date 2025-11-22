@@ -1,13 +1,15 @@
 // Branch Interpolation Example - Non-symmetric Localization
-// Syntax according to plan.md
+// 按照 plan.md 第6点的新语法
 
 // ===== Define Variables and Enums =====
 
+// Boolean 变量（用于简单的 branch）
 let is_forest: Bool
 let is_city: Bool
 let is_male: Bool
 let is_female: Bool
 
+// 定义枚举
 enum Location {
     forest
     city
@@ -20,61 +22,56 @@ enum Gender {
     other
 }
 
+// 定义枚举变量
+let current_location: Location
+let current_gender: Gender
+
+// 定义 branch 类型变量（基于 Boolean）
+let place: branch [
+    is_forest, "森林"
+    is_city, "城市"
+]
+
+let greet: branch [
+    is_male, "先生"
+    is_female, "女士"
+]
+
+// 定义 branch 类型变量（基于枚举）
+let location: branch<current_location> [
+    forest, "森林深处"
+    city, "繁华都市"
+    town, "宁静小镇"
+]
+
+// 定义 branch 类型变量（带 events）
+let object: branch<current_location> [
+    forest, "树木", events: [
+        0, set_color("green")
+    ]
+    city, "高楼", events: [
+        0, set_color("gray")
+        1, set_color("blue")
+    ]
+    town, "房屋", events: [
+        0, set_color("brown")
+    ]
+]
+
 // ===== Node with Branch Interpolation =====
 
 node Welcome {
     text: $"欢迎来到{place}，{greet}！"
-    
-    // Boolean-based branch
-    place: branch [
-        is_forest, "森林"
-        is_city, "城市"
-    ]
-    
-    // Boolean-based branch with different condition
-    greet: branch [
-        is_male, "先生"
-        is_female, "女士"
-    ]
 }
 
 node LocationDesc {
     text: $"你现在在{location}，周围有{object}。"
-    
-    // Enum-based branch
-    location: branch<Location> [
-        forest, "森林深处"
-        city, "繁华都市"
-        town, "宁静小镇"
-    ]
-    
-    // Enum-based branch with events (for text effects)
-    object: branch<Location> [
-        forest, "树木", events: [
-            0, set_color("green")
-        ]
-        city, "高楼", events: [
-            0, set_color("gray")
-            1, set_color("blue")
-        ]
-        town, "房屋", events: [
-            0, set_color("brown")
-        ]
-    ]
 }
 
 // Example combining text events and branch events
 node ComplexScene {
-    // Main text with events (indices refer to non-interpolated parts only)
-    text: $"你看见{object}后，感到惊讶！"
-    with events: [
-        1, shake()
-        2, shake()
-        3, flash()
-    ]
-    
-    // Branch definition with its own events
-    object: branch<Location> [
+    // 定义另一个 branch 变量用于此场景
+    let scene_object: branch<current_location> [
         forest, "野兽", events: [
             0, set_color("red")
             1, set_color("orange")
@@ -84,6 +81,14 @@ node ComplexScene {
             1, set_color("red")
         ]
         town, "老人"
+    ]
+    
+    // Main text with events (indices refer to non-interpolated parts only)
+    text: $"你看见{scene_object}后，感到惊讶！"
+    with events: [
+        1, shake()
+        2, shake()
+        3, flash()
     ]
 }
 

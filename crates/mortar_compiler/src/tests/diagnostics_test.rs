@@ -177,7 +177,7 @@ fn test_analyze_program_valid_calls() {
     let source = r#"
         node Test {
             text: "Test"
-            events: [
+            with events: [
                 0, my_func("hello", 42)
             ]
             choice: [

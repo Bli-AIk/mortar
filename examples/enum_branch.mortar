@@ -1,0 +1,67 @@
+// Enum and Branch Variable Example
+
+// 定义枚举类型
+enum GameState {
+    start
+    playing
+    game_over
+}
+
+enum Location {
+    forest
+    city
+    town
+}
+
+// 定义枚举变量
+let current_state: GameState
+let current_location: Location
+
+// 定义 branch 类型变量，根据枚举值选择文本
+let status: branch<current_state> [
+    start, "游戏开始"
+    playing, "游戏进行中"
+    game_over, "游戏结束"
+]
+
+let place: branch<current_location> [
+    forest, "森林深处"
+    city, "繁华都市"
+    town, "宁静小镇"
+]
+
+// 在节点中使用 branch 变量（通过插值字符串）
+node StatusDisplay {
+    text: $"游戏状态是 {status}。"
+}
+
+node LocationDisplay {
+    text: $"你现在在 {place}。"
+}
+
+// 更复杂的例子：带有 events 的 branch
+enum Weather {
+    sunny
+    rainy
+    snowy
+}
+
+let current_weather: Weather
+
+let weather_desc: branch<current_weather> [
+    sunny, "晴朗", events: [
+        0, set_color("#FFD700")
+    ]
+    rainy, "下雨", events: [
+        0, set_color("#4682B4")
+    ]
+    snowy, "下雪", events: [
+        0, set_color("#E0E0E0")
+    ]
+]
+
+node WeatherDisplay {
+    text: $"今天的天气是{weather_desc}。"
+}
+
+fn set_color(color: String)

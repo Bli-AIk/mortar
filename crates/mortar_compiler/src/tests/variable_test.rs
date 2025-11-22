@@ -290,7 +290,7 @@ fn test_boolean_argument_in_function_call() {
     let source = r#"
         node Test {
             text: "Test"
-            events: [
+            with events: [
                 0, set_flag(true)
             ]
         }
