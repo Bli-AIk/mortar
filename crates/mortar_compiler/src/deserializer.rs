@@ -71,6 +71,19 @@ pub struct Text {
     pub events: Option<Vec<Event>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub condition: Option<IfCondition>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pre_statements: Vec<Statement>,
+}
+
+/// A statement (e.g., assignment)
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Statement {
+    #[serde(rename = "type")]
+    pub stmt_type: String, // "assignment"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub var_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
 }
 
 /// A conditional expression for if-else statements

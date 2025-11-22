@@ -66,6 +66,18 @@ struct JsonText {
     events: Option<Vec<JsonEvent>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     condition: Option<JsonIfCondition>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pre_statements: Vec<JsonStatement>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct JsonStatement {
+    #[serde(rename = "type")]
+    stmt_type: String, // "assignment"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    var_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    value: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -322,13 +334,15 @@ impl Serializer {
         let mut current_text: Option<String> = None;
         let mut current_interpolated: Option<(String, Vec<JsonStringPart>)> = None;
         let mut current_events: Vec<JsonEvent> = Vec::new();
+        let mut pending_statements: Vec<JsonStatement> = Vec::new();
 
         // Helper closure to save pending text
         let save_pending_text =
             |texts: &mut Vec<JsonText>,
              current_text: &mut Option<String>,
              current_interpolated: &mut Option<(String, Vec<JsonStringPart>)>,
-             current_events: &mut Vec<JsonEvent>| {
+             current_events: &mut Vec<JsonEvent>,
+             pending_statements: &mut Vec<JsonStatement>| {
                 if let Some(text_content) = current_text.take() {
                     texts.push(JsonText {
                         text: text_content,
@@ -339,6 +353,7 @@ impl Serializer {
                         } else {
                             Some(current_events.clone())
                         },
+                        pre_statements: std::mem::take(pending_statements),
                     });
                     current_events.clear();
                 } else if let Some((text_content, parts)) = current_interpolated.take() {
@@ -351,6 +366,7 @@ impl Serializer {
                         } else {
                             Some(current_events.clone())
                         },
+                        pre_statements: std::mem::take(pending_statements),
                     });
                     current_events.clear();
                 }
@@ -365,6 +381,7 @@ impl Serializer {
                         &mut current_text,
                         &mut current_interpolated,
                         &mut current_events,
+                        &mut pending_statements,
                     );
 
                     // Process if-else as conditional texts
@@ -383,6 +400,7 @@ impl Serializer {
                         &mut current_text,
                         &mut current_interpolated,
                         &mut current_events,
+                        &mut pending_statements,
                     );
                     // Store new text for later
                     current_text = Some(text.clone());
@@ -394,6 +412,7 @@ impl Serializer {
                         &mut current_text,
                         &mut current_interpolated,
                         &mut current_events,
+                        &mut pending_statements,
                     );
                     // Store new interpolated text for later (waiting for potential WithEvents)
                     let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
@@ -406,6 +425,7 @@ impl Serializer {
                         &mut current_text,
                         &mut current_interpolated,
                         &mut current_events,
+                        &mut pending_statements,
                     );
 
                     let mut json_choices = Vec::new();
@@ -452,9 +472,23 @@ impl Serializer {
                     // Add them to local_variables
                     local_variables.push(Self::convert_var_decl(var_decl));
                 }
-                NodeStmt::Assignment(_assignment) => {
-                    // Assignments are runtime operations, not serialized into JSON
-                    // They will be handled by the runtime executor
+                NodeStmt::Assignment(assignment) => {
+                    // Convert assignment to JSON statement
+                    let value_str = match &assignment.value {
+                        AssignValue::EnumMember(enum_name, member) => {
+                            format!("{}.{}", enum_name, member)
+                        }
+                        AssignValue::Identifier(id) => id.clone(),
+                        AssignValue::Number(n) => n.to_string(),
+                        AssignValue::Boolean(b) => b.to_string(),
+                        AssignValue::String(s) => s.clone(),
+                    };
+
+                    pending_statements.push(JsonStatement {
+                        stmt_type: "assignment".to_string(),
+                        var_name: Some(assignment.var_name.clone()),
+                        value: Some(value_str),
+                    });
                 }
             }
         }
@@ -470,6 +504,7 @@ impl Serializer {
                 } else {
                     Some(current_events.clone())
                 },
+                pre_statements: pending_statements.clone(),
             });
         } else if let Some((text_content, parts)) = current_interpolated {
             texts.push(JsonText {
@@ -481,6 +516,7 @@ impl Serializer {
                 } else {
                     Some(current_events)
                 },
+                pre_statements: pending_statements,
             });
         }
 
@@ -537,24 +573,47 @@ impl Serializer {
     fn process_if_else(if_else: &IfElseStmt, texts: &mut Vec<JsonText>) -> Result<(), String> {
         let condition_json = Self::convert_if_condition(&if_else.condition)?;
 
-        // Process then body
+        // Process then body - collect assignments until we hit a text
+        let mut pending_stmts = Vec::new();
+        let mut has_text = false;
         for stmt in &if_else.then_body {
             match stmt {
+                NodeStmt::Assignment(assignment) => {
+                    let value_str = match &assignment.value {
+                        AssignValue::EnumMember(enum_name, member) => {
+                            format!("{}.{}", enum_name, member)
+                        }
+                        AssignValue::Identifier(id) => id.clone(),
+                        AssignValue::Number(n) => n.to_string(),
+                        AssignValue::Boolean(b) => b.to_string(),
+                        AssignValue::String(s) => s.clone(),
+                    };
+
+                    pending_stmts.push(JsonStatement {
+                        stmt_type: "assignment".to_string(),
+                        var_name: Some(assignment.var_name.clone()),
+                        value: Some(value_str),
+                    });
+                }
                 NodeStmt::Text(text) => {
+                    has_text = true;
                     texts.push(JsonText {
                         text: text.clone(),
                         interpolated_parts: None,
                         events: None,
                         condition: Some(condition_json.clone()),
+                        pre_statements: std::mem::take(&mut pending_stmts),
                     });
                 }
                 NodeStmt::InterpolatedText(interp) => {
+                    has_text = true;
                     let (rendered, parts) = Self::convert_interpolated_string(interp)?;
                     texts.push(JsonText {
                         text: rendered,
                         interpolated_parts: Some(parts),
                         events: None,
                         condition: Some(condition_json.clone()),
+                        pre_statements: std::mem::take(&mut pending_stmts),
                     });
                 }
                 NodeStmt::IfElse(nested_if) => {
@@ -582,6 +641,17 @@ impl Serializer {
             }
         }
 
+        // If there are pending statements but no text, create an invisible text
+        if !has_text && !pending_stmts.is_empty() {
+            texts.push(JsonText {
+                text: String::new(),
+                interpolated_parts: None,
+                events: None,
+                condition: Some(condition_json.clone()),
+                pre_statements: pending_stmts,
+            });
+        }
+
         // Process else body with negated condition
         if let Some(else_body) = &if_else.else_body {
             let negated_condition = JsonIfCondition {
@@ -593,14 +663,33 @@ impl Serializer {
                 value: None,
             };
 
+            let mut pending_stmts = Vec::new();
             for stmt in else_body {
                 match stmt {
+                    NodeStmt::Assignment(assignment) => {
+                        let value_str = match &assignment.value {
+                            AssignValue::EnumMember(enum_name, member) => {
+                                format!("{}.{}", enum_name, member)
+                            }
+                            AssignValue::Identifier(id) => id.clone(),
+                            AssignValue::Number(n) => n.to_string(),
+                            AssignValue::Boolean(b) => b.to_string(),
+                            AssignValue::String(s) => s.clone(),
+                        };
+
+                        pending_stmts.push(JsonStatement {
+                            stmt_type: "assignment".to_string(),
+                            var_name: Some(assignment.var_name.clone()),
+                            value: Some(value_str),
+                        });
+                    }
                     NodeStmt::Text(text) => {
                         texts.push(JsonText {
                             text: text.clone(),
                             interpolated_parts: None,
                             events: None,
                             condition: Some(negated_condition.clone()),
+                            pre_statements: std::mem::take(&mut pending_stmts),
                         });
                     }
                     NodeStmt::InterpolatedText(interp) => {
@@ -610,6 +699,7 @@ impl Serializer {
                             interpolated_parts: Some(parts),
                             events: None,
                             condition: Some(negated_condition.clone()),
+                            pre_statements: std::mem::take(&mut pending_stmts),
                         });
                     }
                     NodeStmt::IfElse(nested_if) => {
@@ -635,6 +725,17 @@ impl Serializer {
                     }
                     _ => {}
                 }
+            }
+
+            // If there are pending statements but no text in else branch, create an invisible text
+            if !pending_stmts.is_empty() {
+                texts.push(JsonText {
+                    text: String::new(),
+                    interpolated_parts: None,
+                    events: None,
+                    condition: Some(negated_condition),
+                    pre_statements: pending_stmts,
+                });
             }
         }
 
