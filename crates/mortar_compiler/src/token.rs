@@ -152,10 +152,8 @@ pub enum Token<'a> {
     String(&'a str),
 
     // Interpolated string: $"text {expression} more text"
-    #[regex(r#"\$"([^"\\]|\\.)*""#, |lex| {
-        let s = lex.slice();
-        &s[2..s.len()-1] // Remove $" and "
-    })]
+    // Using callback to properly handle nested quotes
+    #[token("$\"", lex_interpolated_string)]
     InterpolatedString(&'a str),
 
     #[regex(r"[0-9]+(\.[0-9]+)?")]
@@ -276,6 +274,57 @@ impl fmt::Display for Token<'_> {
             Identifier(s) => write!(f, "{}", s),
         }
     }
+}
+
+fn lex_interpolated_string<'a>(lex: &mut logos::Lexer<'a, Token<'a>>) -> Option<&'a str> {
+    let start = lex.span().end;
+    let source = lex.source();
+    let bytes = source.as_bytes();
+
+    let mut pos = start;
+    let mut depth = 0;
+    let mut in_string_literal = false;
+    let mut escape_next = false;
+
+    while pos < bytes.len() {
+        let ch = bytes[pos] as char;
+        pos += 1;
+
+        if escape_next {
+            escape_next = false;
+            continue;
+        }
+
+        if ch == '\\' {
+            escape_next = true;
+            continue;
+        }
+
+        if ch == '"' && depth == 0 && !in_string_literal {
+            // Found the closing quote
+            lex.bump(pos - start);
+            let content_start = start;
+            let content_end = pos - 1;
+            return Some(&source[content_start..content_end]);
+        }
+
+        if ch == '"' {
+            in_string_literal = !in_string_literal;
+            continue;
+        }
+
+        if !in_string_literal {
+            if ch == '{' {
+                depth += 1;
+            } else if ch == '}' {
+                if depth > 0 {
+                    depth -= 1;
+                }
+            }
+        }
+    }
+
+    None
 }
 
 pub(crate) fn lex_with_output(input: &str) -> Vec<Token<'_>> {

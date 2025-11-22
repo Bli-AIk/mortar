@@ -617,23 +617,51 @@ impl<'a> Parser<'a> {
                 // Parse expression until '}'
                 let mut expr_text = String::new();
                 let mut brace_count = 1;
+                let mut in_string = false;
+                let mut escape_next = false;
 
                 for expr_ch in chars.by_ref() {
-                    if expr_ch == '{' {
-                        brace_count += 1;
+                    if escape_next {
                         expr_text.push(expr_ch);
-                    } else if expr_ch == '}' {
-                        brace_count -= 1;
-                        if brace_count == 0 {
-                            break;
+                        escape_next = false;
+                        continue;
+                    }
+
+                    if expr_ch == '\\' {
+                        expr_text.push(expr_ch);
+                        escape_next = true;
+                        continue;
+                    }
+
+                    if expr_ch == '"' {
+                        in_string = !in_string;
+                        expr_text.push(expr_ch);
+                        continue;
+                    }
+
+                    if !in_string {
+                        if expr_ch == '{' {
+                            brace_count += 1;
+                            expr_text.push(expr_ch);
+                        } else if expr_ch == '}' {
+                            brace_count -= 1;
+                            if brace_count == 0 {
+                                break;
+                            }
+                            expr_text.push(expr_ch);
+                        } else {
+                            expr_text.push(expr_ch);
                         }
-                        expr_text.push(expr_ch);
                     } else {
                         expr_text.push(expr_ch);
                     }
                 }
 
                 if brace_count != 0 {
+                    eprintln!(
+                        "DEBUG: brace_count={}, in_string={}, expr_text={:?}",
+                        brace_count, in_string, expr_text
+                    );
                     return Err("Unmatched '{' in interpolated string".to_string());
                 }
 
