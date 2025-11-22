@@ -1,7 +1,7 @@
 use crate::Language;
 use crate::parser::{
     Arg, ChoiceDest, ChoiceItem, Condition, EventAction, FuncCall, FunctionDecl,
-    InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TopLevel,
+    InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TimelineStmt, TopLevel,
 };
 use owo_colors::OwoColorize;
 use std::collections::{HashMap, HashSet};
@@ -346,14 +346,28 @@ impl DiagnosticCollector {
 
         // Second pass: check usages
         for item in &program.body {
-            if let TopLevel::NodeDef(node) = item {
-                self.analyze_node_usage(
-                    node,
-                    &declared_functions,
-                    &declared_nodes,
-                    &mut used_functions,
-                    &mut used_nodes,
-                );
+            match item {
+                TopLevel::NodeDef(node) => {
+                    self.analyze_node_usage(
+                        node,
+                        &declared_functions,
+                        &declared_nodes,
+                        &mut used_functions,
+                        &mut used_nodes,
+                    );
+                }
+                TopLevel::EventDef(event_def) => {
+                    self.analyze_event_action(&event_def.action, &declared_functions, &mut used_functions);
+                }
+                TopLevel::TimelineDef(timeline_def) => {
+                    for stmt in &timeline_def.body {
+                        if let TimelineStmt::Run(run_stmt) = stmt {
+                            // Mark the event/function as used
+                            used_functions.insert(run_stmt.event_name.clone());
+                        }
+                    }
+                }
+                _ => {}
             }
         }
 
