@@ -10,30 +10,43 @@
 // Events are reusable actions that can be triggered independently or attached
 // to text. They can have an index (for text association) and a duration.
 
-event SetForestBackground {
+event SetColor {
     index: 0
-    action: set_background("bg_forest.png")
+    action: set_color("#228B22")
+}
+event SetColor2 {
+    index: 10
+    action: set_color("#FFFFFF")
 }
 
-event ShowAlice {
-    action: show_character("alice.png", "center")
+event TPRight {
+    action: set_animation("right")
     duration: 2.0
 }
 
-event ShowBob {
-    action: show_character("bob.png", "right")
+event TPLeft {
+    action: set_animation("left")
     duration: 1.5
 }
 
-event PlayBGM {
-    action: play_music("bgm_adventure.mp3", 0.7)
+event PlaySound {
+    index: 20
+    action: play_sound("random-sound-1-80941.wav")
     duration: 0.0
 }
 
-event FadeOut {
-    action: fade_to_black()
+event SetBlack {
+    action: set_color("#000000")
     duration: 1.0
 }
+
+// ------------------------------------------------------------------------------
+// Variable Definitions
+// ------------------------------------------------------------------------------
+// Variables must be defined at the top level, outside of nodes
+
+let custom_time: Number = 5
+let reveal_time: Number = 3
 
 // ------------------------------------------------------------------------------
 // Timeline Definitions
@@ -41,21 +54,17 @@ event FadeOut {
 // Timelines are sequences of events and wait statements that execute in order.
 // They're perfect for complex cutscenes or animations.
 
+// 按照时间线顺序执行事件和等待
+// 如果某个事件有 duration，那么时间线会等待该事件duration秒后再继续
 timeline OpeningCutscene {
-    run ShowAlice
+    run TPRight
     wait 1.0
-    run ShowBob
+    run TPLeft
     wait 0.5
-    run PlayBGM
-    wait 2.0
-    run DialogueStart("Welcome")
-}
-
-timeline EndingCutscene {
-    run FadeOut
-    wait 1.5
-    run PlayMusic("ending_theme.mp3")
-    wait 3.0
+    // now 关键字表示忽略事件的 duration，立即执行下一个事件
+    now run PlaySound
+    wait 10
+    run SetColor2
 }
 
 // ------------------------------------------------------------------------------
@@ -64,67 +73,76 @@ timeline EndingCutscene {
 
 // Example 1: Basic run statement
 // The 'run' keyword executes an event immediately, ignoring its index.
-node BasicRunExample {
+node Start {
     text: "The scene begins..."
-    run SetForestBackground
-    run ShowAlice
+
+    // Because it is run directly, it ignores the index and runs immediately,
+    // But the next run will run after its duration (2 seconds)
+    run TPRight
+    // Execute immediately, then execute the next one
+    run SetColor
+
     text: "Alice appears in the forest."
-}
+} -> WithEventsExample
 
 // Example 2: With events (text association)
 // The 'with' keyword associates events with the previous text.
 // Events are sorted by their index and executed as the text displays.
 node WithEventsExample {
     text: "Welcome to the adventure!"
-    with SetForestBackground  // Single event
-    
+    // with has nothing to do with duration. Because duration is applied to the "event itself", not the "text-related event".
+    with SetColor2  // Single event
+
     text: "The forest comes alive with sound and color."
     with events: [
-        ShowAlice
-        PlayBGM
+        TPLeft
+        PlaySound
     ]
-}
+} -> CustomIndexExample
 
 // Example 3: Run with custom index
 // You can override an event's index when running it.
 node CustomIndexExample {
     text: "This text has a custom event timing."
-    let custom_time: Number = 0.5
-    run ShowAlice with custom_time
-}
+    // 这里的 with custom_time 覆盖了 PlaySound 事件的默认 index（20） 为 5。
+    // 但由于 run 前面没有 with 关键字，所以它是立即执行的。
+    run PlaySound with custom_time
 
-// Example 4: Run with reference
-// Using 'ref' creates a dynamic reference that can change at runtime.
-node ReferenceExample {
-    text: "Dynamic event timing."
-    let dynamic_index: Number = 1.0
-    run ShowBob with ref dynamic_index
-}
+    // 赋值是允许的，修改变量的值
+    custom_time = 28;
+    text: "Be quiet...until you hear...Blast!"
+    // 应该在播放到第28个字符时触发 PlaySound 事件。
+    with run PlaySound with custom_time
+} -> MixedExample
 
-// Example 5: Mixed usage
+// Example 4: Mixed usage
 node MixedExample {
     // Direct run (executes immediately)
-    run SetForestBackground
-    
+    run SetColor
+
     // Text with associated event
     text: "A figure emerges from the shadows..."
-    with ShowAlice
-    
+    with TPRight
+
     // Another text block
-    text: "It's Alice!"
-    
+    text: "It's Alice! Alice! Alice! Alice! Alice!"
+    // custom_time 应该仍然是 28
+    with run PlaySound with custom_time
+
     // Run with custom index
-    let reveal_time: Number = 0.3
-    run PlayBGM with reveal_time
-    
+    run PlaySound with reveal_time
+
     // Choice with event
     choice: [
         "Approach Alice" -> AliceRoute
         "Hide" -> HideRoute
+        "Waiting..." -> break
     ]
-}
 
-// Example 6: Timeline in node
+    text: "well, let's go."
+} -> TimelineExample
+
+// Example 5: Timeline in node
 node TimelineExample {
     text: "Watch the opening cutscene..."
     run OpeningCutscene  // Execute the entire timeline
@@ -143,10 +161,8 @@ node HideRoute {
 // Function Declarations
 // ------------------------------------------------------------------------------
 // All functions used in events must be declared.
+// These correspond to the actions in handle_mortar_action in the bevy binding.
 
-fn set_background(file_name: String)
-fn show_character(sprite: String, position: String)
-fn play_music(file_name: String, volume: Number)
-fn fade_to_black()
-fn DialogueStart(node_name: String)
-fn PlayMusic(file_name: String)
+fn set_animation(anim_name: String)
+fn set_color(color: String)
+fn play_sound(file_name: String)

@@ -49,6 +49,8 @@ struct JsonNode {
     next: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     choice: Option<Vec<JsonChoice>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    choice_position: Option<usize>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -356,6 +358,7 @@ impl Serializer {
     ) -> Result<JsonNode, String> {
         let mut texts = Vec::new();
         let mut choices = None;
+        let mut choice_position = None;
         let mut branches_vec = Vec::new();
         let mut local_variables = Vec::new();
         let mut runs = Vec::new();
@@ -457,6 +460,9 @@ impl Serializer {
                         &mut current_events,
                         &mut pending_statements,
                     );
+
+                    // Record the position of choice (after how many texts)
+                    choice_position = Some(texts.len());
 
                     let mut json_choices = Vec::new();
                     for item in choice_items {
@@ -637,6 +643,7 @@ impl Serializer {
             runs,
             next,
             choice: choices,
+            choice_position,
         })
     }
 

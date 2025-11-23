@@ -43,6 +43,8 @@ pub struct Node {
     pub next: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub choice: Option<Vec<Choice>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub choice_position: Option<usize>,
 }
 
 /// A run statement
@@ -146,6 +148,8 @@ pub struct StringPart {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Event {
     pub index: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index_variable: Option<String>,
     pub actions: Vec<Action>,
 }
 
