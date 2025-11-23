@@ -93,8 +93,13 @@ fn test_serialize_node_def() {
     let node = &json["nodes"][0];
     assert_eq!(node["name"], "start_node");
     assert_eq!(node["next"], "default_next");
-    assert_eq!(node["texts"].as_array().unwrap().len(), 2);
-    assert_eq!(node["choice"].as_array().unwrap().len(), 2);
+
+    // The new content array should contain the text, events and choices in order.
+    let content = node["content"].as_array().unwrap();
+    assert_eq!(content.len(), 3);
+    assert_eq!(content[0]["type"], "text");
+    assert_eq!(content[1]["type"], "text");
+    assert_eq!(content[2]["type"], "choice");
 }
 
 #[test]
@@ -103,15 +108,17 @@ fn test_serialize_text_and_events() {
     let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
-    let node = &json["nodes"][0];
-    let text1 = &node["texts"][0];
-    assert_eq!(text1["text"], "This is the first line.");
+    let content = &json["nodes"][0]["content"];
+    let text1 = &content[0];
+    assert_eq!(text1["type"], "text");
+    assert_eq!(text1["value"], "This is the first line.");
     assert_eq!(text1["events"][0]["index"], 0.5);
     assert_eq!(text1["events"][0]["actions"][0]["type"], "play_sound");
     assert_eq!(text1["events"][0]["actions"][0]["args"][0], "music.mp3");
 
-    let text2 = &node["texts"][1];
-    assert_eq!(text2["text"], "This is the second line.");
+    let text2 = &content[1];
+    assert_eq!(text2["type"], "text");
+    assert_eq!(text2["value"], "This is the second line.");
     assert!(text2["events"].is_null());
 }
 
@@ -121,13 +128,19 @@ fn test_serialize_choices() {
     let json_string = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
 
-    let node = &json["nodes"][0];
-    let choice1 = &node["choice"][0];
+    let content = &json["nodes"][0]["content"];
+    let choice_item = &content[2];
+    assert_eq!(choice_item["type"], "choice");
+
+    let options = choice_item["options"].as_array().unwrap();
+    assert_eq!(options.len(), 2);
+
+    let choice1 = &options[0];
     assert_eq!(choice1["text"], "Go to next");
     assert!(choice1["condition"].is_null());
     assert_eq!(choice1["next"], "next_node");
 
-    let choice2 = &node["choice"][1];
+    let choice2 = &options[1];
     assert_eq!(choice2["text"], "Stay here");
     assert_eq!(choice2["condition"]["type"], "has_item");
     assert_eq!(choice2["action"], "break");

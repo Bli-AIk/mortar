@@ -1,4 +1,5 @@
 use crate::deserializer::Deserializer;
+use serde_json::Value;
 use tempfile::TempDir;
 
 #[test]
@@ -11,9 +12,10 @@ fn test_deserialize_basic_json() {
         "nodes": [
             {
                 "name": "Start",
-                "texts": [
+                "content": [
                     {
-                        "text": "Hello, World!"
+                        "type": "text",
+                        "value": "Hello, World!"
                     }
                 ]
             }
@@ -24,8 +26,15 @@ fn test_deserialize_basic_json() {
     let data = Deserializer::from_json(json).unwrap();
     assert_eq!(data.metadata.version, "0.4.0");
     assert_eq!(data.nodes.len(), 1);
-    assert_eq!(data.nodes[0].name, "Start");
-    assert_eq!(data.nodes[0].texts[0].text, "Hello, World!");
+    let node = &data.nodes[0];
+    assert_eq!(node.name, "Start");
+    assert_eq!(node.content.len(), 1);
+    if let Value::Object(item) = &node.content[0] {
+        assert_eq!(item["type"], "text");
+        assert_eq!(item["value"], "Hello, World!");
+    } else {
+        panic!("Expected content item to be an object");
+    }
 }
 
 #[test]
@@ -38,9 +47,10 @@ fn test_deserialize_with_events() {
         "nodes": [
             {
                 "name": "TestNode",
-                "texts": [
+                "content": [
                     {
-                        "text": "Test text",
+                        "type": "text",
+                        "value": "Test text",
                         "events": [
                             {
                                 "index": 0.5,
@@ -60,12 +70,20 @@ fn test_deserialize_with_events() {
     }"#;
 
     let data = Deserializer::from_json(json).unwrap();
-    let text = &data.nodes[0].texts[0];
-    assert!(text.events.is_some());
-    let events = text.events.as_ref().unwrap();
-    assert_eq!(events[0].index, 0.5);
-    assert_eq!(events[0].actions[0].action_type, "play_sound");
-    assert_eq!(events[0].actions[0].args[0], "sound.mp3");
+    let node = &data.nodes[0];
+    assert_eq!(node.content.len(), 1);
+
+    if let Value::Object(item) = &node.content[0] {
+        assert_eq!(item["type"], "text");
+        assert!(item["events"].is_array());
+        let events = item["events"].as_array().unwrap();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0]["index"], 0.5);
+        assert_eq!(events[0]["actions"][0]["type"], "play_sound");
+        assert_eq!(events[0]["actions"][0]["args"][0], "sound.mp3");
+    } else {
+        panic!("Expected content item to be an object");
+    }
 }
 
 #[test]
@@ -78,19 +96,23 @@ fn test_deserialize_with_choices() {
         "nodes": [
             {
                 "name": "ChoiceNode",
-                "texts": [
+                "content": [
                     {
-                        "text": "What do you choose?"
-                    }
-                ],
-                "choice": [
-                    {
-                        "text": "Option A",
-                        "next": "NodeA"
+                        "type": "text",
+                        "value": "What do you choose?"
                     },
                     {
-                        "text": "Option B",
-                        "next": "NodeB"
+                        "type": "choice",
+                        "options": [
+                            {
+                                "text": "Option A",
+                                "next": "NodeA"
+                            },
+                            {
+                                "text": "Option B",
+                                "next": "NodeB"
+                            }
+                        ]
                     }
                 ]
             }
@@ -100,11 +122,16 @@ fn test_deserialize_with_choices() {
 
     let data = Deserializer::from_json(json).unwrap();
     let node = &data.nodes[0];
-    assert!(node.choice.is_some());
-    let choices = node.choice.as_ref().unwrap();
-    assert_eq!(choices.len(), 2);
-    assert_eq!(choices[0].text, "Option A");
-    assert_eq!(choices[0].next.as_ref().unwrap(), "NodeA");
+    assert_eq!(node.content.len(), 2);
+    if let Value::Object(item) = &node.content[1] {
+        assert_eq!(item["type"], "choice");
+        let choices = item["options"].as_array().unwrap();
+        assert_eq!(choices.len(), 2);
+        assert_eq!(choices[0]["text"], "Option A");
+        assert_eq!(choices[0]["next"], "NodeA");
+    } else {
+        panic!("Expected content item to be an object");
+    }
 }
 
 #[test]
@@ -228,14 +255,11 @@ fn test_deserialize_from_file() {
     let file_path = temp_dir.path().join("test.mortared");
 
     let json = r#"{
-        "metadata": {
-            "version": "0.4.0",
-            "generated_at": "2025-11-20T00:00:00Z"
-        },
+        "metadata": { "version": "0.4.0", "generated_at": "2025-11-20T00:00:00Z" },
         "nodes": [
             {
                 "name": "FileTest",
-                "texts": [{"text": "From file"}]
+                "content": [{"type": "text", "value": "From file"}]
             }
         ],
         "functions": []
@@ -245,6 +269,7 @@ fn test_deserialize_from_file() {
 
     let data = Deserializer::from_file(&file_path).unwrap();
     assert_eq!(data.nodes[0].name, "FileTest");
+    assert_eq!(data.nodes[0].content.len(), 1);
 }
 
 #[test]
@@ -265,13 +290,10 @@ fn test_deserialize_from_bytes() {
 #[test]
 fn test_mortared_data_helper_methods() {
     let json = r#"{
-        "metadata": {
-            "version": "0.4.0",
-            "generated_at": "2025-11-20T00:00:00Z"
-        },
+        "metadata": { "version": "0.4.0", "generated_at": "2025-11-20T00:00:00Z" },
         "nodes": [
-            {"name": "Node1", "texts": [{"text": "Text1"}]},
-            {"name": "Node2", "texts": [{"text": "Text2"}]}
+            {"name": "Node1", "content": [{"type": "text", "value": "Text1"}]},
+            {"name": "Node2", "content": [{"type": "text", "value": "Text2"}]}
         ],
         "functions": [
             {"name": "func1", "params": []}
@@ -334,15 +356,24 @@ fn test_roundtrip_serialization() {
     };
 
     // Serialize
-    let json = Serializer::serialize_to_json(&program, false).unwrap();
+    let json_str = Serializer::serialize_to_json(&program, false).unwrap();
 
     // Deserialize
-    let data = Deserializer::from_json(&json).unwrap();
+    let data = Deserializer::from_json(&json_str).unwrap();
 
     // Verify
     assert_eq!(data.nodes.len(), 1);
-    assert_eq!(data.nodes[0].name, "TestNode");
-    assert_eq!(data.nodes[0].texts[0].text, "Test content");
+    let node = &data.nodes[0];
+    assert_eq!(node.name, "TestNode");
+    assert_eq!(node.content.len(), 1);
+
+    if let Value::Object(item) = &node.content[0] {
+        assert_eq!(item["type"], "text");
+        assert_eq!(item["value"], "Test content");
+    } else {
+        panic!("Expected content item to be an object");
+    }
+
     assert_eq!(data.functions.len(), 1);
     assert_eq!(data.functions[0].name, "test_func");
 }

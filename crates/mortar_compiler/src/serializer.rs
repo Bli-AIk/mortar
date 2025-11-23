@@ -35,25 +35,59 @@ struct Metadata {
     generated_at: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
+enum ContentItem {
+    Text {
+        value: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        interpolated_parts: Option<Vec<JsonStringPart>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        condition: Option<JsonIfCondition>,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        #[serde(default)]
+        pre_statements: Vec<JsonStatement>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        events: Option<Vec<JsonEvent>>,
+    },
+    RunEvent {
+        name: String,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        args: Vec<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        index_override: Option<JsonIndexOverride>,
+        #[serde(skip_serializing_if = "is_false", default)]
+        ignore_duration: bool,
+    },
+    RunTimeline {
+        name: String,
+    },
+    Choice {
+        options: Vec<JsonChoice>,
+    },
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+struct JsonIndexOverride {
+    #[serde(rename = "type")]
+    override_type: String,
+    value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonNode {
     name: String,
-    texts: Vec<JsonText>,
+    content: Vec<ContentItem>,
     #[serde(skip_serializing_if = "Option::is_none")]
     branches: Option<Vec<JsonBranchDef>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     variables: Vec<JsonVariable>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    runs: Vec<JsonRunStmt>,
     #[serde(skip_serializing_if = "Option::is_none")]
     next: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    choice: Option<Vec<JsonChoice>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    choice_position: Option<usize>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonBranchDef {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -61,20 +95,7 @@ struct JsonBranchDef {
     cases: Vec<JsonBranchCase>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct JsonText {
-    text: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    interpolated_parts: Option<Vec<JsonStringPart>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    events: Option<Vec<JsonEvent>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    condition: Option<JsonIfCondition>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pre_statements: Vec<JsonStatement>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct JsonStatement {
     #[serde(rename = "type")]
     stmt_type: String, // "assignment"
@@ -84,7 +105,7 @@ struct JsonStatement {
     value: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct JsonIfCondition {
     #[serde(rename = "type")]
     cond_type: String, // "binary", "unary", "identifier", "literal"
@@ -100,7 +121,7 @@ struct JsonIfCondition {
     value: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonStringPart {
     #[serde(rename = "type")]
     part_type: String, // "text", "expression", or "branch"
@@ -115,7 +136,7 @@ struct JsonStringPart {
     branches: Option<Vec<JsonBranchCase>>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct JsonBranchCase {
     condition: String,
     text: String,
@@ -123,7 +144,7 @@ struct JsonBranchCase {
     events: Option<Vec<JsonEvent>>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct JsonEvent {
     index: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -131,7 +152,7 @@ struct JsonEvent {
     actions: Vec<JsonAction>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct JsonAction {
     #[serde(rename = "type")]
     action_type: String,
@@ -139,7 +160,7 @@ struct JsonAction {
     args: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonChoice {
     text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -152,7 +173,7 @@ struct JsonChoice {
     choice: Option<Vec<JsonChoice>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonCondition {
     #[serde(rename = "type")]
     condition_type: String,
@@ -160,27 +181,8 @@ struct JsonCondition {
     args: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-struct JsonRunStmt {
-    event_name: String,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    args: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    index_override: Option<JsonIndexOverride>,
-    #[serde(skip_serializing_if = "is_false", default)]
-    ignore_duration: bool,
-    position: usize, // Position in the node body for proper ordering
-}
-
 fn is_false(v: &bool) -> bool {
     !*v
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct JsonIndexOverride {
-    #[serde(rename = "type")]
-    override_type: String, // "value" or "variable"
-    value: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -200,7 +202,7 @@ struct JsonParam {
     param_type: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonVariable {
     name: String,
     #[serde(rename = "type")]
@@ -356,135 +358,68 @@ impl Serializer {
         node_def: &NodeDef,
         event_map: &std::collections::HashMap<String, &EventDef>,
     ) -> Result<JsonNode, String> {
-        let mut texts = Vec::new();
-        let mut choices = None;
-        let mut choice_position = None;
+        let mut content = Vec::new();
         let mut branches_vec = Vec::new();
         let mut local_variables = Vec::new();
-        let mut runs = Vec::new();
-
-        // Group texts and events, separate choices and branches
-        let mut current_text: Option<String> = None;
-        let mut current_interpolated: Option<(String, Vec<JsonStringPart>)> = None;
-        let mut current_events: Vec<JsonEvent> = Vec::new();
         let mut pending_statements: Vec<JsonStatement> = Vec::new();
 
-        // Helper closure to save pending text
-        let save_pending_text =
-            |texts: &mut Vec<JsonText>,
-             current_text: &mut Option<String>,
-             current_interpolated: &mut Option<(String, Vec<JsonStringPart>)>,
-             current_events: &mut Vec<JsonEvent>,
-             pending_statements: &mut Vec<JsonStatement>| {
-                if let Some(text_content) = current_text.take() {
-                    texts.push(JsonText {
-                        text: text_content,
+        let mut body_iter = node_def.body.iter().peekable();
+
+        while let Some(stmt) = body_iter.next() {
+            match stmt {
+                NodeStmt::Text(text) => {
+                    let mut events = Vec::new();
+                    if let Some(NodeStmt::WithEvents(with_events)) = body_iter.peek() {
+                        Self::process_with_events(with_events, &mut events, event_map)?;
+                        body_iter.next(); // Consume the WithEvents statement
+                    }
+                    content.push(ContentItem::Text {
+                        value: text.clone(),
                         interpolated_parts: None,
                         condition: None,
-                        events: if current_events.is_empty() {
+                        pre_statements: std::mem::take(&mut pending_statements),
+                        events: if events.is_empty() {
                             None
                         } else {
-                            Some(current_events.clone())
+                            Some(events)
                         },
-                        pre_statements: std::mem::take(pending_statements),
                     });
-                    current_events.clear();
-                } else if let Some((text_content, parts)) = current_interpolated.take() {
-                    texts.push(JsonText {
-                        text: text_content,
-                        interpolated_parts: Some(parts),
-                        condition: None,
-                        events: if current_events.is_empty() {
-                            None
-                        } else {
-                            Some(current_events.clone())
-                        },
-                        pre_statements: std::mem::take(pending_statements),
-                    });
-                    current_events.clear();
-                }
-            };
-
-        for (position, stmt) in node_def.body.iter().enumerate() {
-            match stmt {
-                NodeStmt::IfElse(if_else) => {
-                    // Save current text if any
-                    save_pending_text(
-                        &mut texts,
-                        &mut current_text,
-                        &mut current_interpolated,
-                        &mut current_events,
-                        &mut pending_statements,
-                    );
-
-                    // Process if-else as conditional texts
-                    Self::process_if_else(if_else, &mut texts)?;
-                    continue;
-                }
-                NodeStmt::Branch(branch_def) => {
-                    // Collect branch definitions
-                    branches_vec.push(Self::convert_branch_def(branch_def)?);
-                    continue;
-                }
-                NodeStmt::Text(text) => {
-                    // Save any pending text/interpolated text first (they're done, won't have more WithEvents)
-                    save_pending_text(
-                        &mut texts,
-                        &mut current_text,
-                        &mut current_interpolated,
-                        &mut current_events,
-                        &mut pending_statements,
-                    );
-                    // Store new text for later
-                    current_text = Some(text.clone());
                 }
                 NodeStmt::InterpolatedText(interpolated) => {
-                    // Save any pending text/interpolated text first (they're done, won't have more WithEvents)
-                    save_pending_text(
-                        &mut texts,
-                        &mut current_text,
-                        &mut current_interpolated,
-                        &mut current_events,
-                        &mut pending_statements,
-                    );
-                    // Store new interpolated text for later (waiting for potential WithEvents)
                     let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
-                    current_interpolated = Some((rendered_text, parts));
-                }
-                NodeStmt::Choice(choice_items) => {
-                    // Save any pending text first
-                    save_pending_text(
-                        &mut texts,
-                        &mut current_text,
-                        &mut current_interpolated,
-                        &mut current_events,
-                        &mut pending_statements,
-                    );
-
-                    // Record the position of choice (after how many texts)
-                    choice_position = Some(texts.len());
-
-                    let mut json_choices = Vec::new();
-                    for item in choice_items {
-                        json_choices.push(Self::convert_choice_item(item)?);
+                    let mut events = Vec::new();
+                    if let Some(NodeStmt::WithEvents(with_events)) = body_iter.peek() {
+                        Self::process_with_events(with_events, &mut events, event_map)?;
+                        body_iter.next(); // Consume the WithEvents statement
                     }
-                    choices = Some(json_choices);
+                    content.push(ContentItem::Text {
+                        value: rendered_text,
+                        interpolated_parts: Some(parts),
+                        condition: None,
+                        pre_statements: std::mem::take(&mut pending_statements),
+                        events: if events.is_empty() {
+                            None
+                        } else {
+                            Some(events)
+                        },
+                    });
                 }
                 NodeStmt::Run(run_stmt) => {
-                    // Convert run statement to JSON
+                    // In a Node, a "run" statement can be for an event or a timeline.
+                    // We need to check what the name refers to.
+                    // For now, let's assume all `run` in NodeStmts are events as per parser constraints.
+                    // If timelines in nodes are supported, this will need timeline definitions passed in.
+
                     let args: Vec<String> = run_stmt
                         .args
                         .iter()
-                        .map(|arg| {
-                            match arg {
-                                Arg::String(s) => format!("\"{}\"", s),
-                                Arg::Number(n) => n.to_string(),
-                                Arg::Boolean(b) => b.to_string(),
-                                Arg::Identifier(id) => id.clone(),
-                                Arg::FuncCall(func_call) => {
-                                    // Serialize function call as "func_name(...)"
-                                    format!("{}(...)", func_call.name)
-                                }
+                        .map(|arg| match arg {
+                            Arg::String(s) => format!("\"{}\"", s),
+                            Arg::Number(n) => n.to_string(),
+                            Arg::Boolean(b) => b.to_string(),
+                            Arg::Identifier(id) => id.clone(),
+                            Arg::FuncCall(func_call) => {
+                                format!("{}(...)", func_call.name)
                             }
                         })
                         .collect();
@@ -504,82 +439,32 @@ impl Serializer {
                                 },
                             });
 
-                    runs.push(JsonRunStmt {
-                        event_name: run_stmt.event_name.clone(),
+                    content.push(ContentItem::RunEvent {
+                        name: run_stmt.event_name.clone(),
                         args,
                         index_override,
                         ignore_duration: run_stmt.ignore_duration,
-                        position,
                     });
                 }
-                NodeStmt::WithEvents(with_events) => {
-                    // WithEvents statements associate events with the previous text
-                    // Process inline events and event references
-                    for item in &with_events.events {
-                        match item {
-                            WithEventItem::InlineEvent(event) => {
-                                // Convert inline event and add to current_events
-                                current_events.push(Self::convert_event(event)?);
-                            }
-                            WithEventItem::EventRef(name, _span) => {
-                                // Resolve event reference to actual event definition
-                                if let Some(event_def) = event_map.get(name) {
-                                    // Convert the event definition's action to Event
-                                    let event = Event {
-                                        index: event_def.index.unwrap_or(0.0),
-                                        action: event_def.action.clone(),
-                                    };
-                                    current_events.push(Self::convert_event(&event)?);
-                                } else {
-                                    return Err(format!("Event '{}' not found", name));
-                                }
-                            }
-                            WithEventItem::EventRefWithOverride(name, _span, override_val) => {
-                                // Resolve event reference with custom index override
-                                if let Some(event_def) = event_map.get(name) {
-                                    // Get the override index value or variable name
-                                    let (index, index_variable) = match override_val {
-                                        IndexOverride::Value(v) => (*v, None),
-                                        IndexOverride::Variable(var_name) => {
-                                            // Store variable name for runtime resolution
-                                            // Use default index 0, will be resolved at runtime
-                                            (0.0, Some(var_name.clone()))
-                                        }
-                                    };
-
-                                    // Convert actions using the same method as convert_event
-                                    let mut actions = vec![Self::convert_func_call_to_action(
-                                        &event_def.action.call,
-                                    )?];
-                                    for chain_call in &event_def.action.chains {
-                                        actions
-                                            .push(Self::convert_func_call_to_action(chain_call)?);
-                                    }
-
-                                    // Create event with optional variable reference
-                                    current_events.push(JsonEvent {
-                                        index,
-                                        index_variable,
-                                        actions,
-                                    });
-                                } else {
-                                    return Err(format!("Event '{}' not found", name));
-                                }
-                            }
-                            WithEventItem::EventList(_) => {
-                                // Nested event lists - for future complex scenarios
-                                // TODO: Handle nested event lists if needed
-                            }
-                        }
+                NodeStmt::Choice(choice_items) => {
+                    let mut json_choices = Vec::new();
+                    for item in choice_items {
+                        json_choices.push(Self::convert_choice_item(item)?);
                     }
+                    content.push(ContentItem::Choice {
+                        options: json_choices,
+                    });
+                }
+                NodeStmt::IfElse(if_else) => {
+                    Self::process_if_else_to_content(if_else, &mut content)?;
+                }
+                NodeStmt::Branch(branch_def) => {
+                    branches_vec.push(Self::convert_branch_def(branch_def)?);
                 }
                 NodeStmt::VarDecl(var_decl) => {
-                    // Variable declarations in node body are local scope
-                    // Add them to local_variables
                     local_variables.push(Self::convert_var_decl(var_decl));
                 }
                 NodeStmt::Assignment(assignment) => {
-                    // Convert assignment to JSON statement
                     let value_str = match &assignment.value {
                         AssignValue::EnumMember(enum_name, member) => {
                             format!("{}.{}", enum_name, member)
@@ -596,34 +481,13 @@ impl Serializer {
                         value: Some(value_str),
                     });
                 }
+                // WithEvents is handled by peeking, so we shouldn't encounter it here directly.
+                NodeStmt::WithEvents(_) => {
+                    // This should be handled by peeking in Text/InterpolatedText.
+                    // If we get here, it means a `with events:` block is not preceded by text.
+                    return Err("`with events:` block must follow a `text:` statement.".to_string());
+                }
             }
-        }
-
-        // Don't forget the last text if any
-        if let Some(text_content) = current_text {
-            texts.push(JsonText {
-                text: text_content,
-                interpolated_parts: None,
-                condition: None,
-                events: if current_events.is_empty() {
-                    None
-                } else {
-                    Some(current_events.clone())
-                },
-                pre_statements: pending_statements.clone(),
-            });
-        } else if let Some((text_content, parts)) = current_interpolated {
-            texts.push(JsonText {
-                text: text_content,
-                interpolated_parts: Some(parts),
-                condition: None,
-                events: if current_events.is_empty() {
-                    None
-                } else {
-                    Some(current_events)
-                },
-                pre_statements: pending_statements,
-            });
         }
 
         let next = match &node_def.jump {
@@ -633,17 +497,14 @@ impl Serializer {
 
         Ok(JsonNode {
             name: node_def.name.clone(),
-            texts,
+            content,
             branches: if branches_vec.is_empty() {
                 None
             } else {
                 Some(branches_vec)
             },
             variables: local_variables,
-            runs,
             next,
-            choice: choices,
-            choice_position,
         })
     }
 
@@ -678,14 +539,117 @@ impl Serializer {
         })
     }
 
-    fn process_if_else(if_else: &IfElseStmt, texts: &mut Vec<JsonText>) -> Result<(), String> {
+    fn process_with_events(
+        with_events: &WithEventsStmt,
+        events: &mut Vec<JsonEvent>,
+        event_map: &std::collections::HashMap<String, &EventDef>,
+    ) -> Result<(), String> {
+        for item in &with_events.events {
+            match item {
+                WithEventItem::InlineEvent(event) => {
+                    events.push(Self::convert_event(event)?);
+                }
+                WithEventItem::EventRef(name, _span) => {
+                    if let Some(event_def) = event_map.get(name) {
+                        let event = Event {
+                            index: event_def.index.unwrap_or(0.0),
+                            action: event_def.action.clone(),
+                        };
+                        events.push(Self::convert_event(&event)?);
+                    } else {
+                        return Err(format!("Event '{}' not found", name));
+                    }
+                }
+                WithEventItem::EventRefWithOverride(name, _span, override_val) => {
+                    if let Some(event_def) = event_map.get(name) {
+                        let (index, index_variable) = match override_val {
+                            IndexOverride::Value(v) => (*v, None),
+                            IndexOverride::Variable(var_name) => (0.0, Some(var_name.clone())),
+                        };
+
+                        let mut actions =
+                            vec![Self::convert_func_call_to_action(&event_def.action.call)?];
+                        for chain_call in &event_def.action.chains {
+                            actions.push(Self::convert_func_call_to_action(chain_call)?);
+                        }
+
+                        events.push(JsonEvent {
+                            index,
+                            index_variable,
+                            actions,
+                        });
+                    } else {
+                        return Err(format!("Event '{}' not found", name));
+                    }
+                }
+                WithEventItem::EventList(_) => {
+                    // TODO: Handle nested event lists if needed
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn process_if_else_to_content(
+        if_else: &IfElseStmt,
+        content: &mut Vec<ContentItem>,
+    ) -> Result<(), String> {
         let condition_json = Self::convert_if_condition(&if_else.condition)?;
 
-        // Process then body - collect assignments until we hit a text
+        // Process 'then' body
+        Self::process_conditional_body_to_content(
+            &if_else.then_body,
+            Some(condition_json.clone()),
+            content,
+        )?;
+
+        // Process 'else' body
+        if let Some(else_body) = &if_else.else_body {
+            let negated_condition = JsonIfCondition {
+                cond_type: "unary".to_string(),
+                operator: Some("!".to_string()),
+                left: None,
+                right: None,
+                operand: Some(Box::new(condition_json)),
+                value: None,
+            };
+            Self::process_conditional_body_to_content(else_body, Some(negated_condition), content)?;
+        }
+
+        Ok(())
+    }
+
+    fn process_conditional_body_to_content(
+        body: &[NodeStmt],
+        condition: Option<JsonIfCondition>,
+        content: &mut Vec<ContentItem>,
+    ) -> Result<(), String> {
         let mut pending_stmts = Vec::new();
-        let mut has_text = false;
-        for stmt in &if_else.then_body {
+        let mut has_text_in_block = false;
+
+        for stmt in body {
             match stmt {
+                NodeStmt::Text(text) => {
+                    has_text_in_block = true;
+                    content.push(ContentItem::Text {
+                        value: text.clone(),
+                        interpolated_parts: None,
+                        events: None,
+                        condition: condition.clone(),
+                        pre_statements: std::mem::take(&mut pending_stmts),
+                    });
+                }
+                NodeStmt::InterpolatedText(interp) => {
+                    has_text_in_block = true;
+                    let (rendered, parts) = Self::convert_interpolated_string(interp)?;
+                    content.push(ContentItem::Text {
+                        value: rendered,
+                        interpolated_parts: Some(parts),
+                        events: None,
+                        condition: condition.clone(),
+                        pre_statements: std::mem::take(&mut pending_stmts),
+                    });
+                }
                 NodeStmt::Assignment(assignment) => {
                     let value_str = match &assignment.value {
                         AssignValue::EnumMember(enum_name, member) => {
@@ -696,157 +660,69 @@ impl Serializer {
                         AssignValue::Boolean(b) => b.to_string(),
                         AssignValue::String(s) => s.clone(),
                     };
-
                     pending_stmts.push(JsonStatement {
                         stmt_type: "assignment".to_string(),
                         var_name: Some(assignment.var_name.clone()),
                         value: Some(value_str),
                     });
                 }
-                NodeStmt::Text(text) => {
-                    has_text = true;
-                    texts.push(JsonText {
-                        text: text.clone(),
-                        interpolated_parts: None,
-                        events: None,
-                        condition: Some(condition_json.clone()),
-                        pre_statements: std::mem::take(&mut pending_stmts),
-                    });
-                }
-                NodeStmt::InterpolatedText(interp) => {
-                    has_text = true;
-                    let (rendered, parts) = Self::convert_interpolated_string(interp)?;
-                    texts.push(JsonText {
-                        text: rendered,
-                        interpolated_parts: Some(parts),
-                        events: None,
-                        condition: Some(condition_json.clone()),
-                        pre_statements: std::mem::take(&mut pending_stmts),
-                    });
-                }
                 NodeStmt::IfElse(nested_if) => {
-                    // Handle nested if-else: combine conditions with AND
-                    let mut nested_texts = Vec::new();
-                    Self::process_if_else(nested_if, &mut nested_texts)?;
+                    let mut nested_content = Vec::new();
+                    Self::process_if_else_to_content(nested_if, &mut nested_content)?;
 
-                    // Add the outer condition to all nested texts
-                    for mut text in nested_texts {
-                        if let Some(nested_cond) = text.condition {
-                            // Combine: outer_condition AND nested_condition
-                            text.condition = Some(JsonIfCondition {
-                                cond_type: "binary".to_string(),
-                                operator: Some("&&".to_string()),
-                                left: Some(Box::new(condition_json.clone())),
-                                right: Some(Box::new(nested_cond)),
-                                operand: None,
-                                value: None,
+                    for item in nested_content {
+                        if let ContentItem::Text {
+                            value,
+                            interpolated_parts,
+                            condition: nested_cond,
+                            pre_statements,
+                            events,
+                        } = item
+                        {
+                            let combined_cond = if let Some(current_cond) = &condition {
+                                if let Some(inner_cond) = nested_cond {
+                                    Some(JsonIfCondition {
+                                        cond_type: "binary".to_string(),
+                                        operator: Some("&&".to_string()),
+                                        left: Some(Box::new(current_cond.clone())),
+                                        right: Some(Box::new(inner_cond)),
+                                        operand: None,
+                                        value: None,
+                                    })
+                                } else {
+                                    Some(current_cond.clone())
+                                }
+                            } else {
+                                nested_cond
+                            };
+
+                            content.push(ContentItem::Text {
+                                value,
+                                interpolated_parts,
+                                condition: combined_cond,
+                                pre_statements,
+                                events,
                             });
+                        } else {
+                            // Non-text items from nested blocks are pushed directly.
+                            // Their execution is implicitly conditional on the client side.
+                            content.push(item);
                         }
-                        texts.push(text);
                     }
                 }
-                _ => {}
+                _ => {} // Other statements like Run, Choice, etc., are not valid inside if/else text blocks
             }
         }
 
-        // If there are pending statements but no text, create an invisible text
-        if !has_text && !pending_stmts.is_empty() {
-            texts.push(JsonText {
-                text: String::new(),
+        if !pending_stmts.is_empty() && !has_text_in_block {
+            content.push(ContentItem::Text {
+                value: String::new(),
                 interpolated_parts: None,
                 events: None,
-                condition: Some(condition_json.clone()),
+                condition: condition.clone(),
                 pre_statements: pending_stmts,
             });
         }
-
-        // Process else body with negated condition
-        if let Some(else_body) = &if_else.else_body {
-            let negated_condition = JsonIfCondition {
-                cond_type: "unary".to_string(),
-                operator: Some("!".to_string()),
-                left: None,
-                right: None,
-                operand: Some(Box::new(condition_json)),
-                value: None,
-            };
-
-            let mut pending_stmts = Vec::new();
-            for stmt in else_body {
-                match stmt {
-                    NodeStmt::Assignment(assignment) => {
-                        let value_str = match &assignment.value {
-                            AssignValue::EnumMember(enum_name, member) => {
-                                format!("{}.{}", enum_name, member)
-                            }
-                            AssignValue::Identifier(id) => id.clone(),
-                            AssignValue::Number(n) => n.to_string(),
-                            AssignValue::Boolean(b) => b.to_string(),
-                            AssignValue::String(s) => s.clone(),
-                        };
-
-                        pending_stmts.push(JsonStatement {
-                            stmt_type: "assignment".to_string(),
-                            var_name: Some(assignment.var_name.clone()),
-                            value: Some(value_str),
-                        });
-                    }
-                    NodeStmt::Text(text) => {
-                        texts.push(JsonText {
-                            text: text.clone(),
-                            interpolated_parts: None,
-                            events: None,
-                            condition: Some(negated_condition.clone()),
-                            pre_statements: std::mem::take(&mut pending_stmts),
-                        });
-                    }
-                    NodeStmt::InterpolatedText(interp) => {
-                        let (rendered, parts) = Self::convert_interpolated_string(interp)?;
-                        texts.push(JsonText {
-                            text: rendered,
-                            interpolated_parts: Some(parts),
-                            events: None,
-                            condition: Some(negated_condition.clone()),
-                            pre_statements: std::mem::take(&mut pending_stmts),
-                        });
-                    }
-                    NodeStmt::IfElse(nested_if) => {
-                        // Handle nested if-else in else branch
-                        let mut nested_texts = Vec::new();
-                        Self::process_if_else(nested_if, &mut nested_texts)?;
-
-                        // Add the negated outer condition to all nested texts
-                        for mut text in nested_texts {
-                            if let Some(nested_cond) = text.condition {
-                                // Combine: !outer_condition AND nested_condition
-                                text.condition = Some(JsonIfCondition {
-                                    cond_type: "binary".to_string(),
-                                    operator: Some("&&".to_string()),
-                                    left: Some(Box::new(negated_condition.clone())),
-                                    right: Some(Box::new(nested_cond)),
-                                    operand: None,
-                                    value: None,
-                                });
-                            }
-                            texts.push(text);
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            // If there are pending statements but no text in else branch, create an invisible text
-            if !pending_stmts.is_empty() {
-                texts.push(JsonText {
-                    text: String::new(),
-                    interpolated_parts: None,
-                    events: None,
-                    condition: Some(negated_condition),
-                    pre_statements: pending_stmts,
-                });
-            }
-        }
-
         Ok(())
     }
 

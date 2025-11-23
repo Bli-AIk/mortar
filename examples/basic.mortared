@@ -1,14 +1,15 @@
 {
   "metadata": {
     "version": "0.4.0",
-    "generated_at": "2025-11-23T08:21:22.734250664Z"
+    "generated_at": "2025-11-23T09:46:24.792222238Z"
   },
   "nodes": [
     {
       "name": "Start",
-      "texts": [
+      "content": [
         {
-          "text": "你好呀，欢迎阅读这个互动故事。",
+          "type": "text",
+          "value": "你好呀，欢迎阅读这个互动故事。",
           "events": [
             {
               "index": 0.0,
@@ -52,7 +53,8 @@
           ]
         },
         {
-          "text": "我想你的名字是 {get_name}，对不？",
+          "type": "text",
+          "value": "我想你的名字是 {get_name}，对不？",
           "interpolated_parts": [
             {
               "type": "text",
@@ -94,105 +96,115 @@
           ]
         },
         {
-          "text": "太好啦，我们走！"
+          "type": "text",
+          "value": "太好啦，我们走！"
         }
       ],
       "next": "ChoicePoint"
     },
     {
       "name": "ChoicePoint",
-      "texts": [
+      "content": [
         {
-          "text": "你想干点啥？"
+          "type": "text",
+          "value": "你想干点啥？"
         },
         {
-          "text": "我真服了。那咱就先结束对话吧。"
-        }
-      ],
-      "choice": [
-        {
-          "text": "探索森林",
-          "next": "ForestScene"
-        },
-        {
-          "text": "留在城里",
-          "condition": {
-            "type": "has_map"
-          },
-          "next": "TownScene"
-        },
-        {
-          "text": "查看背包",
-          "condition": {
-            "type": "has_backpack"
-          },
-          "next": "Inventory"
-        },
-        {
-          "text": "吃点什么",
-          "choice": [
+          "type": "choice",
+          "options": [
             {
-              "text": "Apple",
-              "next": "EatApple"
+              "text": "探索森林",
+              "next": "ForestScene"
             },
             {
-              "text": "Bread",
-              "next": "EatBread"
+              "text": "留在城里",
+              "condition": {
+                "type": "has_map"
+              },
+              "next": "TownScene"
+            },
+            {
+              "text": "查看背包",
+              "condition": {
+                "type": "has_backpack"
+              },
+              "next": "Inventory"
+            },
+            {
+              "text": "吃点什么",
+              "choice": [
+                {
+                  "text": "Apple",
+                  "next": "EatApple"
+                },
+                {
+                  "text": "Bread",
+                  "next": "EatBread"
+                }
+              ]
+            },
+            {
+              "text": "别朝我叭叭了！！",
+              "action": "return"
+            },
+            {
+              "text": "我不到啊……",
+              "action": "break"
             }
           ]
         },
         {
-          "text": "别朝我叭叭了！！",
-          "action": "return"
-        },
-        {
-          "text": "我不到啊……",
-          "action": "break"
+          "type": "text",
+          "value": "我真服了。那咱就先结束对话吧。"
         }
-      ],
-      "choice_position": 1
+      ]
     },
     {
       "name": "test_warning",
-      "texts": []
+      "content": []
     },
     {
       "name": "ForestScene",
-      "texts": [
+      "content": [
         {
-          "text": "你进入了森林。"
+          "type": "text",
+          "value": "你进入了森林。"
         }
       ]
     },
     {
       "name": "TownScene",
-      "texts": [
+      "content": [
         {
-          "text": "你回到了城里。"
+          "type": "text",
+          "value": "你回到了城里。"
         }
       ]
     },
     {
       "name": "Inventory",
-      "texts": [
+      "content": [
         {
-          "text": "这是你的背包。"
+          "type": "text",
+          "value": "这是你的背包。"
         }
       ]
     },
     {
       "name": "EatApple",
-      "texts": [
+      "content": [
         {
-          "text": "你吃了一个苹果。"
+          "type": "text",
+          "value": "你吃了一个苹果。"
         }
       ]
     },
     {
       "name": "EatBread",
-      "texts": [
+      "content": [
         {
-          "text": "你吃了一片面包。"
+          "type": "text",
+          "value": "你吃了一片面包。"
         }
       ]
     }

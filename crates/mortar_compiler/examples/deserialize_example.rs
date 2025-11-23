@@ -6,101 +6,74 @@
 //! ```
 
 use mortar_compiler::{Deserializer, MortaredData};
+use serde_json::Value;
 
 fn main() -> Result<(), String> {
     println!("=== Mortar 反序列化示例 ===\n");
 
-    // 创建一个临时的测试 JSON 数据
+    // 创建一个临时的测试 JSON 数据 (使用新的 content 结构)
     let test_json = r#"{
         "metadata": {
-            "version": "0.4.0",
-            "generated_at": "2025-11-20T00:00:00Z"
+            "version": "0.5.0",
+            "generated_at": "2025-11-23T00:00:00Z"
         },
         "variables": [
-            {
-                "name": "player_name",
-                "type": "String"
-            },
-            {
-                "name": "score",
-                "type": "Number",
-                "value": 0
-            }
+            { "name": "player_name", "type": "String" },
+            { "name": "score", "type": "Number", "value": 0 }
         ],
         "constants": [
-            {
-                "name": "MAX_LEVEL",
-                "type": "Number",
-                "value": 99,
-                "public": true
-            }
+            { "name": "MAX_LEVEL", "type": "Number", "value": 99, "public": true }
         ],
         "enums": [
-            {
-                "name": "GameState",
-                "variants": ["menu", "playing", "paused"]
-            }
+            { "name": "GameState", "variants": ["menu", "playing", "paused"] }
         ],
         "nodes": [
             {
                 "name": "Start",
-                "texts": [
+                "content": [
                     {
-                        "text": "欢迎来到游戏世界！",
+                        "type": "text",
+                        "value": "欢迎来到游戏世界！",
                         "events": [
                             {
                                 "index": 0.0,
                                 "actions": [
-                                    {
-                                        "type": "play_music",
-                                        "args": ["intro.mp3"]
-                                    }
+                                    { "type": "play_music", "args": ["intro.mp3"] }
                                 ]
                             }
                         ]
                     },
                     {
-                        "text": "你准备好开始冒险了吗？"
-                    }
-                ],
-                "choice": [
-                    {
-                        "text": "是的，开始！",
-                        "next": "GameStart"
+                        "type": "text",
+                        "value": "你准备好开始冒险了吗？"
                     },
                     {
-                        "text": "让我再想想",
-                        "action": "break"
+                        "type": "choice",
+                        "options": [
+                            { "text": "是的，开始！", "next": "GameStart" },
+                            { "text": "让我再想想", "action": "break" }
+                        ]
                     }
                 ],
                 "next": "MainMenu"
             },
             {
                 "name": "GameStart",
-                "texts": [
-                    {
-                        "text": "游戏开始！祝你好运。"
-                    }
+                "content": [
+                    { "type": "text", "value": "游戏开始！祝你好运。" }
                 ]
             },
             {
                 "name": "MainMenu",
-                "texts": [
-                    {
-                        "text": "主菜单"
-                    }
+                "content": [
+                    { "type": "text", "value": "主菜单" }
                 ]
             }
         ],
         "functions": [
             {
                 "name": "play_music",
-                "params": [
-                    {
-                        "name": "file",
-                        "type": "String"
-                    }
-                ]
+                "params": [ { "name": "file", "type": "String" } ]
             },
             {
                 "name": "get_player_name",
@@ -149,45 +122,67 @@ fn print_basic_info(data: &MortaredData) {
 }
 
 fn access_nodes(data: &MortaredData) {
-    // 获取所有节点名称
     let node_names = data.node_names();
     println!("  所有节点: {:?}", node_names);
 
-    // 访问特定节点
     if let Some(node) = data.get_node("Start") {
         println!("\n  节点 '{}' 详情:", node.name);
 
-        // 显示文本
-        for (i, text) in node.texts.iter().enumerate() {
-            println!("    文本 {}: {}", i + 1, text.text);
+        for (i, item_value) in node.content.iter().enumerate() {
+            let item_type = item_value.get("type").and_then(Value::as_str).unwrap_or("");
 
-            // 显示事件
-            if let Some(events) = &text.events {
-                for event in events {
-                    println!("      事件 @ {}", event.index);
-                    for action in &event.actions {
-                        println!("        - {}({:?})", action.action_type, action.args);
+            match item_type {
+                "text" => {
+                    let text = item_value
+                        .get("value")
+                        .and_then(Value::as_str)
+                        .unwrap_or("");
+                    println!("    内容 {}: [文本] {}", i + 1, text);
+                    if let Some(events) = item_value.get("events").and_then(Value::as_array) {
+                        for event in events {
+                            let index = event.get("index").and_then(Value::as_f64).unwrap_or(0.0);
+                            println!("      事件 @ {}", index);
+                            if let Some(actions) = event.get("actions").and_then(Value::as_array) {
+                                for action in actions {
+                                    let action_type =
+                                        action.get("type").and_then(Value::as_str).unwrap_or("");
+                                    let args = action
+                                        .get("args")
+                                        .and_then(Value::as_array)
+                                        .cloned()
+                                        .unwrap_or_default();
+                                    println!("        - {}({:?})", action_type, args);
+                                }
+                            }
+                        }
                     }
                 }
+                "choice" => {
+                    println!("    内容 {}: [选项]", i + 1);
+                    if let Some(options) = item_value.get("options").and_then(Value::as_array) {
+                        for (opt_idx, choice) in options.iter().enumerate() {
+                            let text = choice.get("text").and_then(Value::as_str).unwrap_or("");
+                            print!("      {}. {}", opt_idx + 1, text);
+                            if let Some(next) = choice.get("next").and_then(Value::as_str) {
+                                print!(" -> {}", next);
+                            }
+                            if let Some(action) = choice.get("action").and_then(Value::as_str) {
+                                print!(" [{}]", action);
+                            }
+                            println!();
+                        }
+                    }
+                }
+                "run_event" => {
+                    let name = item_value.get("name").and_then(Value::as_str).unwrap_or("");
+                    println!("    内容 {}: [运行事件] {}", i + 1, name);
+                }
+                _ => {
+                    println!("    内容 {}: [未知类型]", i + 1);
+                }
             }
         }
 
-        // 显示选项
-        if let Some(choices) = &node.choice {
-            println!("    选项:");
-            for (i, choice) in choices.iter().enumerate() {
-                print!("      {}. {}", i + 1, choice.text);
-                if let Some(next) = &choice.next {
-                    print!(" -> {}", next);
-                }
-                if let Some(action) = &choice.action {
-                    print!(" [{}]", action);
-                }
-                println!();
-            }
-        }
-
-        // 显示下一个节点
         if let Some(next) = &node.next {
             println!("    默认跳转: {}", next);
         }
@@ -219,7 +214,6 @@ fn access_functions(data: &MortaredData) {
 }
 
 fn access_variables_constants(data: &MortaredData) {
-    // 变量
     println!("  变量:");
     for var in &data.variables {
         print!("    let {}: {}", var.name, var.var_type);
@@ -229,7 +223,6 @@ fn access_variables_constants(data: &MortaredData) {
         println!();
     }
 
-    // 常量
     println!("  常量:");
     for constant in &data.constants {
         print!("    ");
@@ -256,45 +249,75 @@ fn access_enums(data: &MortaredData) {
 fn simulate_dialogue(data: &MortaredData) {
     println!("  开始模拟对话...\n");
 
-    let mut current_node = "Start";
+    let mut current_node_name = "Start";
 
     loop {
-        if let Some(node) = data.get_node(current_node) {
+        if let Some(node) = data.get_node(current_node_name) {
             println!("  === {} ===", node.name);
 
-            // 显示所有文本
-            for text in &node.texts {
-                println!("  {}", text.text);
-
-                // 模拟事件触发
-                if let Some(events) = &text.events {
-                    for event in events {
-                        for action in &event.actions {
-                            println!("  [触发事件: {}({:?})]", action.action_type, action.args);
+            for item_value in &node.content {
+                let item_type = item_value.get("type").and_then(Value::as_str).unwrap_or("");
+                match item_type {
+                    "text" => {
+                        let text = item_value
+                            .get("value")
+                            .and_then(Value::as_str)
+                            .unwrap_or("");
+                        println!("  {}", text);
+                        if let Some(events) = item_value.get("events").and_then(Value::as_array) {
+                            for event in events {
+                                if let Some(actions) =
+                                    event.get("actions").and_then(Value::as_array)
+                                {
+                                    for action in actions {
+                                        let action_type = action
+                                            .get("type")
+                                            .and_then(Value::as_str)
+                                            .unwrap_or("");
+                                        let args = action
+                                            .get("args")
+                                            .and_then(Value::as_array)
+                                            .cloned()
+                                            .unwrap_or_default();
+                                        println!("  [触发事件: {}({:?})]", action_type, args);
+                                    }
+                                }
+                            }
                         }
                     }
+                    "choice" => {
+                        if let Some(options) = item_value.get("options").and_then(Value::as_array) {
+                            println!("\n  可用选项:");
+                            for (i, choice) in options.iter().enumerate() {
+                                let text = choice.get("text").and_then(Value::as_str).unwrap_or("");
+                                println!("    {}. {}", i + 1, text);
+                            }
+                            println!("  (在实际游戏中，玩家会在这里做出选择)\n");
+                        }
+                        // In a real game, we'd wait for input. Here, we stop.
+                        current_node_name = ""; // End simulation
+                        break;
+                    }
+                    "run_event" => {
+                        let name = item_value.get("name").and_then(Value::as_str).unwrap_or("");
+                        println!("  [运行事件: {}]", name);
+                    }
+                    _ => {}
                 }
             }
 
-            // 如果有选项，显示但不实际选择
-            if let Some(choices) = &node.choice {
-                println!("\n  可用选项:");
-                for (i, choice) in choices.iter().enumerate() {
-                    println!("    {}. {}", i + 1, choice.text);
-                }
-                println!("  (在实际游戏中，玩家会在这里做出选择)\n");
-                break; // 示例中到此结束
+            if current_node_name.is_empty() {
+                break;
             }
 
-            // 如果有下一个节点，继续
             if let Some(next) = &node.next {
-                current_node = next;
+                current_node_name = next;
                 println!();
             } else {
                 break;
             }
         } else {
-            println!("  节点 '{}' 不存在！", current_node);
+            println!("  节点 '{}' 不存在！", current_node_name);
             break;
         }
     }

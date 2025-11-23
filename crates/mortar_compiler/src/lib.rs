@@ -12,9 +12,9 @@ pub enum Language {
 }
 
 pub use deserializer::{
-    Action, BranchCase, BranchDef, Choice, Condition, Constant, Deserializer, Enum, Event,
-    EventDef, Function, IfCondition, Metadata, MortaredData, Node, Param, StringPart, Text,
-    TimelineDef, TimelineStmt, Variable,
+    Action, BranchCase, BranchDef, Choice, Condition, Constant, ContentItem, Deserializer, Enum,
+    Event, EventDef, Function, IfCondition, IndexOverride, Metadata, MortaredData, Node, Param,
+    Statement, StringPart, TimelineDef, TimelineStmt, Variable,
 };
 pub use diagnostics::{Diagnostic, DiagnosticCollector, DiagnosticKind, Severity};
 pub use handler::file_handler::{FileError, FileHandler};

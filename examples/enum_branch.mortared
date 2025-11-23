@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "0.4.0",
-    "generated_at": "2025-11-22T09:19:38.941042823Z"
+    "generated_at": "2025-11-23T09:46:36.770794981Z"
   },
   "variables": [
     {
@@ -154,9 +154,10 @@
   "nodes": [
     {
       "name": "StatusDisplay",
-      "texts": [
+      "content": [
         {
-          "text": "游戏状态是 {status}。",
+          "type": "text",
+          "value": "游戏状态是 {status}。",
           "interpolated_parts": [
             {
               "type": "text",
@@ -176,9 +177,10 @@
     },
     {
       "name": "LocationDisplay",
-      "texts": [
+      "content": [
         {
-          "text": "你现在在 {place}。",
+          "type": "text",
+          "value": "你现在在 {place}。",
           "interpolated_parts": [
             {
               "type": "text",
@@ -198,9 +200,10 @@
     },
     {
       "name": "WeatherDisplay",
-      "texts": [
+      "content": [
         {
-          "text": "今天的天气是{weather_desc}。",
+          "type": "text",
+          "value": "今天的天气是{weather_desc}。",
           "interpolated_parts": [
             {
               "type": "text",

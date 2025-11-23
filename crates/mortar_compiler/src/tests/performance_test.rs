@@ -3,19 +3,18 @@ use crate::token::{Token, tokenize};
 
 #[test]
 fn test_tokenize_performance_keywords() {
-    let source = "event run with ref timeline tl wait index action duration";
+    let source = "event run with timeline tl wait index action duration";
     let tokens = tokenize(source);
 
     assert_eq!(tokens[0].token, Token::Event);
     assert_eq!(tokens[1].token, Token::Run);
     assert_eq!(tokens[2].token, Token::With);
-    assert_eq!(tokens[3].token, Token::Ref);
-    assert_eq!(tokens[4].token, Token::Timeline);
-    assert_eq!(tokens[5].token, Token::Timeline); // 'tl' is also Timeline
-    assert_eq!(tokens[6].token, Token::Wait);
-    assert_eq!(tokens[7].token, Token::Index);
-    assert_eq!(tokens[8].token, Token::Action);
-    assert_eq!(tokens[9].token, Token::Duration);
+    assert_eq!(tokens[3].token, Token::Timeline);
+    assert_eq!(tokens[4].token, Token::Timeline); // 'tl' is also Timeline
+    assert_eq!(tokens[5].token, Token::Wait);
+    assert_eq!(tokens[6].token, Token::Index);
+    assert_eq!(tokens[7].token, Token::Action);
+    assert_eq!(tokens[8].token, Token::Duration);
 }
 
 #[test]
@@ -153,10 +152,10 @@ fn test_parse_run_with_index() {
 }
 
 #[test]
-fn test_parse_run_with_ref() {
+fn test_parse_run_with_variable_index() {
     let source = r#"
         node ExampleNode {
-            run Basic with ref test_index
+            run Basic with test_index
         }
     "#;
 
@@ -167,8 +166,8 @@ fn test_parse_run_with_ref() {
             NodeStmt::Run(run_stmt) => {
                 assert_eq!(run_stmt.event_name, "Basic");
                 match &run_stmt.index_override {
-                    Some(IndexOverride::Reference(name)) => assert_eq!(name, "test_index"),
-                    _ => panic!("Expected Reference index override"),
+                    Some(IndexOverride::Variable(name)) => assert_eq!(name, "test_index"),
+                    _ => panic!("Expected Variable index override"),
                 }
             }
             _ => panic!("Expected Run statement"),

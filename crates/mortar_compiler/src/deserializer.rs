@@ -3,7 +3,11 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-/// Represents the complete deserialized Mortar output structure
+use serde_json::Value;
+
+// ... (keep existing imports)
+
+// Represents the complete deserialized Mortar output structure
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MortaredData {
     pub metadata: Metadata,
@@ -28,36 +32,53 @@ pub struct Metadata {
     pub generated_at: DateTime<Utc>,
 }
 
-/// A dialogue node
+/// A dialogue node with a linear content flow
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Node {
     pub name: String,
-    pub texts: Vec<Text>,
+    #[serde(default)]
+    pub content: Vec<Value>, // Using Value for flexibility, can be parsed further
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub branches: Option<Vec<BranchDef>>,
     #[serde(default)]
     pub variables: Vec<Variable>,
-    #[serde(default)]
-    pub runs: Vec<RunStmt>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub next: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub choice: Option<Vec<Choice>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub choice_position: Option<usize>,
 }
 
-/// A run statement
+/// Represents the different types of content within a node's linear flow.
+/// This enum itself is not directly deserialized into, but serves as a guide
+/// to the structure of the `Value` objects in `Node.content`.
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RunStmt {
-    pub event_name: String,
-    #[serde(default)]
-    pub args: Vec<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub index_override: Option<IndexOverride>,
-    #[serde(default)]
-    pub ignore_duration: bool,
-    pub position: usize,
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
+pub enum ContentItem {
+    Text {
+        value: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        interpolated_parts: Option<Vec<StringPart>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        condition: Option<IfCondition>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        pre_statements: Vec<Statement>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        events: Option<Vec<Event>>,
+    },
+    RunEvent {
+        name: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        args: Vec<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_override: Option<IndexOverride>,
+        #[serde(default)]
+        ignore_duration: bool,
+    },
+    RunTimeline {
+        name: String,
+    },
+    Choice {
+        options: Vec<Choice>,
+    },
 }
 
 /// Index override for run statements
@@ -84,20 +105,6 @@ pub struct BranchCase {
     pub text: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub events: Option<Vec<Event>>,
-}
-
-/// A text block with optional events and conditions
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Text {
-    pub text: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub interpolated_parts: Option<Vec<StringPart>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub events: Option<Vec<Event>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub condition: Option<IfCondition>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub pre_statements: Vec<Statement>,
 }
 
 /// A statement (e.g., assignment)

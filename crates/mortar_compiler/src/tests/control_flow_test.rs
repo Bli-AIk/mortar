@@ -263,20 +263,22 @@ fn test_serialize_if_else() {
     let json_str = Serializer::serialize_to_json(&program, false).unwrap();
     let json: Value = serde_json::from_str(&json_str).unwrap();
 
-    // Check that node has texts with conditions
-    assert!(json["nodes"][0]["texts"].is_array());
-    let texts = json["nodes"][0]["texts"].as_array().unwrap();
-    assert_eq!(texts.len(), 2);
+    // Check that node has a content array with conditional texts
+    assert!(json["nodes"][0]["content"].is_array());
+    let content = json["nodes"][0]["content"].as_array().unwrap();
+    assert_eq!(content.len(), 2);
 
     // Check first text (then body)
-    assert_eq!(texts[0]["text"], "High score!");
-    assert!(texts[0]["condition"].is_object());
-    assert_eq!(texts[0]["condition"]["type"], "binary");
-    assert_eq!(texts[0]["condition"]["operator"], ">");
+    assert_eq!(content[0]["type"], "text");
+    assert_eq!(content[0]["value"], "High score!");
+    assert!(content[0]["condition"].is_object());
+    assert_eq!(content[0]["condition"]["type"], "binary");
+    assert_eq!(content[0]["condition"]["operator"], ">");
 
     // Check second text (else body with negated condition)
-    assert_eq!(texts[1]["text"], "Low score.");
-    assert!(texts[1]["condition"].is_object());
-    assert_eq!(texts[1]["condition"]["type"], "unary");
-    assert_eq!(texts[1]["condition"]["operator"], "!");
+    assert_eq!(content[1]["type"], "text");
+    assert_eq!(content[1]["value"], "Low score.");
+    assert!(content[1]["condition"].is_object());
+    assert_eq!(content[1]["condition"]["type"], "unary");
+    assert_eq!(content[1]["condition"]["operator"], "!");
 }

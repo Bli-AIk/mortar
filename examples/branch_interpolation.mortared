@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "0.4.0",
-    "generated_at": "2025-11-22T13:48:51.917468112Z"
+    "generated_at": "2025-11-23T09:46:18.941405907Z"
   },
   "variables": [
     {
@@ -256,9 +256,10 @@
   "nodes": [
     {
       "name": "Start",
-      "texts": [
+      "content": [
         {
-          "text": "欢迎来到{place}，{greet}！",
+          "type": "text",
+          "value": "欢迎来到{place}，{greet}！",
           "interpolated_parts": [
             {
               "type": "text",
@@ -287,9 +288,10 @@
     },
     {
       "name": "LocationDesc",
-      "texts": [
+      "content": [
         {
-          "text": "你现在在{location}，周围有{object}。",
+          "type": "text",
+          "value": "你现在在{location}，周围有{object}。",
           "interpolated_parts": [
             {
               "type": "text",
@@ -318,9 +320,10 @@
     },
     {
       "name": "ComplexScene",
-      "texts": [
+      "content": [
         {
-          "text": "你看见{scene_object}后，感到惊讶！",
+          "type": "text",
+          "value": "你看见{scene_object}后，感到惊讶！",
           "interpolated_parts": [
             {
               "type": "text",
@@ -372,7 +375,8 @@
           ]
         },
         {
-          "text": "于是你从{location}...",
+          "type": "text",
+          "value": "于是你从{location}...",
           "interpolated_parts": [
             {
               "type": "text",
@@ -389,7 +393,8 @@
           ]
         },
         {
-          "text": "",
+          "type": "text",
+          "value": "",
           "condition": {
             "type": "binary",
             "operator": "!=",
@@ -411,7 +416,8 @@
           ]
         },
         {
-          "text": "",
+          "type": "text",
+          "value": "",
           "condition": {
             "type": "unary",
             "operator": "!",
@@ -437,7 +443,8 @@
           ]
         },
         {
-          "text": "跑到了{location}。",
+          "type": "text",
+          "value": "跑到了{location}。",
           "interpolated_parts": [
             {
               "type": "text",

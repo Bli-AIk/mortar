@@ -1,14 +1,15 @@
 {
   "metadata": {
     "version": "0.4.0",
-    "generated_at": "2025-11-22T09:19:39.128464933Z"
+    "generated_at": "2025-11-23T09:46:42.995177218Z"
   },
   "nodes": [
     {
       "name": "Start",
-      "texts": [
+      "content": [
         {
-          "text": "你好呀，欢迎阅读这个 SIMPLE 互动故事。",
+          "type": "text",
+          "value": "你好呀，欢迎阅读这个 SIMPLE 互动故事。",
           "events": [
             {
               "index": 0.0,
@@ -52,7 +53,8 @@
           ]
         },
         {
-          "text": "我的天，三角形变色了{get_exclamation}",
+          "type": "text",
+          "value": "我的天，三角形变色了{get_exclamation}",
           "interpolated_parts": [
             {
               "type": "text",
@@ -93,7 +95,8 @@
           ]
         },
         {
-          "text": "我想你的名字是 {get_name}，对不？",
+          "type": "text",
+          "value": "我想你的名字是 {get_name}，对不？",
           "interpolated_parts": [
             {
               "type": "text",
@@ -111,7 +114,8 @@
           ]
         },
         {
-          "text": "太好啦，我们走{get_exclamation}",
+          "type": "text",
+          "value": "太好啦，我们走{get_exclamation}",
           "interpolated_parts": [
             {
               "type": "text",
@@ -128,7 +132,8 @@
           ]
         },
         {
-          "text": "让我们{create_message}",
+          "type": "text",
+          "value": "让我们{create_message}",
           "interpolated_parts": [
             {
               "type": "text",
@@ -151,9 +156,10 @@
     },
     {
       "name": "TestEventRef",
-      "texts": [
+      "content": [
         {
-          "text": "测试事件引用",
+          "type": "text",
+          "value": "测试事件引用",
           "events": [
             {
               "index": 1.0,
@@ -169,7 +175,8 @@
           ]
         },
         {
-          "text": "测试单个事件内联",
+          "type": "text",
+          "value": "测试单个事件内联",
           "events": [
             {
               "index": 0.0,
@@ -185,7 +192,8 @@
           ]
         },
         {
-          "text": "测试多个事件引用",
+          "type": "text",
+          "value": "测试多个事件引用",
           "events": [
             {
               "index": 1.0,
@@ -212,7 +220,8 @@
           ]
         },
         {
-          "text": "混合内联事件和事件引用",
+          "type": "text",
+          "value": "混合内联事件和事件引用",
           "events": [
             {
               "index": 0.0,

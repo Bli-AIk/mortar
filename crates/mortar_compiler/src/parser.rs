@@ -1040,26 +1040,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_events_stmt(&mut self) -> Result<Vec<Event>, String> {
-        self.consume(&Token::Events, "Expected 'events'")?;
-        self.consume(&Token::Colon, "Expected ':'")?;
-        self.consume(&Token::LeftBracket, "Expected '['")?;
-
-        let mut events = Vec::new();
-
-        while !self.check(&Token::RightBracket) && !self.is_at_end() {
-            self.skip_comments_and_separators();
-
-            if !self.check(&Token::RightBracket) && !self.is_at_end() {
-                events.push(self.parse_event()?);
-                self.skip_optional_separators();
-            }
-        }
-
-        self.consume(&Token::RightBracket, "Expected ']'")?;
-        Ok(events)
-    }
-
     fn parse_event(&mut self) -> Result<Event, String> {
         let index = if let Some(token_info) = self.advance() {
             if let Token::Number(n) = &token_info.token {

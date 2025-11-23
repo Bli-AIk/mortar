@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "0.4.0",
-    "generated_at": "2025-11-22T09:19:38.846902295Z"
+    "generated_at": "2025-11-23T09:46:30.980424312Z"
   },
   "variables": [
     {
@@ -26,9 +26,10 @@
   "nodes": [
     {
       "name": "ScoreEvaluation",
-      "texts": [
+      "content": [
         {
-          "text": "优秀！你的分数超过了100分！",
+          "type": "text",
+          "value": "优秀！你的分数超过了100分！",
           "condition": {
             "type": "binary",
             "operator": ">",
@@ -43,7 +44,8 @@
           }
         },
         {
-          "text": "继续努力，争取突破100分。",
+          "type": "text",
+          "value": "继续努力，争取突破100分。",
           "condition": {
             "type": "unary",
             "operator": "!",
@@ -65,16 +67,18 @@
     },
     {
       "name": "BooleanCondition",
-      "texts": [
+      "content": [
         {
-          "text": "恭喜你获得胜利！",
+          "type": "text",
+          "value": "恭喜你获得胜利！",
           "condition": {
             "type": "identifier",
             "value": "is_winner"
           }
         },
         {
-          "text": "下次会更好的。",
+          "type": "text",
+          "value": "下次会更好的。",
           "condition": {
             "type": "unary",
             "operator": "!",
@@ -88,9 +92,10 @@
     },
     {
       "name": "MultipleComparisons",
-      "texts": [
+      "content": [
         {
-          "text": "完美！",
+          "type": "text",
+          "value": "完美！",
           "condition": {
             "type": "binary",
             "operator": ">=",
@@ -105,7 +110,8 @@
           }
         },
         {
-          "text": "需要更多练习。",
+          "type": "text",
+          "value": "需要更多练习。",
           "condition": {
             "type": "binary",
             "operator": "<=",
@@ -120,7 +126,8 @@
           }
         },
         {
-          "text": "刚好满分！",
+          "type": "text",
+          "value": "刚好满分！",
           "condition": {
             "type": "binary",
             "operator": "==",
@@ -135,7 +142,8 @@
           }
         },
         {
-          "text": "至少有分数了。",
+          "type": "text",
+          "value": "至少有分数了。",
           "condition": {
             "type": "binary",
             "operator": "!=",
@@ -153,9 +161,10 @@
     },
     {
       "name": "LogicalOperators",
-      "texts": [
+      "content": [
         {
-          "text": "高分且获胜，太棒了！",
+          "type": "text",
+          "value": "高分且获胜，太棒了！",
           "condition": {
             "type": "binary",
             "operator": "&&",
@@ -178,7 +187,8 @@
           }
         },
         {
-          "text": "还有进步空间。",
+          "type": "text",
+          "value": "还有进步空间。",
           "condition": {
             "type": "unary",
             "operator": "!",
@@ -205,7 +215,8 @@
           }
         },
         {
-          "text": "你可以获得特殊奖励。",
+          "type": "text",
+          "value": "你可以获得特殊奖励。",
           "condition": {
             "type": "binary",
             "operator": "||",
@@ -231,9 +242,10 @@
     },
     {
       "name": "NotOperator",
-      "texts": [
+      "content": [
         {
-          "text": "虽然没有获胜，但不要气馁。",
+          "type": "text",
+          "value": "虽然没有获胜，但不要气馁。",
           "condition": {
             "type": "unary",
             "operator": "!",
@@ -244,7 +256,8 @@
           }
         },
         {
-          "text": "分数还不错。",
+          "type": "text",
+          "value": "分数还不错。",
           "condition": {
             "type": "unary",
             "operator": "!",
@@ -266,13 +279,127 @@
     },
     {
       "name": "NestedConditions",
-      "texts": []
+      "content": [
+        {
+          "type": "text",
+          "value": "完美组合：高分+获胜！",
+          "condition": {
+            "type": "binary",
+            "operator": "&&",
+            "left": {
+              "type": "binary",
+              "operator": ">",
+              "left": {
+                "type": "identifier",
+                "value": "player_score"
+              },
+              "right": {
+                "type": "identifier",
+                "value": "100"
+              }
+            },
+            "right": {
+              "type": "identifier",
+              "value": "is_winner"
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": "高分但未获胜，继续加油！",
+          "condition": {
+            "type": "binary",
+            "operator": "&&",
+            "left": {
+              "type": "binary",
+              "operator": ">",
+              "left": {
+                "type": "identifier",
+                "value": "player_score"
+              },
+              "right": {
+                "type": "identifier",
+                "value": "100"
+              }
+            },
+            "right": {
+              "type": "unary",
+              "operator": "!",
+              "operand": {
+                "type": "identifier",
+                "value": "is_winner"
+              }
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": "虽然分数不高，但赢了！",
+          "condition": {
+            "type": "binary",
+            "operator": "&&",
+            "left": {
+              "type": "unary",
+              "operator": "!",
+              "operand": {
+                "type": "binary",
+                "operator": ">",
+                "left": {
+                  "type": "identifier",
+                  "value": "player_score"
+                },
+                "right": {
+                  "type": "identifier",
+                  "value": "100"
+                }
+              }
+            },
+            "right": {
+              "type": "identifier",
+              "value": "is_winner"
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": "分数和结果都需要改进。",
+          "condition": {
+            "type": "binary",
+            "operator": "&&",
+            "left": {
+              "type": "unary",
+              "operator": "!",
+              "operand": {
+                "type": "binary",
+                "operator": ">",
+                "left": {
+                  "type": "identifier",
+                  "value": "player_score"
+                },
+                "right": {
+                  "type": "identifier",
+                  "value": "100"
+                }
+              }
+            },
+            "right": {
+              "type": "unary",
+              "operator": "!",
+              "operand": {
+                "type": "identifier",
+                "value": "is_winner"
+              }
+            }
+          }
+        }
+      ]
     },
     {
       "name": "ComplexLogic",
-      "texts": [
+      "content": [
         {
-          "text": "满足特殊条件，获得额外奖励！",
+          "type": "text",
+          "value": "满足特殊条件，获得额外奖励！",
           "condition": {
             "type": "binary",
             "operator": "||",
@@ -311,7 +438,8 @@
           }
         },
         {
-          "text": "继续努力达成目标。",
+          "type": "text",
+          "value": "继续努力达成目标。",
           "condition": {
             "type": "unary",
             "operator": "!",

@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "0.4.0",
-    "generated_at": "2025-11-23T02:24:55.365005652Z"
+    "generated_at": "2025-11-23T09:46:10.538048092Z"
   },
   "variables": [
     {
@@ -18,31 +18,32 @@
   "nodes": [
     {
       "name": "Start",
-      "texts": [
+      "content": [
         {
-          "text": "The scene begins..."
+          "type": "text",
+          "value": "The scene begins..."
         },
         {
-          "text": "Alice appears in the forest."
-        }
-      ],
-      "runs": [
-        {
-          "event_name": "TPRight",
-          "position": 1
+          "type": "run_event",
+          "name": "TPRight"
         },
         {
-          "event_name": "SetColor",
-          "position": 2
+          "type": "run_event",
+          "name": "SetColor"
+        },
+        {
+          "type": "text",
+          "value": "Alice appears in the forest."
         }
       ],
       "next": "WithEventsExample"
     },
     {
       "name": "WithEventsExample",
-      "texts": [
+      "content": [
         {
-          "text": "Welcome to the adventure!",
+          "type": "text",
+          "value": "Welcome to the adventure!",
           "events": [
             {
               "index": 10.0,
@@ -58,7 +59,8 @@
           ]
         },
         {
-          "text": "The forest comes alive with sound and color.",
+          "type": "text",
+          "value": "The forest comes alive with sound and color.",
           "events": [
             {
               "index": 0.0,
@@ -89,19 +91,29 @@
     },
     {
       "name": "CustomIndexExample",
-      "texts": [
+      "content": [
         {
-          "text": "This text has a custom event timing.",
+          "type": "text",
+          "value": "This text has a custom event timing."
+        },
+        {
+          "type": "run_event",
+          "name": "PlaySound",
+          "index_override": {
+            "type": "variable",
+            "value": "custom_time"
+          }
+        },
+        {
+          "type": "text",
+          "value": "Be quiet...until you hear...Blast!",
           "pre_statements": [
             {
               "type": "assignment",
               "var_name": "custom_time",
               "value": "28"
             }
-          ]
-        },
-        {
-          "text": "Be quiet...until you hear...Blast!",
+          ],
           "events": [
             {
               "index": 0.0,
@@ -118,23 +130,18 @@
           ]
         }
       ],
-      "runs": [
-        {
-          "event_name": "PlaySound",
-          "index_override": {
-            "type": "variable",
-            "value": "custom_time"
-          },
-          "position": 1
-        }
-      ],
       "next": "MixedExample"
     },
     {
       "name": "MixedExample",
-      "texts": [
+      "content": [
         {
-          "text": "A figure emerges from the shadows...",
+          "type": "run_event",
+          "name": "SetColor"
+        },
+        {
+          "type": "text",
+          "value": "A figure emerges from the shadows...",
           "events": [
             {
               "index": 0.0,
@@ -150,7 +157,8 @@
           ]
         },
         {
-          "text": "It's Alice! Alice! Alice! Alice! Alice!",
+          "type": "text",
+          "value": "It's Alice! Alice! Alice! Alice! Alice!",
           "events": [
             {
               "index": 0.0,
@@ -167,67 +175,65 @@
           ]
         },
         {
-          "text": "well, let's go."
-        }
-      ],
-      "runs": [
-        {
-          "event_name": "SetColor",
-          "position": 0
-        },
-        {
-          "event_name": "PlaySound",
+          "type": "run_event",
+          "name": "PlaySound",
           "index_override": {
             "type": "variable",
             "value": "reveal_time"
-          },
-          "position": 5
-        }
-      ],
-      "next": "TimelineExample",
-      "choice": [
-        {
-          "text": "Approach Alice",
-          "next": "AliceRoute"
+          }
         },
         {
-          "text": "Hide",
-          "next": "HideRoute"
+          "type": "choice",
+          "options": [
+            {
+              "text": "Approach Alice",
+              "next": "AliceRoute"
+            },
+            {
+              "text": "Hide",
+              "next": "HideRoute"
+            },
+            {
+              "text": "Waiting...",
+              "action": "break"
+            }
+          ]
         },
         {
-          "text": "Waiting...",
-          "action": "break"
+          "type": "text",
+          "value": "well, let's go."
         }
       ],
-      "choice_position": 2
+      "next": "TimelineExample"
     },
     {
       "name": "TimelineExample",
-      "texts": [
+      "content": [
         {
-          "text": "Watch the opening cutscene..."
-        }
-      ],
-      "runs": [
+          "type": "text",
+          "value": "Watch the opening cutscene..."
+        },
         {
-          "event_name": "OpeningCutscene",
-          "position": 1
+          "type": "run_event",
+          "name": "OpeningCutscene"
         }
       ]
     },
     {
       "name": "AliceRoute",
-      "texts": [
+      "content": [
         {
-          "text": "You approach Alice..."
+          "type": "text",
+          "value": "You approach Alice..."
         }
       ]
     },
     {
       "name": "HideRoute",
-      "texts": [
+      "content": [
         {
-          "text": "You hide behind a tree..."
+          "type": "text",
+          "value": "You hide behind a tree..."
         }
       ]
     }
