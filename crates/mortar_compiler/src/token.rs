@@ -65,8 +65,8 @@ pub enum Token<'a> {
     Run,
     #[token("with")]
     With,
-    #[token("ref")]
-    Ref,
+    #[token("now")]
+    Now,
     #[token("timeline")]
     #[token("tl")]
     Timeline,
@@ -233,7 +233,7 @@ impl fmt::Display for Token<'_> {
             Event => write!(f, "event"),
             Run => write!(f, "run"),
             With => write!(f, "with"),
-            Ref => write!(f, "ref"),
+            Now => write!(f, "now"),
             Timeline => write!(f, "timeline"),
             Wait => write!(f, "wait"),
             Index => write!(f, "index"),

@@ -138,7 +138,7 @@ impl Backend {
             | Token::Event
             | Token::Run
             | Token::With
-            | Token::Ref
+            | Token::Now
             | Token::Timeline
             | Token::Wait
             | Token::Index

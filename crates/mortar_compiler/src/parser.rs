@@ -158,13 +158,13 @@ pub struct RunStmt {
     pub event_name_span: Option<(usize, usize)>,
     pub args: Vec<Arg>,
     pub index_override: Option<IndexOverride>,
+    pub ignore_duration: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum IndexOverride {
     Value(f64),
     Variable(String),
-    Reference(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1704,6 +1704,16 @@ impl<'a> Parser<'a> {
     fn parse_timeline_stmt(&mut self) -> Result<TimelineStmt, String> {
         match self.peek().map(|t| &t.token) {
             Some(Token::Run) => Ok(TimelineStmt::Run(self.parse_run_stmt()?)),
+            Some(Token::Now) => {
+                // Parse "now run EventName" - ignores duration
+                self.advance(); // consume "now"
+                if !self.check(&Token::Run) {
+                    return Err("Expected 'run' after 'now'".to_string());
+                }
+                let mut run_stmt = self.parse_run_stmt()?;
+                run_stmt.ignore_duration = true;
+                Ok(TimelineStmt::Run(run_stmt))
+            }
             Some(Token::Wait) => {
                 self.advance();
                 if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
@@ -1715,7 +1725,7 @@ impl<'a> Parser<'a> {
                 }
             }
             _ => Err(format!(
-                "Expected 'run' or 'wait' in timeline, found {:?}",
+                "Expected 'run', 'now', or 'wait' in timeline, found {:?}",
                 self.peek().map(|t| &t.token)
             )),
         }
@@ -1756,11 +1766,7 @@ impl<'a> Parser<'a> {
         let index_override = if self.check(&Token::With) {
             self.advance();
 
-            if self.check(&Token::Ref) {
-                self.advance();
-                let var_name = self.consume_identifier("Expected variable name after 'ref'")?;
-                Some(IndexOverride::Reference(var_name))
-            } else if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
+            if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
                 let value = n.parse::<f64>().map_err(|_| "Invalid number")?;
                 self.advance();
                 Some(IndexOverride::Value(value))
@@ -1769,7 +1775,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Some(IndexOverride::Variable(name))
             } else {
-                return Err("Expected number, identifier, or 'ref' after 'with'".to_string());
+                return Err("Expected number or identifier after 'with'".to_string());
             }
         } else {
             None
@@ -1780,6 +1786,7 @@ impl<'a> Parser<'a> {
             event_name_span,
             args,
             index_override,
+            ignore_duration: false,
         })
     }
 

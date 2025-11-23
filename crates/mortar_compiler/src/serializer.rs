@@ -163,7 +163,13 @@ struct JsonRunStmt {
     args: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     index_override: Option<JsonIndexOverride>,
+    #[serde(skip_serializing_if = "is_false", default)]
+    ignore_duration: bool,
     position: usize, // Position in the node body for proper ordering
+}
+
+fn is_false(v: &bool) -> bool {
+    !*v
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -240,6 +246,8 @@ struct JsonTimelineStmt {
     args: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     duration: Option<f64>,
+    #[serde(skip_serializing_if = "is_false", default)]
+    ignore_duration: bool,
 }
 
 pub struct Serializer;
@@ -486,16 +494,13 @@ impl Serializer {
                                     override_type: "variable".to_string(),
                                     value: var.clone(),
                                 },
-                                IndexOverride::Reference(var) => JsonIndexOverride {
-                                    override_type: "reference".to_string(),
-                                    value: var.clone(),
-                                },
                             });
 
                     runs.push(JsonRunStmt {
                         event_name: run_stmt.event_name.clone(),
                         args,
                         index_override,
+                        ignore_duration: run_stmt.ignore_duration,
                         position,
                     });
                 }
@@ -1133,12 +1138,14 @@ impl Serializer {
                         })
                         .collect(),
                     duration: None,
+                    ignore_duration: run_stmt.ignore_duration,
                 },
                 TimelineStmt::Wait(duration) => JsonTimelineStmt {
                     stmt_type: "wait".to_string(),
                     event_name: None,
                     args: Vec::new(),
                     duration: Some(*duration),
+                    ignore_duration: false,
                 },
             })
             .collect();

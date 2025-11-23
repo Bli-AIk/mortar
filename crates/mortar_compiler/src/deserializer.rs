@@ -53,6 +53,8 @@ pub struct RunStmt {
     pub args: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub index_override: Option<IndexOverride>,
+    #[serde(default)]
+    pub ignore_duration: bool,
     pub position: usize,
 }
 
@@ -254,6 +256,8 @@ pub struct TimelineStmt {
     pub args: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub duration: Option<f64>,
+    #[serde(default)]
+    pub ignore_duration: bool,
 }
 
 /// Deserializer for loading .mortared JSON files
