@@ -124,6 +124,8 @@ struct JsonBranchCase {
 #[derive(Serialize, Deserialize, Clone)]
 struct JsonEvent {
     index: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    index_variable: Option<String>, // Variable name for runtime resolution
     actions: Vec<JsonAction>,
 }
 
@@ -526,6 +528,38 @@ impl Serializer {
                                     return Err(format!("Event '{}' not found", name));
                                 }
                             }
+                            WithEventItem::EventRefWithOverride(name, _span, override_val) => {
+                                // Resolve event reference with custom index override
+                                if let Some(event_def) = event_map.get(name) {
+                                    // Get the override index value or variable name
+                                    let (index, index_variable) = match override_val {
+                                        IndexOverride::Value(v) => (*v, None),
+                                        IndexOverride::Variable(var_name) => {
+                                            // Store variable name for runtime resolution
+                                            // Use default index 0, will be resolved at runtime
+                                            (0.0, Some(var_name.clone()))
+                                        }
+                                    };
+
+                                    // Convert actions using the same method as convert_event
+                                    let mut actions = vec![Self::convert_func_call_to_action(
+                                        &event_def.action.call,
+                                    )?];
+                                    for chain_call in &event_def.action.chains {
+                                        actions
+                                            .push(Self::convert_func_call_to_action(chain_call)?);
+                                    }
+
+                                    // Create event with optional variable reference
+                                    current_events.push(JsonEvent {
+                                        index,
+                                        index_variable,
+                                        actions,
+                                    });
+                                } else {
+                                    return Err(format!("Event '{}' not found", name));
+                                }
+                            }
                             WithEventItem::EventList(_) => {
                                 // Nested event lists - for future complex scenarios
                                 // TODO: Handle nested event lists if needed
@@ -877,6 +911,7 @@ impl Serializer {
 
         Ok(JsonEvent {
             index: event.index,
+            index_variable: None, // Default to None for regular events
             actions,
         })
     }

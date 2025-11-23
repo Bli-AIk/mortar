@@ -175,6 +175,7 @@ pub struct WithEventsStmt {
 #[derive(Debug, Clone, PartialEq)]
 pub enum WithEventItem {
     EventRef(String, Option<(usize, usize)>),
+    EventRefWithOverride(String, Option<(usize, usize)>, IndexOverride), // Event name, span, index override
     InlineEvent(Event),
     EventList(Vec<WithEventItem>),
 }
@@ -584,7 +585,7 @@ impl<'a> Parser<'a> {
             Some(Token::Choice) => Ok(NodeStmt::Choice(self.parse_choice_stmt()?)),
             Some(Token::Run) => Ok(NodeStmt::Run(self.parse_run_stmt()?)),
             Some(Token::With) => Ok(NodeStmt::WithEvents(self.parse_with_events_stmt()?)),
-            Some(Token::Let) => Ok(NodeStmt::VarDecl(self.parse_var_decl()?)),
+            Some(Token::Let) => Err("Variable declarations with 'let' are not allowed inside nodes. Please define variables at the top level (outside of nodes).".to_string()),
             Some(Token::Identifier(_)) => {
                 // Could be:
                 // 1. Assignment (name = value)
@@ -605,11 +606,11 @@ impl<'a> Parser<'a> {
                     }
                 }
                 Err(format!(
-                    "Unexpected identifier in node body. Expected 'text', 'choice', 'run', 'with', 'let', assignment, or branch definition"
+                    "Unexpected identifier in node body. Expected 'text', 'choice', 'run', 'with', assignment, or branch definition"
                 ))
             }
             _ => Err(format!(
-                "Expected 'text', 'choice', 'run', 'with', 'let', or branch definition, found {:?}",
+                "Expected 'text', 'choice', 'run', 'with', assignment, or branch definition, found {:?}",
                 self.peek().map(|t| &t.token)
             )),
         }
@@ -1796,10 +1797,29 @@ impl<'a> Parser<'a> {
         let mut events = Vec::new();
 
         // Check if it's:
+        // - "with run EventName with var" (run statement with index override converted to text event)
         // - "with event { index, action }" (single inline event) - check FIRST
         // - "with events: [...]" (multiple events)
         // - "with EventName" (single event reference)
-        if self.check(&Token::Event) {
+        if self.check(&Token::Run) {
+            // "with run EventName with var" - parse as run statement but treat as text event
+            // Parse the run statement
+            let run_stmt = self.parse_run_stmt()?;
+
+            // Store as event reference with or without index override
+            let name = run_stmt.event_name.clone();
+            let span = run_stmt.event_name_span;
+
+            if let Some(override_val) = run_stmt.index_override {
+                events.push(WithEventItem::EventRefWithOverride(
+                    name,
+                    span,
+                    override_val,
+                ));
+            } else {
+                events.push(WithEventItem::EventRef(name, span));
+            }
+        } else if self.check(&Token::Event) {
             // "with event { index, action }" - single inline event
             self.advance();
             self.consume(&Token::LeftBrace, "Expected '{' after 'event'")?;
