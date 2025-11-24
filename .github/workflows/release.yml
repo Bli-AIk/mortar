@@ -70,13 +70,13 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
         
     - name: Cache cargo index
       uses: actions/cache@v4
       with:
         path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('Cargo.lock') }}
 
     - name: Build release (Linux/Windows)
       if: matrix.os != 'macos-latest'
@@ -203,13 +203,13 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
         
     - name: Cache cargo index
       uses: actions/cache@v4
       with:
         path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('Cargo.lock') }}
 
     - name: Build release (Linux/Windows)
       if: matrix.os != 'macos-latest'
@@ -293,7 +293,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
         
     - name: Publish ${{ matrix.crate }} to crates.io
       run: cargo publish --package ${{ matrix.crate }} --token ${{ secrets.CRATES_TOKEN }}
