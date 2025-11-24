@@ -6,6 +6,11 @@
 // 基本变量类型
 // 我们没有所有权什么的东西，不必在意 mut
 // 我们可以用 let 来定义变量
+// let 只能定义在节点/方法外部
+// 变量类型有三种：String、Number、Bool
+// 格式是 let 变量名: 变量类型 = 值（值可选）
+// 我们没有null的概念，变量必须赋值后才能使用
+// 节点内可以给变量赋值，格式是 变量名 = 值
 
 let player_name: String
 let player_score: Number
