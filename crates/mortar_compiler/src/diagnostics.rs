@@ -1,7 +1,7 @@
 use crate::Language;
 use crate::parser::{
     Arg, ChoiceDest, ChoiceItem, Condition, EventAction, FuncCall, FunctionDecl,
-    InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TopLevel,
+    InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TimelineStmt, TopLevel,
 };
 use owo_colors::OwoColorize;
 use std::collections::{HashMap, HashSet};
@@ -335,19 +335,43 @@ impl DiagnosticCollector {
 
                     declared_nodes.insert(node.name.clone(), node);
                 }
+                TopLevel::VarDecl(_) | TopLevel::ConstDecl(_) | TopLevel::EnumDef(_) => {
+                    // Variable, constant, and enum declarations don't need naming checks for now
+                }
+                TopLevel::EventDef(_) | TopLevel::TimelineDef(_) => {
+                    // Event and timeline definitions don't need naming checks for now
+                }
             }
         }
 
         // Second pass: check usages
         for item in &program.body {
-            if let TopLevel::NodeDef(node) = item {
-                self.analyze_node_usage(
-                    node,
-                    &declared_functions,
-                    &declared_nodes,
-                    &mut used_functions,
-                    &mut used_nodes,
-                );
+            match item {
+                TopLevel::NodeDef(node) => {
+                    self.analyze_node_usage(
+                        node,
+                        &declared_functions,
+                        &declared_nodes,
+                        &mut used_functions,
+                        &mut used_nodes,
+                    );
+                }
+                TopLevel::EventDef(event_def) => {
+                    self.analyze_event_action(
+                        &event_def.action,
+                        &declared_functions,
+                        &mut used_functions,
+                    );
+                }
+                TopLevel::TimelineDef(timeline_def) => {
+                    for stmt in &timeline_def.body {
+                        if let TimelineStmt::Run(run_stmt) = stmt {
+                            // Mark the event/function as used
+                            used_functions.insert(run_stmt.event_name.clone());
+                        }
+                    }
+                }
+                _ => {}
             }
         }
 
@@ -385,15 +409,13 @@ impl DiagnosticCollector {
         // Analyze statements
         for stmt in &node.body {
             match stmt {
-                NodeStmt::Events(events) => {
-                    for event in events {
-                        self.analyze_event_action(
-                            &event.action,
-                            declared_functions,
-                            used_functions,
-                        );
-                    }
+                NodeStmt::IfElse(_) => {
+                    // If-else statements don't need special analysis for now
                 }
+                NodeStmt::Branch(_) => {
+                    // Branch definitions don't need analysis here
+                }
+
                 NodeStmt::Choice(choices) => {
                     self.analyze_choices(
                         choices,
@@ -414,6 +436,18 @@ impl DiagnosticCollector {
                         declared_functions,
                         used_functions,
                     );
+                }
+                NodeStmt::Run(_) => {
+                    // Run statements don't need analysis for now
+                }
+                NodeStmt::WithEvents(_) => {
+                    // WithEvents statements don't need analysis for now
+                }
+                NodeStmt::VarDecl(_) => {
+                    // Variable declarations in node body are local scope
+                }
+                NodeStmt::Assignment(_) => {
+                    // Assignment statements don't need special analysis for now
                 }
             }
         }
@@ -626,6 +660,7 @@ impl DiagnosticCollector {
         match arg {
             Arg::String(_) => "String".to_string(),
             Arg::Number(_) => "Number".to_string(),
+            Arg::Boolean(_) => "Boolean".to_string(),
             Arg::Identifier(_) => "Unknown".to_string(), // Could be enhanced with variable tracking
             Arg::FuncCall(func_call) => {
                 if let Some(func_decl) = declared_functions.get(&func_call.name) {

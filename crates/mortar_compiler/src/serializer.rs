@@ -15,8 +15,18 @@ fn get_text(key: &str, language: Language) -> &'static str {
 #[derive(Serialize, Deserialize)]
 pub struct MortaredOutput {
     metadata: Metadata,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    variables: Vec<JsonVariable>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    constants: Vec<JsonConstant>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    enums: Vec<JsonEnum>,
     nodes: Vec<JsonNode>,
     functions: Vec<JsonFunction>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    events: Vec<JsonEventDef>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    timelines: Vec<JsonTimelineDef>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -25,43 +35,124 @@ struct Metadata {
     generated_at: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
+enum ContentItem {
+    Text {
+        value: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        interpolated_parts: Option<Vec<JsonStringPart>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        condition: Option<JsonIfCondition>,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        #[serde(default)]
+        pre_statements: Vec<JsonStatement>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        events: Option<Vec<JsonEvent>>,
+    },
+    RunEvent {
+        name: String,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        args: Vec<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        index_override: Option<JsonIndexOverride>,
+        #[serde(skip_serializing_if = "is_false", default)]
+        ignore_duration: bool,
+    },
+    RunTimeline {
+        name: String,
+    },
+    Choice {
+        options: Vec<JsonChoice>,
+    },
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+struct JsonIndexOverride {
+    #[serde(rename = "type")]
+    override_type: String,
+    value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonNode {
     name: String,
-    texts: Vec<JsonText>,
+    content: Vec<ContentItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    branches: Option<Vec<JsonBranchDef>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    variables: Vec<JsonVariable>,
     #[serde(skip_serializing_if = "Option::is_none")]
     next: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    choice: Option<Vec<JsonChoice>>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct JsonText {
-    text: String,
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+struct JsonBranchDef {
+    name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    interpolated_parts: Option<Vec<JsonStringPart>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    events: Option<Vec<JsonEvent>>,
+    enum_type: Option<String>,
+    cases: Vec<JsonBranchCase>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+struct JsonStatement {
+    #[serde(rename = "type")]
+    stmt_type: String, // "assignment"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    var_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    value: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+struct JsonIfCondition {
+    #[serde(rename = "type")]
+    cond_type: String, // "binary", "unary", "identifier", "literal"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    operator: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    left: Option<Box<JsonIfCondition>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    right: Option<Box<JsonIfCondition>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    operand: Option<Box<JsonIfCondition>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    value: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonStringPart {
     #[serde(rename = "type")]
-    part_type: String, // "text" or "expression"
+    part_type: String, // "text", "expression", or "branch"
     content: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     function_name: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     args: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enum_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    branches: Option<Vec<JsonBranchCase>>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+struct JsonBranchCase {
+    condition: String,
+    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    events: Option<Vec<JsonEvent>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct JsonEvent {
     index: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    index_variable: Option<String>, // Variable name for runtime resolution
     actions: Vec<JsonAction>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct JsonAction {
     #[serde(rename = "type")]
     action_type: String,
@@ -69,7 +160,7 @@ struct JsonAction {
     args: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonChoice {
     text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -82,12 +173,16 @@ struct JsonChoice {
     choice: Option<Vec<JsonChoice>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct JsonCondition {
     #[serde(rename = "type")]
     condition_type: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     args: Vec<String>,
+}
+
+fn is_false(v: &bool) -> bool {
+    !*v
 }
 
 #[derive(Serialize, Deserialize)]
@@ -105,6 +200,60 @@ struct JsonParam {
     name: String,
     #[serde(rename = "type")]
     param_type: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+struct JsonVariable {
+    name: String,
+    #[serde(rename = "type")]
+    var_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    value: Option<serde_json::Value>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonConstant {
+    name: String,
+    #[serde(rename = "type")]
+    const_type: String,
+    value: serde_json::Value,
+    public: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonEnum {
+    name: String,
+    variants: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonEventDef {
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    index: Option<f64>,
+    action: JsonAction,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration: Option<f64>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonTimelineDef {
+    name: String,
+    statements: Vec<JsonTimelineStmt>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonTimelineStmt {
+    #[serde(rename = "type")]
+    stmt_type: String, // "run" or "wait"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    event_name: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    args: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration: Option<f64>,
+    #[serde(skip_serializing_if = "is_false", default)]
+    ignore_duration: bool,
 }
 
 pub struct Serializer;
@@ -147,126 +296,198 @@ impl Serializer {
 
     fn convert_program_to_mortared(program: &Program) -> Result<MortaredOutput, String> {
         let metadata = Metadata {
-            version: "0.1.0".to_string(),
+            version: env!("CARGO_PKG_VERSION").to_string(),
             generated_at: Utc::now(),
         };
 
+        let mut variables = Vec::new();
+        let mut constants = Vec::new();
+        let mut enums = Vec::new();
         let mut nodes = Vec::new();
         let mut functions = Vec::new();
+        let mut events = Vec::new();
+        let mut timelines = Vec::new();
+
+        // Build event definitions map for reference resolution
+        let mut event_map = std::collections::HashMap::new();
+        for top_level in &program.body {
+            if let TopLevel::EventDef(event_def) = top_level {
+                event_map.insert(event_def.name.clone(), event_def);
+            }
+        }
 
         for top_level in &program.body {
             match top_level {
                 TopLevel::NodeDef(node_def) => {
-                    nodes.push(Self::convert_node_def(node_def)?);
+                    nodes.push(Self::convert_node_def(node_def, &event_map)?);
                 }
                 TopLevel::FunctionDecl(func_decl) => {
                     functions.push(Self::convert_function_decl(func_decl));
+                }
+                TopLevel::VarDecl(var_decl) => {
+                    variables.push(Self::convert_var_decl(var_decl));
+                }
+                TopLevel::ConstDecl(const_decl) => {
+                    constants.push(Self::convert_const_decl(const_decl));
+                }
+                TopLevel::EnumDef(enum_def) => {
+                    enums.push(Self::convert_enum_def(enum_def));
+                }
+                TopLevel::EventDef(event_def) => {
+                    events.push(Self::convert_event_def(event_def));
+                }
+                TopLevel::TimelineDef(timeline_def) => {
+                    timelines.push(Self::convert_timeline_def(timeline_def));
                 }
             }
         }
 
         Ok(MortaredOutput {
             metadata,
+            variables,
+            constants,
+            enums,
             nodes,
             functions,
+            events,
+            timelines,
         })
     }
 
-    fn convert_node_def(node_def: &NodeDef) -> Result<JsonNode, String> {
-        let mut texts = Vec::new();
-        let mut choices = None;
+    fn convert_node_def(
+        node_def: &NodeDef,
+        event_map: &std::collections::HashMap<String, &EventDef>,
+    ) -> Result<JsonNode, String> {
+        let mut content = Vec::new();
+        let mut branches_vec = Vec::new();
+        let mut local_variables = Vec::new();
+        let mut pending_statements: Vec<JsonStatement> = Vec::new();
 
-        // Group texts and events, separate choices
-        let mut current_text: Option<String> = None;
-        let mut current_events: Vec<JsonEvent> = Vec::new();
+        let mut body_iter = node_def.body.iter().peekable();
 
-        for stmt in &node_def.body {
+        while let Some(stmt) = body_iter.next() {
             match stmt {
                 NodeStmt::Text(text) => {
-                    // If we have a current text, save it first
-                    if let Some(text_content) = current_text.take() {
-                        texts.push(JsonText {
-                            text: text_content,
-                            interpolated_parts: None,
-                            events: if current_events.is_empty() {
-                                None
-                            } else {
-                                Some(current_events.clone())
-                            },
-                        });
-                        current_events.clear();
+                    let mut events = Vec::new();
+                    if let Some(NodeStmt::WithEvents(with_events)) = body_iter.peek() {
+                        Self::process_with_events(with_events, &mut events, event_map)?;
+                        body_iter.next(); // Consume the WithEvents statement
                     }
-                    current_text = Some(text.clone());
-                }
-                NodeStmt::InterpolatedText(interpolated) => {
-                    // If we have a current text, save it first
-                    if let Some(text_content) = current_text.take() {
-                        texts.push(JsonText {
-                            text: text_content,
-                            interpolated_parts: None,
-                            events: if current_events.is_empty() {
-                                None
-                            } else {
-                                Some(current_events.clone())
-                            },
-                        });
-                        current_events.clear();
-                    }
-
-                    // Convert interpolated string
-                    let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
-                    texts.push(JsonText {
-                        text: rendered_text,
-                        interpolated_parts: Some(parts),
-                        events: if current_events.is_empty() {
+                    content.push(ContentItem::Text {
+                        value: text.clone(),
+                        interpolated_parts: None,
+                        condition: None,
+                        pre_statements: std::mem::take(&mut pending_statements),
+                        events: if events.is_empty() {
                             None
                         } else {
-                            Some(current_events.clone())
+                            Some(events)
                         },
                     });
-                    current_events.clear();
                 }
-                NodeStmt::Events(events) => {
-                    // Convert events and associate with current text
-                    for event in events {
-                        current_events.push(Self::convert_event(event)?);
+                NodeStmt::InterpolatedText(interpolated) => {
+                    let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
+                    let mut events = Vec::new();
+                    if let Some(NodeStmt::WithEvents(with_events)) = body_iter.peek() {
+                        Self::process_with_events(with_events, &mut events, event_map)?;
+                        body_iter.next(); // Consume the WithEvents statement
                     }
+                    content.push(ContentItem::Text {
+                        value: rendered_text,
+                        interpolated_parts: Some(parts),
+                        condition: None,
+                        pre_statements: std::mem::take(&mut pending_statements),
+                        events: if events.is_empty() {
+                            None
+                        } else {
+                            Some(events)
+                        },
+                    });
+                }
+                NodeStmt::Run(run_stmt) => {
+                    // In a Node, a "run" statement can be for an event or a timeline.
+                    // We need to check what the name refers to.
+                    // For now, let's assume all `run` in NodeStmts are events as per parser constraints.
+                    // If timelines in nodes are supported, this will need timeline definitions passed in.
+
+                    let args: Vec<String> = run_stmt
+                        .args
+                        .iter()
+                        .map(|arg| match arg {
+                            Arg::String(s) => format!("\"{}\"", s),
+                            Arg::Number(n) => n.to_string(),
+                            Arg::Boolean(b) => b.to_string(),
+                            Arg::Identifier(id) => id.clone(),
+                            Arg::FuncCall(func_call) => {
+                                format!("{}(...)", func_call.name)
+                            }
+                        })
+                        .collect();
+
+                    let index_override =
+                        run_stmt
+                            .index_override
+                            .as_ref()
+                            .map(|override_val| match override_val {
+                                IndexOverride::Value(v) => JsonIndexOverride {
+                                    override_type: "value".to_string(),
+                                    value: v.to_string(),
+                                },
+                                IndexOverride::Variable(var) => JsonIndexOverride {
+                                    override_type: "variable".to_string(),
+                                    value: var.clone(),
+                                },
+                            });
+
+                    content.push(ContentItem::RunEvent {
+                        name: run_stmt.event_name.clone(),
+                        args,
+                        index_override,
+                        ignore_duration: run_stmt.ignore_duration,
+                    });
                 }
                 NodeStmt::Choice(choice_items) => {
-                    // Save any pending text first
-                    if let Some(text_content) = current_text.take() {
-                        texts.push(JsonText {
-                            text: text_content,
-                            interpolated_parts: None,
-                            events: if current_events.is_empty() {
-                                None
-                            } else {
-                                Some(current_events.clone())
-                            },
-                        });
-                        current_events.clear();
-                    }
-
                     let mut json_choices = Vec::new();
                     for item in choice_items {
                         json_choices.push(Self::convert_choice_item(item)?);
                     }
-                    choices = Some(json_choices);
+                    content.push(ContentItem::Choice {
+                        options: json_choices,
+                    });
+                }
+                NodeStmt::IfElse(if_else) => {
+                    Self::process_if_else_to_content(if_else, &mut content)?;
+                }
+                NodeStmt::Branch(branch_def) => {
+                    branches_vec.push(Self::convert_branch_def(branch_def)?);
+                }
+                NodeStmt::VarDecl(var_decl) => {
+                    local_variables.push(Self::convert_var_decl(var_decl));
+                }
+                NodeStmt::Assignment(assignment) => {
+                    let value_str = match &assignment.value {
+                        AssignValue::EnumMember(enum_name, member) => {
+                            format!("{}.{}", enum_name, member)
+                        }
+                        AssignValue::Identifier(id) => id.clone(),
+                        AssignValue::Number(n) => n.to_string(),
+                        AssignValue::Boolean(b) => b.to_string(),
+                        AssignValue::String(s) => s.clone(),
+                    };
+
+                    pending_statements.push(JsonStatement {
+                        stmt_type: "assignment".to_string(),
+                        var_name: Some(assignment.var_name.clone()),
+                        value: Some(value_str),
+                    });
+                }
+                // WithEvents is handled by peeking, so we shouldn't encounter it here directly.
+                NodeStmt::WithEvents(_) => {
+                    // This should be handled by peeking in Text/InterpolatedText.
+                    // If we get here, it means a `with events:` block is not preceded by text.
+                    return Err("`with events:` block must follow a `text:` statement.".to_string());
                 }
             }
-        }
-
-        // Don't forget the last text if any
-        if let Some(text_content) = current_text {
-            texts.push(JsonText {
-                text: text_content,
-                interpolated_parts: None,
-                events: if current_events.is_empty() {
-                    None
-                } else {
-                    Some(current_events)
-                },
-            });
         }
 
         let next = match &node_def.jump {
@@ -276,10 +497,291 @@ impl Serializer {
 
         Ok(JsonNode {
             name: node_def.name.clone(),
-            texts,
+            content,
+            branches: if branches_vec.is_empty() {
+                None
+            } else {
+                Some(branches_vec)
+            },
+            variables: local_variables,
             next,
-            choice: choices,
         })
+    }
+
+    fn convert_branch_def(branch_def: &BranchDef) -> Result<JsonBranchDef, String> {
+        let cases = branch_def
+            .cases
+            .iter()
+            .map(|case| {
+                let events = if let Some(event_list) = &case.events {
+                    Some(
+                        event_list
+                            .iter()
+                            .map(|e| Self::convert_event(e))
+                            .collect::<Result<Vec<_>, _>>()?,
+                    )
+                } else {
+                    None
+                };
+
+                Ok(JsonBranchCase {
+                    condition: case.condition.clone(),
+                    text: case.text.clone(),
+                    events,
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+
+        Ok(JsonBranchDef {
+            name: branch_def.name.clone(),
+            enum_type: branch_def.enum_type.clone(),
+            cases,
+        })
+    }
+
+    fn process_with_events(
+        with_events: &WithEventsStmt,
+        events: &mut Vec<JsonEvent>,
+        event_map: &std::collections::HashMap<String, &EventDef>,
+    ) -> Result<(), String> {
+        for item in &with_events.events {
+            match item {
+                WithEventItem::InlineEvent(event) => {
+                    events.push(Self::convert_event(event)?);
+                }
+                WithEventItem::EventRef(name, _span) => {
+                    if let Some(event_def) = event_map.get(name) {
+                        let event = Event {
+                            index: event_def.index.unwrap_or(0.0),
+                            action: event_def.action.clone(),
+                        };
+                        events.push(Self::convert_event(&event)?);
+                    } else {
+                        return Err(format!("Event '{}' not found", name));
+                    }
+                }
+                WithEventItem::EventRefWithOverride(name, _span, override_val) => {
+                    if let Some(event_def) = event_map.get(name) {
+                        let (index, index_variable) = match override_val {
+                            IndexOverride::Value(v) => (*v, None),
+                            IndexOverride::Variable(var_name) => (0.0, Some(var_name.clone())),
+                        };
+
+                        let mut actions =
+                            vec![Self::convert_func_call_to_action(&event_def.action.call)?];
+                        for chain_call in &event_def.action.chains {
+                            actions.push(Self::convert_func_call_to_action(chain_call)?);
+                        }
+
+                        events.push(JsonEvent {
+                            index,
+                            index_variable,
+                            actions,
+                        });
+                    } else {
+                        return Err(format!("Event '{}' not found", name));
+                    }
+                }
+                WithEventItem::EventList(_) => {
+                    // TODO: Handle nested event lists if needed
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn process_if_else_to_content(
+        if_else: &IfElseStmt,
+        content: &mut Vec<ContentItem>,
+    ) -> Result<(), String> {
+        let condition_json = Self::convert_if_condition(&if_else.condition)?;
+
+        // Process 'then' body
+        Self::process_conditional_body_to_content(
+            &if_else.then_body,
+            Some(condition_json.clone()),
+            content,
+        )?;
+
+        // Process 'else' body
+        if let Some(else_body) = &if_else.else_body {
+            let negated_condition = JsonIfCondition {
+                cond_type: "unary".to_string(),
+                operator: Some("!".to_string()),
+                left: None,
+                right: None,
+                operand: Some(Box::new(condition_json)),
+                value: None,
+            };
+            Self::process_conditional_body_to_content(else_body, Some(negated_condition), content)?;
+        }
+
+        Ok(())
+    }
+
+    fn process_conditional_body_to_content(
+        body: &[NodeStmt],
+        condition: Option<JsonIfCondition>,
+        content: &mut Vec<ContentItem>,
+    ) -> Result<(), String> {
+        let mut pending_stmts = Vec::new();
+        let mut has_text_in_block = false;
+
+        for stmt in body {
+            match stmt {
+                NodeStmt::Text(text) => {
+                    has_text_in_block = true;
+                    content.push(ContentItem::Text {
+                        value: text.clone(),
+                        interpolated_parts: None,
+                        events: None,
+                        condition: condition.clone(),
+                        pre_statements: std::mem::take(&mut pending_stmts),
+                    });
+                }
+                NodeStmt::InterpolatedText(interp) => {
+                    has_text_in_block = true;
+                    let (rendered, parts) = Self::convert_interpolated_string(interp)?;
+                    content.push(ContentItem::Text {
+                        value: rendered,
+                        interpolated_parts: Some(parts),
+                        events: None,
+                        condition: condition.clone(),
+                        pre_statements: std::mem::take(&mut pending_stmts),
+                    });
+                }
+                NodeStmt::Assignment(assignment) => {
+                    let value_str = match &assignment.value {
+                        AssignValue::EnumMember(enum_name, member) => {
+                            format!("{}.{}", enum_name, member)
+                        }
+                        AssignValue::Identifier(id) => id.clone(),
+                        AssignValue::Number(n) => n.to_string(),
+                        AssignValue::Boolean(b) => b.to_string(),
+                        AssignValue::String(s) => s.clone(),
+                    };
+                    pending_stmts.push(JsonStatement {
+                        stmt_type: "assignment".to_string(),
+                        var_name: Some(assignment.var_name.clone()),
+                        value: Some(value_str),
+                    });
+                }
+                NodeStmt::IfElse(nested_if) => {
+                    let mut nested_content = Vec::new();
+                    Self::process_if_else_to_content(nested_if, &mut nested_content)?;
+
+                    for item in nested_content {
+                        if let ContentItem::Text {
+                            value,
+                            interpolated_parts,
+                            condition: nested_cond,
+                            pre_statements,
+                            events,
+                        } = item
+                        {
+                            let combined_cond = if let Some(current_cond) = &condition {
+                                if let Some(inner_cond) = nested_cond {
+                                    Some(JsonIfCondition {
+                                        cond_type: "binary".to_string(),
+                                        operator: Some("&&".to_string()),
+                                        left: Some(Box::new(current_cond.clone())),
+                                        right: Some(Box::new(inner_cond)),
+                                        operand: None,
+                                        value: None,
+                                    })
+                                } else {
+                                    Some(current_cond.clone())
+                                }
+                            } else {
+                                nested_cond
+                            };
+
+                            content.push(ContentItem::Text {
+                                value,
+                                interpolated_parts,
+                                condition: combined_cond,
+                                pre_statements,
+                                events,
+                            });
+                        } else {
+                            // Non-text items from nested blocks are pushed directly.
+                            // Their execution is implicitly conditional on the client side.
+                            content.push(item);
+                        }
+                    }
+                }
+                _ => {} // Other statements like Run, Choice, etc., are not valid inside if/else text blocks
+            }
+        }
+
+        if !pending_stmts.is_empty() && !has_text_in_block {
+            content.push(ContentItem::Text {
+                value: String::new(),
+                interpolated_parts: None,
+                events: None,
+                condition: condition.clone(),
+                pre_statements: pending_stmts,
+            });
+        }
+        Ok(())
+    }
+
+    fn convert_if_condition(cond: &IfCondition) -> Result<JsonIfCondition, String> {
+        match cond {
+            IfCondition::Binary(binary) => {
+                let op_str = match binary.operator {
+                    ComparisonOp::Greater => ">",
+                    ComparisonOp::Less => "<",
+                    ComparisonOp::GreaterEqual => ">=",
+                    ComparisonOp::LessEqual => "<=",
+                    ComparisonOp::Equal => "==",
+                    ComparisonOp::NotEqual => "!=",
+                    ComparisonOp::And => "&&",
+                    ComparisonOp::Or => "||",
+                };
+
+                Ok(JsonIfCondition {
+                    cond_type: "binary".to_string(),
+                    operator: Some(op_str.to_string()),
+                    left: Some(Box::new(Self::convert_if_condition(&binary.left)?)),
+                    right: Some(Box::new(Self::convert_if_condition(&binary.right)?)),
+                    operand: None,
+                    value: None,
+                })
+            }
+            IfCondition::Unary(unary) => Ok(JsonIfCondition {
+                cond_type: "unary".to_string(),
+                operator: Some("!".to_string()),
+                left: None,
+                right: None,
+                operand: Some(Box::new(Self::convert_if_condition(&unary.operand)?)),
+                value: None,
+            }),
+            IfCondition::Identifier(name) => Ok(JsonIfCondition {
+                cond_type: "identifier".to_string(),
+                operator: None,
+                left: None,
+                right: None,
+                operand: None,
+                value: Some(name.clone()),
+            }),
+            IfCondition::EnumMember(enum_name, member) => Ok(JsonIfCondition {
+                cond_type: "enum_member".to_string(),
+                operator: None,
+                left: None,
+                right: None,
+                operand: None,
+                value: Some(format!("{}.{}", enum_name, member)),
+            }),
+            IfCondition::Literal(val) => Ok(JsonIfCondition {
+                cond_type: "literal".to_string(),
+                operator: None,
+                left: None,
+                right: None,
+                operand: None,
+                value: Some(val.to_string()),
+            }),
+        }
     }
 
     fn convert_event(event: &Event) -> Result<JsonEvent, String> {
@@ -292,6 +794,7 @@ impl Serializer {
 
         Ok(JsonEvent {
             index: event.index,
+            index_variable: None, // Default to None for regular events
             actions,
         })
     }
@@ -303,6 +806,7 @@ impl Serializer {
             match arg {
                 Arg::String(s) => args.push(s.clone()),
                 Arg::Number(n) => args.push(n.to_string()),
+                Arg::Boolean(b) => args.push(b.to_string()),
                 Arg::Identifier(id) => args.push(id.clone()),
                 Arg::FuncCall(_) => {
                     return Err(
@@ -333,6 +837,7 @@ impl Serializer {
                     .map(|arg| match arg {
                         Arg::String(s) => s.clone(),
                         Arg::Number(n) => n.to_string(),
+                        Arg::Boolean(b) => b.to_string(),
                         Arg::Identifier(id) => id.clone(),
                         Arg::FuncCall(_) => "nested_call".to_string(), // Simplified
                     })
@@ -380,6 +885,65 @@ impl Serializer {
         }
     }
 
+    fn convert_var_decl(var_decl: &VarDecl) -> JsonVariable {
+        JsonVariable {
+            name: var_decl.name.clone(),
+            var_type: var_decl.type_name.clone(),
+            value: var_decl.value.as_ref().map(Self::convert_var_value),
+        }
+    }
+
+    fn convert_const_decl(const_decl: &ConstDecl) -> JsonConstant {
+        JsonConstant {
+            name: const_decl.name.clone(),
+            const_type: const_decl.type_name.clone(),
+            value: Self::convert_var_value(&const_decl.value),
+            public: const_decl.is_public,
+        }
+    }
+
+    fn convert_enum_def(enum_def: &EnumDef) -> JsonEnum {
+        JsonEnum {
+            name: enum_def.name.clone(),
+            variants: enum_def.variants.clone(),
+        }
+    }
+
+    fn convert_var_value(value: &VarValue) -> serde_json::Value {
+        match value {
+            VarValue::String(s) => serde_json::Value::String(s.clone()),
+            VarValue::Number(n) => serde_json::json!(n),
+            VarValue::Boolean(b) => serde_json::Value::Bool(*b),
+            VarValue::EnumMember(enum_name, member) => {
+                serde_json::Value::String(format!("{}.{}", enum_name, member))
+            }
+            VarValue::Branch(branch_value) => {
+                let cases: Vec<_> = branch_value
+                    .cases
+                    .iter()
+                    .map(|case| {
+                        let events = case.events.as_ref().and_then(|events| {
+                            let converted: Result<Vec<_>, _> =
+                                events.iter().map(|e| Self::convert_event(e)).collect();
+                            converted.ok()
+                        });
+
+                        serde_json::json!({
+                            "condition": case.condition,
+                            "text": case.text,
+                            "events": events
+                        })
+                    })
+                    .collect();
+
+                serde_json::json!({
+                    "enum_type": branch_value.enum_type,
+                    "cases": cases
+                })
+            }
+        }
+    }
+
     fn convert_interpolated_string(
         interpolated: &InterpolatedString,
     ) -> Result<(String, Vec<JsonStringPart>), String> {
@@ -395,6 +959,8 @@ impl Serializer {
                         content: text.clone(),
                         function_name: None,
                         args: Vec::new(),
+                        enum_type: None,
+                        branches: None,
                     });
                 }
                 StringPart::Expression(func_call) => {
@@ -410,6 +976,7 @@ impl Serializer {
                             match arg {
                                 Arg::String(s) => format!("\"{}\"", s),
                                 Arg::Number(n) => n.to_string(),
+                                Arg::Boolean(b) => b.to_string(),
                                 Arg::Identifier(id) => id.clone(),
                                 Arg::FuncCall(nested) => format!("{}()", nested.name), // Simplified
                             }
@@ -421,11 +988,89 @@ impl Serializer {
                         content: placeholder.clone(),
                         function_name: Some(func_call.name.clone()),
                         args,
+                        enum_type: None,
+                        branches: None,
+                    });
+                }
+                StringPart::Placeholder(name) => {
+                    // Placeholder will be resolved by branch definitions
+                    let placeholder = format!("{{{}}}", name);
+                    rendered_text.push_str(&placeholder);
+
+                    parts.push(JsonStringPart {
+                        part_type: "placeholder".to_string(),
+                        content: placeholder,
+                        function_name: None,
+                        args: Vec::new(),
+                        enum_type: None,
+                        branches: None,
                     });
                 }
             }
         }
 
         Ok((rendered_text, parts))
+    }
+
+    fn convert_event_def(event_def: &EventDef) -> JsonEventDef {
+        JsonEventDef {
+            name: event_def.name.clone(),
+            index: event_def.index,
+            action: JsonAction {
+                action_type: event_def.action.call.name.clone(),
+                args: event_def
+                    .action
+                    .call
+                    .args
+                    .iter()
+                    .map(|arg| match arg {
+                        Arg::String(s) => format!("\"{}\"", s),
+                        Arg::Number(n) => n.to_string(),
+                        Arg::Boolean(b) => b.to_string(),
+                        Arg::Identifier(id) => id.clone(),
+                        Arg::FuncCall(fc) => format!("{}()", fc.name),
+                    })
+                    .collect(),
+            },
+            duration: event_def.duration,
+        }
+    }
+
+    fn convert_timeline_def(timeline_def: &TimelineDef) -> JsonTimelineDef {
+        let statements = timeline_def
+            .body
+            .iter()
+            .map(|stmt| match stmt {
+                TimelineStmt::Run(run_stmt) => JsonTimelineStmt {
+                    stmt_type: "run".to_string(),
+                    event_name: Some(run_stmt.event_name.clone()),
+                    args: run_stmt
+                        .args
+                        .iter()
+                        .map(|arg| match arg {
+                            Arg::String(s) => format!("\"{}\"", s),
+                            Arg::Number(n) => n.to_string(),
+                            Arg::Boolean(b) => b.to_string(),
+                            Arg::Identifier(id) => id.clone(),
+                            Arg::FuncCall(fc) => format!("{}()", fc.name),
+                        })
+                        .collect(),
+                    duration: None,
+                    ignore_duration: run_stmt.ignore_duration,
+                },
+                TimelineStmt::Wait(duration) => JsonTimelineStmt {
+                    stmt_type: "wait".to_string(),
+                    event_name: None,
+                    args: Vec::new(),
+                    duration: Some(*duration),
+                    ignore_duration: false,
+                },
+            })
+            .collect();
+
+        JsonTimelineDef {
+            name: timeline_def.name.clone(),
+            statements,
+        }
     }
 }

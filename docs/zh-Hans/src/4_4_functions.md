@@ -7,7 +7,7 @@
 在 Mortar 脚本中，你会调用各种函数：
 
 ```mortar
-events: [
+with events: [
     0, play_sound("boom.wav")
     2, shake_screen()
 ]
@@ -115,7 +115,7 @@ Mortar 支持 json 中的类型：
 
 node StartScene {
     text: $"欢迎，{get_player_name()}！"
-    events: [
+    with events: [
         0, play_bgm("theme.mp3")
     ]
     
@@ -133,7 +133,7 @@ node 商店 {
 
 node 冒险 {
     text: "冒险开始！"
-    events: [
+    with events: [
         0, start_battle("哥布林")
     ]
 }
@@ -161,7 +161,7 @@ fn start_battle(enemy: String)
 ### 调用无参数函数
 
 ```mortar
-events: [
+with events: [
     0, shake_screen()
     2, flash_white()
 ]
@@ -173,7 +173,7 @@ fn flash_white()
 ### 调用有参数函数
 
 ```mortar
-events: [
+with events: [
     0, play_sound("boom.wav")
     2, set_color("#FF0000")
     4, move_to(100, 200)
@@ -187,7 +187,7 @@ fn move_to(x: Number, y: Number)
 ### 链式调用
 
 ```mortar
-events: [
+with events: [
     0, play_sound("boom.wav").shake_screen().flash_white()
 ]
 
@@ -263,13 +263,13 @@ Mortar 会在编译时检查类型是否正确：
 
 ```mortar
 // ✅ 正确
-events: [
+with events: [
     0, play_sound("file.wav")
 ]
 fn play_sound(file: String)
 
 // ❌ 错误：参数类型不对
-events: [
+with events: [
     0, play_sound(123)  // 传了数字，但需要字符串
 ]
 fn play_sound(file: String)

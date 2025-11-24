@@ -37,6 +37,48 @@ pub enum Token<'a> {
     #[token("when")]
     When,
 
+    // Variable and constant keywords
+    #[token("let")]
+    Let,
+    #[token("const")]
+    Const,
+    #[token("pub")]
+    #[token("public")]
+    Pub,
+    #[token("enum")]
+    Enum,
+
+    // Branch interpolation keyword
+    #[token("branch")]
+    Branch,
+
+    // Control flow keywords
+    #[token("if")]
+    If,
+    #[token("else")]
+    Else,
+
+    // Performance system keywords
+    #[token("event")]
+    Event,
+    #[token("run")]
+    Run,
+    #[token("with")]
+    With,
+    #[token("now")]
+    Now,
+    #[token("timeline")]
+    #[token("tl")]
+    Timeline,
+    #[token("wait")]
+    Wait,
+    #[token("index")]
+    Index,
+    #[token("action")]
+    Action,
+    #[token("duration")]
+    Duration,
+
     // Type keywords
     #[token("String")]
     StringType,
@@ -76,6 +118,26 @@ pub enum Token<'a> {
     LeftParen,
     #[token(")")]
     RightParen,
+    #[token("=")]
+    Equals,
+    #[token("<")]
+    Less,
+    #[token(">")]
+    Greater,
+    #[token("<=")]
+    LessEqual,
+    #[token(">=")]
+    GreaterEqual,
+    #[token("==")]
+    EqualEqual,
+    #[token("!=")]
+    NotEqual,
+    #[token("&&")]
+    And,
+    #[token("||")]
+    Or,
+    #[token("!")]
+    Not,
     // endregion
 
     // region Literals
@@ -90,10 +152,8 @@ pub enum Token<'a> {
     String(&'a str),
 
     // Interpolated string: $"text {expression} more text"
-    #[regex(r#"\$"([^"\\]|\\.)*""#, |lex| {
-        let s = lex.slice();
-        &s[2..s.len()-1] // Remove $" and "
-    })]
+    // Using callback to properly handle nested quotes
+    #[token("$\"", lex_interpolated_string)]
     InterpolatedString(&'a str),
 
     #[regex(r"[0-9]+(\.[0-9]+)?")]
@@ -163,6 +223,22 @@ impl fmt::Display for Token<'_> {
             Return => write!(f, "return"),
             Break => write!(f, "break"),
             When => write!(f, "when"),
+            Let => write!(f, "let"),
+            Const => write!(f, "const"),
+            Pub => write!(f, "pub"),
+            Enum => write!(f, "enum"),
+            Branch => write!(f, "branch"),
+            If => write!(f, "if"),
+            Else => write!(f, "else"),
+            Event => write!(f, "event"),
+            Run => write!(f, "run"),
+            With => write!(f, "with"),
+            Now => write!(f, "now"),
+            Timeline => write!(f, "timeline"),
+            Wait => write!(f, "wait"),
+            Index => write!(f, "index"),
+            Action => write!(f, "action"),
+            Duration => write!(f, "duration"),
 
             StringType => write!(f, "String"),
             NumberType => write!(f, "Number"),
@@ -181,6 +257,16 @@ impl fmt::Display for Token<'_> {
             RightBracket => write!(f, "]"),
             LeftParen => write!(f, "("),
             RightParen => write!(f, ")"),
+            Equals => write!(f, "="),
+            Less => write!(f, "<"),
+            Greater => write!(f, ">"),
+            LessEqual => write!(f, "<="),
+            GreaterEqual => write!(f, ">="),
+            EqualEqual => write!(f, "=="),
+            NotEqual => write!(f, "!="),
+            And => write!(f, "&&"),
+            Or => write!(f, "||"),
+            Not => write!(f, "!"),
 
             String(s) => write!(f, "\"{}\"", s),
             InterpolatedString(s) => write!(f, "$\"{}\"", s),
@@ -188,6 +274,57 @@ impl fmt::Display for Token<'_> {
             Identifier(s) => write!(f, "{}", s),
         }
     }
+}
+
+fn lex_interpolated_string<'a>(lex: &mut logos::Lexer<'a, Token<'a>>) -> Option<&'a str> {
+    let start = lex.span().end;
+    let source = lex.source();
+    let bytes = source.as_bytes();
+
+    let mut pos = start;
+    let mut depth = 0;
+    let mut in_string_literal = false;
+    let mut escape_next = false;
+
+    while pos < bytes.len() {
+        let ch = bytes[pos] as char;
+        pos += 1;
+
+        if escape_next {
+            escape_next = false;
+            continue;
+        }
+
+        if ch == '\\' {
+            escape_next = true;
+            continue;
+        }
+
+        if ch == '"' && depth == 0 && !in_string_literal {
+            // Found the closing quote
+            lex.bump(pos - start);
+            let content_start = start;
+            let content_end = pos - 1;
+            return Some(&source[content_start..content_end]);
+        }
+
+        if ch == '"' {
+            in_string_literal = !in_string_literal;
+            continue;
+        }
+
+        if !in_string_literal {
+            if ch == '{' {
+                depth += 1;
+            } else if ch == '}' {
+                if depth > 0 {
+                    depth -= 1;
+                }
+            }
+        }
+    }
+
+    None
 }
 
 pub(crate) fn lex_with_output(input: &str) -> Vec<Token<'_>> {

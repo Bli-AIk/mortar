@@ -1,0 +1,109 @@
+// Branch Interpolation Example - Non-symmetric Localization
+
+// ===== Define Variables and Enums =====
+
+// Boolean 变量（用于简单的 branch）
+let is_forest: Bool = true
+let is_city: Bool
+let is_male: Bool = true
+let is_female: Bool
+
+// 定义枚举
+// 枚举是按照类似 C# 的方式设计的。每个成员都是且只是一个标识符。
+enum Location {
+    forest
+    city
+    town
+}
+
+enum Gender {
+    male
+    female
+    other
+}
+
+// 定义枚举变量
+let current_location: Location = Location.city;
+// current_gender，则使用 Gender 的第一个成员 male 作为默认值
+let current_gender: Gender
+
+// 定义 branch 类型变量（基于 Boolean）
+let place: branch [
+    is_forest, "森林"
+    is_city, "城市"
+]
+
+let greet: branch [
+    is_male, "先生"
+    is_female, "女士"
+]
+
+// 定义 branch 类型变量（基于枚举）
+let location: branch<current_location> [
+    forest, "森林深处"
+    city, "繁华都市"
+    town, "宁静小镇"
+]
+
+// 定义 branch 类型变量（带 events）
+let object: branch<current_location> [
+    forest, "树木", events: [
+        0, set_color("green")
+    ]
+    city, "高楼", events: [
+        0, set_color("gray")
+        1, set_color("blue")
+    ]
+    town, "房屋", events: [
+        0, set_color("brown")
+    ]
+]
+
+// ===== Node with Branch Interpolation =====
+
+node Start {
+    text: $"欢迎来到{place}，{greet}！"
+} -> LocationDesc
+
+node LocationDesc {
+    text: $"你现在在{location}，周围有{object}。"
+} -> ComplexScene
+
+// 定义另一个 branch 变量用于此场景
+let scene_object: branch<current_location> [
+    forest, "野兽", events: [
+        0, set_color("#FF0000")
+        1, set_color("#FF7F00")
+        ]
+    city, "警车", events: [
+        0, set_color("#0000FF")
+        1, set_color("#FF00FF")
+    ]
+    town, "老人"
+]
+// Example combining text events and branch events
+node ComplexScene {
+    // Main text with events (indices refer to non-interpolated parts only)
+    text: $"你看见{scene_object}后，感到惊讶！"
+    with events: [
+        0, set_color("#00FF00")
+        5, set_color("#FF33FF")
+        9, set_color("33FF22")
+    ]
+    text: $"于是你从{location}..."
+
+    if (current_location != Location.town)
+    {
+        current_location = Location.town
+    }
+    else
+    {
+        current_location = Location.forest
+    }
+
+    text: $"跑到了{location}。"
+}
+
+// ===== Function Declarations =====
+
+fn set_color(color: String)

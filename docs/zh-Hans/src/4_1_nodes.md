@@ -70,7 +70,7 @@ node Dialogue {
 ```mortar
 node Dialogue {
     text: "你好呀！"
-    events: [
+    with events: [
         0, play_sound("hi.wav")
         3, show_smile()
     ]
@@ -97,7 +97,7 @@ node 选择 {
 node 完整示例 {
     // 第一段文字 + 事件
     text: "欢迎来到魔法学院！"
-    events: [
+    with events: [
         0, play_bgm("magic.mp3")
         7, sparkle()
     ]

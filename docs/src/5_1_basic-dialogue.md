@@ -45,13 +45,13 @@ Now let's make the dialogue more lively by adding sound effects:
 ```mortar
 node VillagerGreeting {
     text: "Hello there, adventurer!"
-    events: [
+    with events: [
         // Play greeting sound when "H" appears
         0, play_sound("greeting.wav")
     ]
     
     text: "Welcome to our little village."
-    events: [
+    with events: [
         // Play warm music at "little village"
         15, play_music("village_theme.ogg")
     ]
@@ -68,7 +68,7 @@ node OfferHelp {
     text: "Great! Let me see what I can do for you..."
     
     text: "Here's a map, hope it helps!"
-    events: [
+    with events: [
         // Item get sound effect
         0, play_sound("item_get.wav"),
         // Show item icon at the same time
@@ -78,7 +78,7 @@ node OfferHelp {
 
 node PoliteFarewell {
     text: "Alright, have a pleasant journey!"
-    events: [
+    with events: [
         0, play_sound("farewell.wav")
     ]
 }
@@ -102,12 +102,12 @@ Make dialogue more personalized by greeting with player's name:
 node VillagerGreeting {
     // Use string interpolation to dynamically insert player name
     text: $"Hello there, {get_player_name()}!"
-    events: [
+    with events: [
         0, play_sound("greeting.wav")
     ]
     
     text: "Welcome to our little village."
-    events: [
+    with events: [
         15, play_music("village_theme.ogg")
     ]
     
@@ -123,7 +123,7 @@ node OfferHelp {
     text: "Great! Let me see what I can do for you..."
     
     text: "Here's a map, hope it helps!"
-    events: [
+    with events: [
         0, play_sound("item_get.wav"),
         0, show_item_icon("map")
     ]
@@ -133,7 +133,7 @@ node OfferHelp {
 
 node PoliteFarewell {
     text: "Alright, have a pleasant journey!"
-    events: [
+    with events: [
         0, play_sound("farewell.wav")
     ]
 }
@@ -157,12 +157,12 @@ Some players might already have a map, let's add conditional logic:
 ```mortar
 node VillagerGreeting {
     text: $"Hello there, {get_player_name()}!"
-    events: [
+    with events: [
         0, play_sound("greeting.wav")
     ]
     
     text: "Welcome to our little village."
-    events: [
+    with events: [
         15, play_music("village_theme.ogg")
     ]
     
@@ -183,7 +183,7 @@ node VillagerGreeting {
 node OfferHelp {
     text: "Great! Let me see what I can do for you..."
     text: "Here's a map, hope it helps!"
-    events: [
+    with events: [
         0, play_sound("item_get.wav"),
         0, show_item_icon("map")
     ]
@@ -197,7 +197,7 @@ node AlreadyHasMap {
 
 node PoliteFarewell {
     text: "Alright, have a pleasant journey!"
-    events: [
+    with events: [
         0, play_sound("farewell.wav")
     ]
 }

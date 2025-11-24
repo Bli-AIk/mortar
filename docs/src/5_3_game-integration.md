@@ -35,7 +35,7 @@ Create `simple.mortar`:
 ```mortar
 node StartScene {
     text: "Hello!"
-    events: [
+    with events: [
         0, play_sound("hi.wav")
     ]
     

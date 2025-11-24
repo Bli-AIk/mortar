@@ -1,0 +1,110 @@
+// ‘node’ 就是一个基本的对话节点。
+// 也可以缩写为 ‘nd’！
+node Start {
+    // 编写你的文本内容。
+    // 双引号（或单引号）是必须的，但分号和逗号可以省略！
+    text: "你好呀，欢迎阅读这个互动故事。"
+
+    // 现在必须使用 with 关键字来关联 events 到上一个 text！
+    with events: [
+        // 使用 索引 + 事件 函数 的方式来编写事件。支持链式写法。
+        // 这里的索引表示事件触发的字符位置（从 0 开始计数）。
+        // 它会绑定到你的游戏具体实现——打字机播放的位置？音频时间轴？还是别的什么，都可以，看你怎么实现。
+        0, play_sound("greeting.wav")
+        6, set_animation("wave").play_sound("wave_sound.wav")
+        17, set_color("#FF6B6B")
+    ]
+    // 当我们再次使用 text 字段时，表示这是同一个节点的另一个文本块。
+    // 你可以写若干个 text 块，它们会被顺序播放。
+    text: $"我想你的名字是 {get_name()}，对不？"
+    with events: [
+        // 索引可以是浮点数！一般来说，语音同步会用到小数点。而打字机则是整数。
+        // 实际上，mortar 中的数字都是 Number，这和 json 里的数字类型是一样的。
+        4.2, set_color("#33CCFF")
+        10.8, set_color("#FF6B6B")
+    ]
+
+    // 这个 text 块没有 events…… 这是完全合法的！
+    text: "太好啦，我们走！"
+
+// 节点后面的箭头表示跳转到下一个节点。
+} -> ChoicePoint
+
+/*
+这里还有一个节点，展示了如何编写选项——通过选择字段实现。
+*/
+
+node ChoicePoint {
+    text: "你想干点啥？"
+
+    // 通过选择字段，我们也可以跳转到不同的节点。
+    choice: [
+        // 这个选项没有任何条件判断。按理来说，你始终可以选择它。
+        "探索森林" -> ForestScene,
+
+        // 这两个选项带有 when 关键字，这说明它们带有条件判断！
+        // when 关键字支持 链式写法 和 函数式写法。
+        ("留在城里").when(has_map()) -> TownScene;
+        "查看背包" when has_backpack()  -> Inventory;
+
+        // 选择字段也可以嵌套一个选择字段。你想嵌套多少层都行！
+        "吃点什么" -> [
+            "Apple" -> EatApple;
+            "Bread" -> EatBread;
+        ];
+
+        // 使用 return 关键字 退出当前节点。
+        // 顺带一提，如果这个节点有后续节点，那 return 不会终止整个对话流程，只会退出当前节点。
+        "别朝我叭叭了！！" -> return,
+
+        // 使用 break 关键字 终止选项列表。
+        "我不到啊……" -> break,
+    ],
+
+    // 在这个选择字段中，只有你选了 "我不到啊……"，才会来到这一行。
+    text: "我真服了。那咱就先结束对话吧。",
+
+    // 然后，由于没有任何后续节点，这个对话还是结束了。
+}
+
+// 在 start 中调用的函数不是平白无故就出现的——你需要在 Mortar 文件中定义它们！
+// 这有点像是 C / C++ 里的函数声明。它们最终会被编译器识别并关联到你的游戏代码中。
+fn play_sound(file_name: String);
+
+fn set_animation(anim_name: String);
+
+fn set_color(value: String);
+
+fn get_name() -> String;
+
+// fn 可以写作 function ，Bool 也可以写作 Boolean。
+function has_map() -> Bool;
+
+fn has_backpack() -> Boolean;
+
+node test_warning{
+
+}
+
+fn TestWarning2();
+
+node ForestScene {
+    text: "你进入了森林。"
+}
+
+node TownScene {
+    text: "你回到了城里。"
+}
+
+node Inventory {
+    text: "这是你的背包。"
+}
+
+node EatApple{
+    text: "你吃了一个苹果。"
+}
+
+node EatBread{
+    text: "你吃了一片面包。"
+}
+

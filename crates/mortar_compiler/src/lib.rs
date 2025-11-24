@@ -1,3 +1,4 @@
+pub mod deserializer;
 pub mod diagnostics;
 pub mod handler;
 pub mod parser;
@@ -10,10 +11,16 @@ pub enum Language {
     Chinese,
 }
 
+pub use deserializer::{
+    Action, BranchCase, BranchDef, Choice, Condition, Constant, ContentItem, Deserializer, Enum,
+    Event, EventDef, Function, IfCondition, IndexOverride, Metadata, MortaredData, Node, Param,
+    Statement, StringPart, TimelineDef, TimelineStmt, Variable,
+};
 pub use diagnostics::{Diagnostic, DiagnosticCollector, DiagnosticKind, Severity};
 pub use handler::file_handler::{FileError, FileHandler};
 pub use parser::{
-    ChoiceItem, Event, EventAction, NodeDef, NodeJump, NodeStmt, ParseHandler, Program, TopLevel,
+    ChoiceItem, Event as ParserEvent, EventAction, NodeDef, NodeJump, NodeStmt, ParseHandler,
+    Program, TopLevel,
 };
 pub use serializer::Serializer;
 pub use token::{Token, TokenInfo, tokenize};

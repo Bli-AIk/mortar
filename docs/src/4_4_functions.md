@@ -7,7 +7,8 @@ Functions are the bridge between Mortar and your game code. Through function dec
 In Mortar scripts, you'll call various functions:
 
 ```mortar
-events: [
+text: "Boom!"
+with events: [
     0, play_sound("boom.wav")
     2, shake_screen()
 ]
@@ -37,7 +38,7 @@ fn calculate_damage(base: Number, modifier: Number) -> Number
 fn playSound() { }              // Avoid camelCase (that's other languages' style)
 fn PlaySound() { }              // Don't use PascalCase (that's for nodes)
 fn play-sound() { }             // Kebab-case not recommended
-fn 播放声音() { }               // Non-ASCII text not recommended
+fn sonido_ñ() { }               // Non-ASCII text not recommended
 fn playsound() { }              // All lowercase hard to read
 ```
 
@@ -115,7 +116,7 @@ Mortar supports types from JSON:
 
 node StartScene {
     text: $"Welcome, {get_player_name()}!"
-    events: [
+    with events: [
         0, play_bgm("theme.mp3")
     ]
     
@@ -133,7 +134,7 @@ node Shop {
 
 node Adventure {
     text: "Adventure begins!"
-    events: [
+    with events: [
         0, start_battle("Goblin")
     ]
 }
@@ -161,7 +162,7 @@ fn start_battle(enemy: String)
 ### Call Functions Without Parameters
 
 ```mortar
-events: [
+with events: [
     0, shake_screen()
     2, flash_white()
 ]
@@ -173,7 +174,7 @@ fn flash_white()
 ### Call Functions With Parameters
 
 ```mortar
-events: [
+with events: [
     0, play_sound("boom.wav")
     2, set_color("#FF0000")
     4, move_to(100, 200)
@@ -187,7 +188,7 @@ fn move_to(x: Number, y: Number)
 ### Method Chaining
 
 ```mortar
-events: [
+with events: [
     0, play_sound("boom.wav").shake_screen().flash_white()
 ]
 
@@ -263,13 +264,13 @@ Mortar checks types at compile time:
 
 ```mortar
 // ✅ Correct
-events: [
+with events: [
     0, play_sound("file.wav")
 ]
 fn play_sound(file: String)
 
 // ❌ Error: wrong parameter type
-events: [
+with events: [
     0, play_sound(123)  // Passed number, but needs string
 ]
 fn play_sound(file: String)

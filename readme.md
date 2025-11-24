@@ -192,14 +192,11 @@ Features:
 * ✅ **Error Handling**: `ariadne` friendly error reporting
 * ✅ **JSON Output**: Standardized output format
 * ✅ **Language Server**: IDE integration and syntax highlighting
-
-Planned Features:
-
-* 🚧 **Key-Value Parsing**: Supports writing non-dialogue text
-* 🚧 **Event System**: Extracts events into independent nodes
-* 🚧 **Conditional Expressions**: AND, OR, NOT, comparisons
-* 🚧 **Control Flow Statements**: if, else, while
-* 🚧 **Localization Support**: Implement localization based on [Fluent](https://github.com/projectfluent/fluent)
+* ✅ **Variable System**: Variable declarations, constants, and enums
+* ✅ **Branch Interpolation**: Non-symmetric text support (inspired by [Fluent](https://github.com/projectfluent/fluent))
+* ✅ **Conditional Expressions**: AND, OR, NOT, comparisons
+* ✅ **Control Flow Statements**：if，else
+* ✅ **Event System**: Extracts events into independent nodes
 
 ## Contributing
 
@@ -269,9 +266,9 @@ cargo install mortar_lsp
 
 # Use as library dependency in Cargo.toml
 [dependencies]
-mortar_language = "0.3"
+mortar_language = "0.4"
 # Or use individual components
-mortar_compiler = "0.3"
+mortar_compiler = "0.4"
 ```
 
 ## License

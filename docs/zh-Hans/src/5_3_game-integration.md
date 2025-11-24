@@ -35,7 +35,7 @@
 ```mortar
 node StartScene {
     text: "你好！"
-    events: [
+    with events: [
         0, play_sound("hi.wav")
     ]
     
