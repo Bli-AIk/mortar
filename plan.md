@@ -33,64 +33,56 @@ pub const continue: String = "继续"
 pub const exit: String = "退出"
 
 // ------
-// 2.分支插值 —— 参考自 fluent 的 非对称本地化 设计
+// 2.分支插值 —— 参考 examples/branch_interpolation.mortar
 
 ```mortar
-let is_forest: Bool
+let is_forest: Bool = true
 let is_city: Bool
-
-node ForestScene {
-    text: $"你进入了 {place}，你看见了 {object} 。"
-
-    place: branch [
-        is_forest, 森林
-        is_city, 城市
-    ]
-
-    object: branch<ExampleEnum> [
-        tree, 树
-        wall, 墙壁
-    ]
-}
 
 enum ExampleEnum {
     tree
     wall
+}
+
+// 建议在节点外部声明 branch 变量，便于集中管理
+let place: branch [
+    is_forest, "森林"
+    is_city, "城市"
+]
+
+let object: branch<ExampleEnum> [
+    tree, "古树"
+    wall, "石墙"
+]
+
+node ForestScene {
+    text: $"你进入了{place}，看见{object}。"
 }
 ```
 
 // 针对索引问题的解决方案：
 
 ```mortar
-node ForestScene {
-    // events 只针对非插值文本。
-    // object 作为插值，不会接受任何索引。
-    text: $"你看见{object}后，吓哭啦！"
-    events: [
-            1, set_color("#33CCFF") // 对应文字“看”
-            2, set_color("#424242") // 对应文字“见”
-            3, set_color("#FF6B6B") // 对应文字“后”，而不是 {object}。
-        ]
+text: $"你看见{object}后，吓哭啦！"
+with events: [
+    1, set_color("#33CCFF")
+    2, set_color("#424242")
+    3, set_color("#FF6B6B")
+]
 
-    // 而插值文本需要单独设计其对应的 events
-    object: branch<ExampleEnum> [
-        tree, 树, events: [
-        0, set_color("#228B22") // 对应文字“树”
-        ]
-        wall, 墙壁, events: [
-        0, set_color("#A9A9A9") // 对应文字“墙”
-        1, set_color("#696969") // 对应文字“壁”
-        ]
+// branch case 自带独立的 events，索引从占位符内部重新计数
+let object: branch<ExampleEnum> [
+    tree, "古树", events: [
+        0, set_color("#228B22")
     ]
-}
-
-enum ExampleEnum {
-    tree
-    wall
-}
+    wall, "石墙", events: [
+        0, set_color("#A9A9A9")
+        1, set_color("#696969")
+    ]
+]
+```
 
 fn set_color(color_code: String)
-```
 
 // ------
 // 3.本地化
@@ -149,8 +141,9 @@ node ExampleNodeWithGenerics {
 
     let test_index: Number = 1
     run Basic with test_index // 也可以指定 index （为变量）
-
-    run Basic with ref test_index // 这样的话，传入的值就不是死的值，而是引用，可以动态变化。
+    // 如果希望 run 的效果跟随上一段文本，也可以写：
+    text: "准备触发音效！"
+    with run Basic with test_index
 
     // 简单来说，run 是直接运行， with 是关联到文本并根据 index 排序执行。
     // 如果在最后 with 了一个 Number，它会被视为 index。
@@ -163,6 +156,7 @@ timeline IntroScene {
     run ShowAlice
     wait 2.0
     run PlayMusic
+    now run PlaySound // now 关键字表示忽略 duration，立即执行下一个语句
     run DialogueNode("Start")
 }
 

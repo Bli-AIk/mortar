@@ -45,13 +45,13 @@ node PoliteFarewell {
 ```mortar
 node VillagerGreeting {
     text: "你好呀，冒险者！"
-    events: [
+    with events: [
         // 在"你"字出现时播放问候音效
         0, play_sound("greeting.wav")
     ]
     
     text: "欢迎来到我们的小村庄。"
-    events: [
+    with events: [
         // 在"小村庄"这几个字时播放温馨音乐
         7, play_music("village_theme.ogg")
     ]
@@ -68,7 +68,7 @@ node OfferHelp {
     text: "太好了！让我看看能帮你什么..."
     
     text: "这是一份地图，希望对你有用！"
-    events: [
+    with events: [
         // 获得道具时的音效
         0, play_sound("item_get.wav"),
         // 同时显示道具图标
@@ -78,7 +78,7 @@ node OfferHelp {
 
 node PoliteFarewell {
     text: "好的，祝你旅途愉快！"
-    events: [
+    with events: [
         0, play_sound("farewell.wav")
     ]
 }
@@ -102,12 +102,12 @@ fn show_item_icon(item_name: String)
 node VillagerGreeting {
     // 使用字符串插值，动态插入玩家名字
     text: $"你好呀，{get_player_name()}！"
-    events: [
+    with events: [
         0, play_sound("greeting.wav")
     ]
     
     text: "欢迎来到我们的小村庄。"
-    events: [
+    with events: [
         7, play_music("village_theme.ogg")
     ]
     
@@ -123,7 +123,7 @@ node OfferHelp {
     text: "太好了！让我看看能帮你什么..."
     
     text: "这是一份地图，希望对你有用！"
-    events: [
+    with events: [
         0, play_sound("item_get.wav"),
         0, show_item_icon("map")
     ]
@@ -133,7 +133,7 @@ node OfferHelp {
 
 node PoliteFarewell {
     text: "好的，祝你旅途愉快！"
-    events: [
+    with events: [
         0, play_sound("farewell.wav")
     ]
 }
@@ -157,12 +157,12 @@ fn get_player_name() -> String  // 返回玩家名字
 ```mortar
 node VillagerGreeting {
     text: $"你好呀，{get_player_name()}！"
-    events: [
+    with events: [
         0, play_sound("greeting.wav")
     ]
     
     text: "欢迎来到我们的小村庄。"
-    events: [
+    with events: [
         7, play_music("village_theme.ogg")
     ]
     
@@ -183,7 +183,7 @@ node VillagerGreeting {
 node OfferHelp {
     text: "太好了！让我看看能帮你什么..."
     text: "这是一份地图，希望对你有用！"
-    events: [
+    with events: [
         0, play_sound("item_get.wav"),
         0, show_item_icon("map")
     ]
@@ -197,7 +197,7 @@ node AlreadyHasMap {
 
 node PoliteFarewell {
     text: "好的，祝你旅途愉快！"
-    events: [
+    with events: [
         0, play_sound("farewell.wav")
     ]
 }

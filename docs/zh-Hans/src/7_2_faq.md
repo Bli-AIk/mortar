@@ -22,7 +22,7 @@
 
 ```mortar
 text: "轰隆隆！一道闪电划过天空。"
-events: [
+with events: [
     0, shake_screen()      // 在"轰"字时屏幕震动
     3, flash_effect()      // 在"！"时闪光效果
     4, play_thunder()      // 在"一"字时雷声
@@ -66,17 +66,17 @@ text: "你好"
 text: "你好",
 text: "你好";
 
-events: [
+with events: [
     0, sound_a()
     1, sound_b()
 ]
 
-events: [
+with events: [
     0, sound_a(),
     1, sound_b(),
 ]
 
-events: [
+with events: [
     0, sound_a();
     1, sound_b();
 ]
@@ -263,7 +263,7 @@ fn has_key() -> Bool
 
 ```mortar
 text: "这段话配了语音。"
-events: [
+with events: [
     0.0, start_voice()
     1.5, highlight_word()   // 1.5秒时
     3.2, another_effect()   // 3.2秒时
@@ -275,7 +275,7 @@ events: [
 **可以！** 而且会按顺序执行：
 
 ```mortar
-events: [
+with events: [
     0, effect_a()
     0, effect_b()    // 同样在位置0
     0, effect_c()    // 也在位置0
@@ -290,7 +290,7 @@ events: [
 
 ```mortar
 node A {
-    events: [
+    with events: [
         0, my_function()   // 使用了函数
     ]
 }

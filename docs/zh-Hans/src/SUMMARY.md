@@ -11,6 +11,12 @@
   - [文本与事件：分离的艺术](./4_2_text-events.md)
   - [选项：让玩家做选择](./4_3_choices.md)
   - [函数：连接游戏世界](./4_4_functions.md)
+  - [变量与常量](./4_5_variables.md)
+  - [分支插值](./4_6_branch-interpolation.md)
+  - [本地化策略](./4_7_localization.md)
+  - [节点中的控制流](./4_8_control-flow.md)
+  - [事件系统与时间线](./4_9_event-system.md)
+  - [枚举与结构化状态](./4_10_enums.md)
 
 # 实战演练
 

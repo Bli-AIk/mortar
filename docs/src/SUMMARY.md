@@ -11,6 +11,12 @@
   - [Text and Events: The Art of Separation](./4_2_text-events.md)
   - [Choices: Let Players Decide](./4_3_choices.md)
   - [Functions: Connecting to Game World](./4_4_functions.md)
+  - [Variables and Constants](./4_5_variables.md)
+  - [Branch Interpolation](./4_6_branch-interpolation.md)
+  - [Localization Strategy](./4_7_localization.md)
+  - [Control Flow in Nodes](./4_8_control-flow.md)
+  - [Event System and Timelines](./4_9_event-system.md)
+  - [Enums and Structured Choices](./4_10_enums.md)
 
 # Practical Examples
 

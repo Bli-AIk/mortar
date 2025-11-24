@@ -29,11 +29,11 @@ node Chapter1Start { }      // Can include numbers
 
 **⚠️ Not recommended naming styles**:
 ```mortar
-node 开场 { }              // Non-ASCII text not recommended
-node opening_scene { }    // Don't use snake_case (that's for functions)
-node openingscene { }     // All lowercase is hard to read
-node opening-scene { }    // Kebab-case not recommended
-node 1stScene { }         // Don't start with numbers
+node ScèneOuverture { }    // Non-ASCII text not recommended
+node opening_scene { }     // Don't use snake_case (that's for functions)
+node openingscene { }      // All lowercase is hard to read
+node opening-scene { }     // Kebab-case not recommended
+node 1stScene { }          // Don't start with numbers
 ```
 
 **We recommend the following naming conventions**:
@@ -70,7 +70,7 @@ Multiple text segments will display in order.
 ```mortar
 node Dialogue {
     text: "Hello!"
-    events: [
+    with events: [
         0, play_sound("hi.wav")
         5, show_smile()
     ]
@@ -97,7 +97,7 @@ node Choice {
 node CompleteExample {
     // First text + events
     text: "Welcome to the Magic Academy!"
-    events: [
+    with events: [
         0, play_bgm("magic.mp3")
         11, sparkle()
     ]

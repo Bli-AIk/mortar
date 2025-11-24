@@ -19,7 +19,7 @@ Mortar's approach:
 
 ```mortar
 text: "Hello, welcome to here!"
-events: [
+with events: [
     0, play_sound("hi.wav")
     7, show_animation("wave")
     18, set_color("red")
@@ -65,15 +65,13 @@ text: 'Single quotes'
 ### Basic Syntax
 
 ```mortar
-events: [
+with events: [
     index, function_call
     index, function_call
 ]
 ```
 
-Indices start from 0, type is Number, which supports both integers and decimals (floats).
-
-The specific usage of indices depends on the programming team's implementation.
+`with events` attaches the event list to the most recent `text` statement. Indices start from 0, type is Number, and support integers or decimals. Your engine decides how to interpret these indices (typewriter steps, timeline positions, etc.).
 
 ### Simple Example
 
@@ -81,7 +79,7 @@ Using character indices as an example:
 
 ```mortar
 text: "Hello world!"
-events: [
+with events: [
     0, sound_a()  // At "H"
     6, sound_b()  // At "w"
     11, sound_c()  // At "!"
@@ -103,7 +101,7 @@ events: [
 You can call multiple functions at the same position:
 
 ```mortar
-events: [
+with events: [
     0, play_sound("boom.wav").shake_screen().flash_white()
 ]
 ```
@@ -111,7 +109,7 @@ events: [
 Or write them separately:
 
 ```mortar
-events: [
+with events: [
     0, play_sound("boom.wav")
     0, shake_screen()
     0, flash_white()
@@ -126,7 +124,7 @@ Indices can be decimals, which is especially useful for voice synchronization:
 
 ```mortar
 text: "Hello, world!"
-events: [
+with events: [
     0.0, start_voice("hello.wav")   // Start playing voice
     1.5, blink_eyes()               // Blink at 1.5 seconds
     3.2, show_smile()               // Smile at 3.2 seconds
@@ -163,7 +161,7 @@ text: $"Today is {get_date()}."
 ```mortar
 node Typewriter {
     text: "Ding! Ding! Ding!"
-    events: [
+    with events: [
         0, play_sound("ding.wav")  // First "Ding"
         6, play_sound("ding.wav")  // Second "Ding"
         12, play_sound("ding.wav")  // Third "Ding"
@@ -176,7 +174,7 @@ node Typewriter {
 ```mortar
 node Narration {
     text: "In a distant kingdom..."
-    events: [
+    with events: [
         0, fade_in_bgm("story_theme.mp3")
         0, dim_lights()
     ]
@@ -190,7 +188,7 @@ node Narration {
 ```mortar
 node Dialogue {
     text: "I'll tell you a secret..."
-    events: [
+    with events: [
         0.0, play_voice("secret.wav")
         0.0, set_expression("serious")
         2.5, lean_closer()
@@ -223,7 +221,7 @@ See [Functions: Connecting to Game World](./4_4_functions.md) for details.
 ```mortar
 // Clear structure
 text: "Hello, world!"
-events: [
+with events: [
     0, greeting_sound()
     7, sparkle_effect()
 ]
@@ -234,7 +232,7 @@ events: [
 ```mortar
 text: "Hello"
 text: "world"
-events: [
+with events: [
     0, say_hello()  // Associated text is wrong!
 ]
 ```
@@ -263,7 +261,7 @@ text: "This is pure text."
 Executes in written order:
 
 ```mortar
-events: [
+with events: [
     0, first()   // Executes first
     0, second()  // Then this
     0, third()   // Finally this

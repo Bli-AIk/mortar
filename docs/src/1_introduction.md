@@ -46,7 +46,7 @@ This is what Mortar code looks like:
 ```mortar
 node OpeningScene {
     text: "Welcome to the magical world!"
-    events: [
+    with events: [
         0, play_sound("magic_sound.wav")
         7, sparkle_effect()
     ]

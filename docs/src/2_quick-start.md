@@ -39,7 +39,7 @@ Now let's make our dialogue more lively. Assume you've already discussed with th
 ```mortar
 node StartScene {
     text: "Hello, welcome to this interactive story!"
-    events: [
+    with events: [
         // Play a sound effect when the 'H' character appears
         0, play_sound("greeting.wav")
         // Show an animation when the 'w' of "welcome" appears
@@ -55,7 +55,7 @@ fn show_animation(anim_name: String)
 
 **Explanation**:
 
-* `events:` is followed by an event list, wrapped in square brackets `[]`
+* `with events:` binds the event list to the text line right above it, wrapped in square brackets `[]`
 * `0, play_sound("greeting.wav")` means: at index 0 (which corresponds to the character 'H' if using a typewriter effect), play the sound.
 * The numbers are "indices," representing character positions starting from 0. Indices can be decimals (floating-point numbers).
 * These indices are flexible. Some games might use a typewriter effect, while others might align with voice acting. How you count them depends entirely on your project's needs.
@@ -70,7 +70,7 @@ A node can have several text segments:
 node StartScene {
     text: "Hello, welcome to this interactive story!"
     // ↕ This event list binds to the text above it
-    events: [
+    with events: [
         0, play_sound("greeting.wav")
     ]
     
@@ -145,7 +145,7 @@ Let's combine what we just learned and "add some details":
 ```mortar
 node WelcomeScene {
     text: "Hello, welcome to the Magic Academy!"
-    events: [
+    with events: [
         0, play_sound("magic_sound.wav")
         7, sparkle_effect()
     ]
