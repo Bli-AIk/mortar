@@ -196,11 +196,7 @@ Features:
 * ✅ **Branch Interpolation**: Non-symmetric text support (inspired by [Fluent](https://github.com/projectfluent/fluent))
 * ✅ **Conditional Expressions**: AND, OR, NOT, comparisons
 * ✅ **Control Flow Statements**：if，else
-
-Planned Features:
-* 🚧 **Event System**: Extracts events into independent nodes
-* 🚧 **Control Flow Statements**: while
-* 🚧 **Localization Support**: Multiple file localization support
+* ✅ **Event System**: Extracts events into independent nodes
 
 ## Contributing
 
@@ -270,9 +266,9 @@ cargo install mortar_lsp
 
 # Use as library dependency in Cargo.toml
 [dependencies]
-mortar_language = "0.3"
+mortar_language = "0.4"
 # Or use individual components
-mortar_compiler = "0.3"
+mortar_compiler = "0.4"
 ```
 
 ## License
