@@ -35,7 +35,7 @@ jobs:
         mdbook-version: 'latest'
 
     - name: Setup Pages
-      uses: actions/configure-pages@v4
+      uses: actions/configure-pages@v5
 
     - name: Build English docs
       run: |
