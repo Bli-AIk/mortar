@@ -28,7 +28,7 @@ exclude = [
 [workspace.dependencies]
 ariadne = "0.6.0"
 chumsky = "0.11.2"
-clap = "4.5.51"
+clap = "4.5.53"
 logos = "0.15.1"
 owo-colors = "4.2.3"
 serde = { version = "1.0", features = ["derive"] }
