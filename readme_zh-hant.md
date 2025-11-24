@@ -182,13 +182,11 @@ mortar hello.mortar -o custom.json --pretty
 * ✅ **错误处理**：ariadne 友好的错误报告
 * ✅ **JSON 输出**：标准化输出格式
 * ✅ **语言服务器**：IDE 集成与语法高亮
-
-计划中功能：
-* 🚧 **键值对解析**：支持编写非对话文本
-* 🚧 **演出系统**：将events 提取成 独立节点
-* 🚧 **条件表达式**：与、或、非，比较
-* 🚧 **判断、循环语句**：if，else，while
-* 🚧 **本地化支持**：参考 [Fluent](https://github.com/projectfluent/fluent) 实现本地化支持
+* ✅ **变量系统**：变量声明、常量定义、枚举类型
+* ✅ **分支插值**：支持非对称文本（参考 [Fluent](https://github.com/projectfluent/fluent) 设计）
+* ✅ **条件表达式**：与、或、非，比较
+* ✅ **判断语句**：if，else
+* ✅ **演出系统**：将 events 提取成 独立节点
 
 ## 参与贡献
 
@@ -256,9 +254,9 @@ cargo install mortar_lsp
 
 # 在 Cargo.toml 中作为库依赖使用
 [dependencies]
-mortar_language = "0.3"
+mortar_language = "0.4"
 # 或使用单个组件
-mortar_compiler = "0.3"
+mortar_compiler = "0.4"
 ```
 
 ## 许可协议

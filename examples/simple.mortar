@@ -1,0 +1,84 @@
+// 这是简化的 basic.mortar.
+
+// ‘node’ 就是一个基本的对话节点。
+// 也可以缩写为 ‘nd’！
+node Start {
+    // 编写你的文本内容。
+    // 双引号（或单引号）是必须的，但分号和逗号可以省略！
+    text: "你好呀，欢迎阅读这个 SIMPLE 互动故事。"
+
+    // 现在必须使用 with 关键字来关联 events 到上一个 text！
+    with events: [
+        // 使用 索引 + 事件 函数 的方式来编写事件。支持链式写法。
+        // 这里的索引表示事件触发的字符位置（从 0 开始计数）。
+        // 它会绑定到你的游戏具体实现——打字机播放的位置？音频时间轴？还是别的什么，都可以，看你怎么实现。
+        0, play_sound("random-sound-1-80941.wav")
+        6, set_animation("wave").play_sound("random-sound-1-80941.wav")
+        17, set_color("#AAAAAA")
+    ]
+    text: $"我的天，三角形变色了{get_exclamation(10)}"
+    with events: [
+        // 索引可以是浮点数！一般来说，语音同步会用到小数点。而打字机则是整数。
+        // 实际上，mortar 中的数字都是 Number，这和 json 里的数字类型是一样的。
+        4.2, set_color("#33CCFF")
+        10.8, set_color("#FF6B6B")
+    ]
+
+
+    // 当我们再次使用 text 字段时，表示这是同一个节点的另一个文本块。
+    // 你可以写若干个 text 块，它们会被顺序播放。
+    text: $"我想你的名字是 {get_name()}，对不？"
+
+    // 这个 text 块没有 events…… 这是完全合法的！
+    text: $"太好啦，我们走{get_exclamation(5)}"
+    
+    // 测试多参数函数
+    text: $"让我们{create_message("开始", "冒险", 3)}"
+
+} -> TestEventRef
+
+// 测试单独声明 event（用于后续 with 引用）
+event ColorYellow {
+    index: 1
+    action: set_color("#FFFF00")
+}
+
+event ColorGreen {
+    index: 5
+    action: set_color("#00FF00")
+}
+
+// 测试单独 with event 的节点
+node TestEventRef {
+    text: "测试事件引用"
+    with ColorYellow  // 单独引用一个 event
+
+    text: "测试单个事件内联"
+    with event { 0, set_color("#000000") }  // 内联事件
+    
+    text: "测试多个事件引用"
+    with events: [
+        ColorYellow
+        ColorGreen
+    ]
+    
+    text: "混合内联事件和事件引用"
+    with events: [
+        0, set_color("#0000FF")  // 内联事件
+        ColorGreen  // 事件引用
+    ]
+}
+
+// 在 start 中调用的函数不是平白无故就出现的——你需要在 Mortar 文件中定义它们！
+// 这有点像是 C / C++ 里的函数声明。它们最终会被编译器识别并关联到你的游戏代码中。
+fn play_sound(file_name: String);
+
+fn set_animation(anim_name: String);
+
+fn set_color(value: String);
+
+fn get_name() -> String;
+
+fn get_exclamation(count: Number) -> String;
+
+fn create_message(verb: String, obj: String, level: Number) -> String;

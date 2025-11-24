@@ -145,7 +145,8 @@ thread 'main' panicked at 'index out of bounds'
 import functions from "common_functions.mortar"
 
 node MyNode {
-    events: [
+    text: "触发共用逻辑"
+    with events: [
         0, play_sound("test.wav")  // 这个函数来自 common_functions.mortar
     ]
 }

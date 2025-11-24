@@ -1,0 +1,90 @@
+// Control Flow Example - if-else statements
+
+// ===== Variables =====
+
+let player_score: Number = 150
+let is_winner: Bool
+let level: Number = 5
+let has_bonus: Bool
+
+// ===== Nodes with Control Flow =====
+
+node ScoreEvaluation {
+    if player_score > 100 {
+        text: "优秀！你的分数超过了100分！"
+    } else {
+        text: "继续努力，争取突破100分。"
+    }
+}
+
+node BooleanCondition {
+    if is_winner {
+        text: "恭喜你获得胜利！"
+    } else {
+        text: "下次会更好的。"
+    }
+}
+
+node MultipleComparisons {
+    if player_score >= 150 {
+        text: "完美！"
+    }
+    
+    if player_score <= 50 {
+        text: "需要更多练习。"
+    }
+    
+    if player_score == 100 {
+        text: "刚好满分！"
+    }
+    
+    if player_score != 0 {
+        text: "至少有分数了。"
+    }
+}
+
+node LogicalOperators {
+    if player_score > 100 && is_winner {
+        text: "高分且获胜，太棒了！"
+    } else {
+        text: "还有进步空间。"
+    }
+    
+    if level > 10 || has_bonus {
+        text: "你可以获得特殊奖励。"
+    }
+}
+
+node NotOperator {
+    if !is_winner {
+        text: "虽然没有获胜，但不要气馁。"
+    }
+    
+    if !(player_score < 50) {
+        text: "分数还不错。"
+    }
+}
+
+node NestedConditions {
+    if player_score > 100 {
+        if is_winner {
+            text: "完美组合：高分+获胜！"
+        } else {
+            text: "高分但未获胜，继续加油！"
+        }
+    } else {
+        if is_winner {
+            text: "虽然分数不高，但赢了！"
+        } else {
+            text: "分数和结果都需要改进。"
+        }
+    }
+}
+
+node ComplexLogic {
+    if (player_score > 100 && level > 5) || has_bonus {
+        text: "满足特殊条件，获得额外奖励！"
+    } else {
+        text: "继续努力达成目标。"
+    }
+}

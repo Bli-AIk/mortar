@@ -15,13 +15,13 @@ Now let's create a complete interactive short story with multiple branches and e
 // ========== Opening Scene ==========
 node OpeningScene {
     text: "Night falls as you walk alone through the dark forest."
-    events: [
+    with events: [
         0, play_ambient("forest_night.ogg"),
         5, fade_in_music()
     ]
     
     text: "Suddenly, a strange blue light flickers ahead."
-    events: [
+    with events: [
         10, flash_effect("#0088FF")
     ]
     
@@ -38,7 +38,7 @@ node OpeningScene {
 node ObserveSpring {
     text: "You crouch down and carefully examine the spring."
     text: "Ancient text appears on the water's surface..."
-    events: [
+    with events: [
         0, show_text_effect("ancient_runes")
     ]
     
@@ -55,12 +55,12 @@ node ObserveSpring {
 
 node CautiousDrink {
     text: "You carefully cup some spring water and take a small sip."
-    events: [
+    with events: [
         35, play_sound("drink_water.wav")
     ]
     
     text: "A cool energy surges through your body!"
-    events: [
+    with events: [
         0, screen_flash("#00FFFF"),
         0, play_sound("power_up.wav")
     ]
@@ -71,7 +71,7 @@ node CautiousDrink {
 
 node CollectWater {
     text: "You take out your precious magic bottle and carefully collect the spring water."
-    events: [
+    with events: [
         0, play_sound("bottle_fill.wav"),
         44, show_item_obtained("holy_water")
     ]
@@ -83,7 +83,7 @@ node CollectWater {
 // ========== Direct Drink Branch ==========
 node DirectDrink {
     text: "Without hesitation, you take a big gulp!"
-    events: [
+    with events: [
         23, play_sound("gulp.wav")
     ]
     
@@ -101,7 +101,7 @@ node DirectDrink {
 
 node DirectDrinkSuccess {
     text: "Thanks to your strong magic resistance, the spring's power is perfectly absorbed!"
-    events: [
+    with events: [
         0, play_sound("success.wav")
     ]
     
@@ -111,7 +111,7 @@ node DirectDrinkSuccess {
 
 node DirectDrinkFail {
     text: "Oh no! The magic is too strong, your body can't handle it!"
-    events: [
+    with events: [
         0, screen_shake(),
         0, play_sound("magic_overload.wav")
     ]
@@ -127,7 +127,7 @@ node ChooseLeave {
     text: "After a few steps, you look back..."
     
     text: "The spring's glow gradually dims, as if saying: 'The opportunity is lost.'"
-    events: [
+    with events: [
         63, fade_out_effect()
     ]
     
@@ -136,7 +136,7 @@ node ChooseLeave {
 // ========== Ending Nodes ==========
 node GoodEndingPower {
     text: "=== Ending: Power Awakening ==="
-    events: [
+    with events: [
         0, play_music("victory_theme.ogg")
     ]
     
@@ -149,7 +149,7 @@ node GoodEndingPower {
 
 node GoodEndingWisdom {
     text: "=== Ending: Path of the Wise ==="
-    events: [
+    with events: [
         0, play_music("wisdom_theme.ogg")
     ]
     
@@ -162,7 +162,7 @@ node GoodEndingWisdom {
 
 node BadEndingUnconscious {
     text: "=== Ending: Price of Greed ==="
-    events: [
+    with events: [
         0, play_music("bad_ending.ogg"),
         0, screen_fade_black()
     ]
@@ -176,7 +176,7 @@ node BadEndingUnconscious {
 
 node NormalEndingCautious {
     text: "=== Ending: Ordinary Path ==="
-    events: [
+    with events: [
         0, play_music("normal_ending.ogg")
     ]
     
@@ -277,7 +277,7 @@ text: $"Final power: {get_final_power()}"
 Trigger multiple events at the same position:
 
 ```mortar
-events: [
+with events: [
     0, screen_flash("#00FFFF"),
     0, play_sound("power_up.wav")  // Trigger simultaneously
 ]

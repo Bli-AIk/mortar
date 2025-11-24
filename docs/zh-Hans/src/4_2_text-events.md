@@ -19,7 +19,7 @@ Mortar 的方式：
 
 ```mortar
 text: "你好，欢迎来到这里！"
-events: [
+with events: [
     0, play_sound("hi.wav")
     3, show_animation("wave")
     8, set_color("red")
@@ -65,7 +65,7 @@ text: '单引号'
 ### 基本语法
 
 ```mortar
-events: [
+with events: [
     索引, 函数调用
     索引, 函数调用
 ]
@@ -81,7 +81,7 @@ events: [
 
 ```mortar
 text: "你好世界！"
-events: [
+with events: [
     0, sound_a()  // 在"你"字
     2, sound_b()  // 在"世"字  
     4, sound_c()  // 在"！"
@@ -100,7 +100,7 @@ events: [
 可以在同一个位置调用多个函数：
 
 ```mortar
-events: [
+with events: [
     0, play_sound("boom.wav").shake_screen().flash_white()
 ]
 ```
@@ -108,7 +108,7 @@ events: [
 或者分开写：
 
 ```mortar
-events: [
+with events: [
     0, play_sound("boom.wav")
     0, shake_screen()
     0, flash_white()
@@ -123,7 +123,7 @@ events: [
 
 ```mortar
 text: "你好，世界！"
-events: [
+with events: [
     0.0, start_voice("hello.wav")   // 开始播放语音
     1.5, blink_eyes()               // 1.5秒时眨眼
     3.2, show_smile()               // 3.2秒时微笑
@@ -160,7 +160,7 @@ text: $"今天是 {get_date()}。"
 ```mortar
 node 打字机 {
     text: "叮！叮！叮！"
-    events: [
+    with events: [
         0, play_sound("ding.wav")  // 第一个"叮"
         2, play_sound("ding.wav")  // 第二个"叮"
         4, play_sound("ding.wav")  // 第三个"叮"
@@ -173,7 +173,7 @@ node 打字机 {
 ```mortar
 node 旁白 {
     text: "在一个遥远的王国..."
-    events: [
+    with events: [
         0, fade_in_bgm("story_theme.mp3")
         0, dim_lights()
     ]
@@ -187,7 +187,7 @@ node 旁白 {
 ```mortar
 node Dialogue {
     text: "我要告诉你一个秘密..."
-    events: [
+    with events: [
         0.0, play_voice("secret.wav")
         0.0, set_expression("serious")
         2.5, lean_closer()
@@ -220,7 +220,7 @@ fn get_gold() -> Number
 ```mortar
 // 清晰的结构
 text: "你好，世界！"
-events: [
+with events: [
     0, greeting_sound()
     2, sparkle_effect()
 ]
@@ -231,7 +231,7 @@ events: [
 ```mortar
 text: "你好"
 text: "世界"
-events: [
+with events: [
     0, say_hello()  // 关联的文本不对！
 ]
 ```
@@ -260,7 +260,7 @@ text: "这是纯文本。"
 按写的顺序执行：
 
 ```mortar
-events: [
+with events: [
     0, first()   // 先执行
     0, second()  // 再执行
     0, third()   // 最后执行

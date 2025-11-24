@@ -128,6 +128,22 @@ impl Backend {
             | Token::Return
             | Token::Break
             | Token::When
+            | Token::Let
+            | Token::Const
+            | Token::Pub
+            | Token::Enum
+            | Token::Branch
+            | Token::If
+            | Token::Else
+            | Token::Event
+            | Token::Run
+            | Token::With
+            | Token::Now
+            | Token::Timeline
+            | Token::Wait
+            | Token::Index
+            | Token::Action
+            | Token::Duration
             | Token::StringType
             | Token::NumberType
             | Token::BooleanType
@@ -149,7 +165,17 @@ impl Backend {
             | Token::LeftBracket
             | Token::RightBracket
             | Token::LeftParen
-            | Token::RightParen => PUNCTUATION,
+            | Token::RightParen
+            | Token::Equals
+            | Token::Less
+            | Token::Greater
+            | Token::LessEqual
+            | Token::GreaterEqual
+            | Token::EqualEqual
+            | Token::NotEqual
+            | Token::And
+            | Token::Or
+            | Token::Not => PUNCTUATION,
 
             Token::Identifier(_) => {
                 // Check if it's an identifier after node/nd or fn (function/node definition)

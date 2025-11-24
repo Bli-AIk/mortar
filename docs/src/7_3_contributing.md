@@ -145,7 +145,8 @@ Add an `import` syntax to import function declarations from other files:
 import functions from "common_functions.mortar"
 
 node MyNode {
-    events: [
+    text: "Triggering shared logic."
+    with events: [
         0, play_sound("test.wav")  // This function comes from common_functions.mortar
     ]
 }

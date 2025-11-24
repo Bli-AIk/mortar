@@ -46,7 +46,7 @@ Mortar 特别适合这些场景：
 ```mortar
 node OpeningScene {
     text: "欢迎来到魔法世界！"
-    events: [
+    with events: [
         0, play_sound("magic_sound.wav")
         7, sparkle_effect()
     ]

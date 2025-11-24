@@ -22,7 +22,7 @@ Character positions give you **precise control** over event timing:
 
 ```mortar
 text: "Boom! A bolt of lightning streaks across the sky."
-events: [
+with events: [
     0, shake_screen()      // At "B" for Boom, screen shakes
     5, flash_effect()      // At "!" for flash effect
     6, play_thunder()      // At "A" for A bolt, thunder sound
@@ -64,17 +64,17 @@ text: "Hello"
 text: "Hello",
 text: "Hello";
 
-events: [
+with events: [
     0, sound_a()
     1, sound_b()
 ]
 
-events: [
+with events: [
     0, sound_a(),
     1, sound_b(),
 ]
 
-events: [
+with events: [
     0, sound_a();
     1, sound_b();
 ]
@@ -143,9 +143,9 @@ node opening_scene { }  // snake_case is for functions
 node forest_1 { }       // OK, but Forest1 is better
 
 // ❌ Bad naming
-node 开场 { }           // Avoid non-ASCII text
-node 1node { }         // Cannot start with number
-node node-1 { }        // Cannot use hyphens
+node ScèneOuverture { }   // Avoid non-ASCII text
+node 1node { }            // Cannot start with number
+node node-1 { }           // Cannot use hyphens
 ```
 
 **Why recommend PascalCase?**
@@ -260,7 +260,7 @@ Suggestions:
 
 ```mortar
 text: "This line has voice acting."
-events: [
+with events: [
     0.0, start_voice()
     1.5, highlight_word()   // At 1.5 seconds
     3.2, another_effect()   // At 3.2 seconds
@@ -272,7 +272,7 @@ events: [
 **Yes!** And they execute in order:
 
 ```mortar
-events: [
+with events: [
     0, effect_a()
     0, effect_b()    // Also at position 0
     0, effect_c()    // Also at position 0
@@ -287,7 +287,8 @@ Game runtime will call these three functions in sequence.
 
 ```mortar
 node A {
-    events: [
+    text: "Triggering something..."
+    with events: [
         0, my_function()   // Using function
     ]
 }
@@ -371,7 +372,7 @@ fn calculate_damage(base: Number, modifier: Number) -> Number
 // ⚠️ Not recommended
 fn playSound() { }          // camelCase is other languages' style
 fn PlaySound() { }          // PascalCase is for nodes
-fn 播放声音() { }           // Avoid non-ASCII text
+fn sonido_ñ() { }           // Avoid non-ASCII text
 ```
 
 **Parameter names should also use snake_case**:

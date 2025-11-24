@@ -50,6 +50,12 @@ pub fn analyze_program(program: &Program) -> Result<SymbolTable, Vec<(String, us
                     symbol_table.functions.push(func.clone());
                 }
             }
+            TopLevel::VarDecl(_) | TopLevel::ConstDecl(_) | TopLevel::EnumDef(_) => {
+                // Variable, constant, and enum declarations - no analysis needed yet
+            }
+            TopLevel::EventDef(_) | TopLevel::TimelineDef(_) => {
+                // Event and timeline definitions - no analysis needed yet
+            }
         }
     }
 

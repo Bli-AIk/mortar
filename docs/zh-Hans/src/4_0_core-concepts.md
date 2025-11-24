@@ -39,7 +39,7 @@
 Mortar 的方式：
 ```mortar
 text: "你好，欢迎来到这里！"
-events: [
+with events: [
     0, play_sound("greeting.wav")
     3, show_animation("wave")
 ]
@@ -53,7 +53,7 @@ Mortar 用"字符位置"来控制事件发生的时机：
 
 ```mortar
 text: "你好世界！"
-events: [
+with events: [
     0, sound_a()  // 在"你"字时触发
     2, sound_b()  // 在"世"字时触发
     4, sound_c()  // 在"！"时触发
@@ -98,6 +98,12 @@ choice: [
 - [文本与事件：分离的艺术](./4_2_text-events.md) - 如何优雅地关联文本和事件
 - [选项：让玩家做选择](./4_3_choices.md) - 创建分支对话
 - [函数：连接游戏世界](./4_4_functions.md) - 声明和使用函数
+- [变量与常量](./4_5_variables.md) - 管理对话状态与公共文案
+- [分支插值](./4_6_branch-interpolation.md) - 提供 Fluent 风格的局部差异
+- [本地化策略](./4_7_localization.md) - 组织多语言脚本与文档
+- [节点中的控制流](./4_8_control-flow.md) - 使用 `if/else` 控制文本
+- [事件系统与时间线](./4_9_event-system.md) - 复用命名事件与演出
+- [枚举与结构化状态](./4_10_enums.md) - 建模有限状态并驱动分支
 
 ## 小提示
 

@@ -39,7 +39,7 @@ node StartScene {
 ```mortar
 node StartScene {
     text: "你好呀，欢迎来到这个互动故事！"
-    events: [
+    with events: [
         // 在"你"字出现时播放音效
         0, play_sound("greeting.wav")
         // 在"欢"字出现时显示动画
@@ -55,7 +55,7 @@ fn show_animation(anim_name: String)
 
 **解释一下**：
 
-* `events:` 后面跟着事件列表，用方括号 `[]` 包起来
+* `with events:` 绑定到它上面的那条文本，事件列表用方括号 `[]` 包起来
 * `0, play_sound("greeting.wav")` 表示：在第 0 个索引（我们用打字机关联索引，也就是"你"字）出现时，播放音效
 * 数字就是“索引”，也就是字符的位置，从 0 开始计数。索引可以是小数（浮点数）
 * 这里的索引不是死板的，有的游戏可能用打字机效果，有的游戏可能和语音对齐，所以具体怎么数完全看项目需求
@@ -70,7 +70,7 @@ fn show_animation(anim_name: String)
 node StartScene {
     text: "你好呀，欢迎来到这个互动故事！"
     // ↕ 这个 事件列表 与其上方的 文本 绑定
-    events: [
+    with events: [
         0, play_sound("greeting.wav")
     ]
     
@@ -145,7 +145,7 @@ mortar hello.mortar -o 我的对话.json
 ```mortar
 node WelcomeScene {
     text: "你好呀，欢迎来到魔法学院！"
-    events: [
+    with events: [
         0, play_sound("magic_sound.wav")
         7, sparkle_effect()
     ]

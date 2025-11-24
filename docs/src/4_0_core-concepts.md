@@ -39,7 +39,7 @@ Looks messy, right? Writers need to remember various markup, and programmers fin
 Mortar's approach:
 ```mortar
 text: "Hello, welcome here!"
-events: [
+with events: [
     0, play_sound("greeting.wav")
     7, show_animation("wave")
 ]
@@ -53,7 +53,7 @@ Mortar uses "character position" to control when events occur:
 
 ```mortar
 text: "Hello world!"
-events: [
+with events: [
     0, sound_a()  // Triggers at "H"
     6, sound_b()  // Triggers at "w"
     11, sound_c()  // Triggers at "!"
@@ -98,6 +98,12 @@ Want to learn more about each part?
 - [Text and Events: The Art of Separation](./4_2_text-events.md) - How to elegantly associate text and events
 - [Choices: Let Players Decide](./4_3_choices.md) - Creating branching dialogues
 - [Functions: Connecting to Game World](./4_4_functions.md) - Declaring and using functions
+- [Variables and Constants](./4_5_variables.md) - Track state and expose key-value strings
+- [Branch Interpolation](./4_6_branch-interpolation.md) - Build Fluent-style snippets with per-branch events
+- [Localization Strategy](./4_7_localization.md) - Structure repositories for multilingual builds
+- [Control Flow in Nodes](./4_8_control-flow.md) - Use `if/else` to gate dialogue
+- [Event System and Timelines](./4_9_event-system.md) - Reuse named cues and cinematic playlists
+- [Enums and Structured Choices](./4_10_enums.md) - Model discrete states for cleaner branching
 
 ## Tips
 

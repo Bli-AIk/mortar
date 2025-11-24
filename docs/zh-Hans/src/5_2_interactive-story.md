@@ -15,13 +15,13 @@
 // ========== 开场 ==========
 node OpeningScene {
     text: "夜幕降临，你独自走在幽暗的森林中。"
-    events: [
+    with events: [
         0, play_ambient("forest_night.ogg"),
         3, fade_in_music()
     ]
     
     text: "突然，前方闪烁着奇异的蓝光。"
-    events: [
+    with events: [
         3, flash_effect("#0088FF")
     ]
     
@@ -38,7 +38,7 @@ node OpeningScene {
 node ObserveSpring {
     text: "你蹲下身，仔细观察这池泉水。"
     text: "水面上浮现出古老的文字..."
-    events: [
+    with events: [
         0, show_text_effect("ancient_runes")
     ]
     
@@ -55,12 +55,12 @@ node ObserveSpring {
 
 node CautiousDrink {
     text: "你小心翼翼地捧起一点泉水，轻轻啜了一口。"
-    events: [
+    with events: [
         7, play_sound("drink_water.wav")
     ]
     
     text: "一股清凉的能量涌入体内！"
-    events: [
+    with events: [
         0, screen_flash("#00FFFF"),
         0, play_sound("power_up.wav")
     ]
@@ -71,7 +71,7 @@ node CautiousDrink {
 
 node CollectWater {
     text: "你拿出珍贵的魔法瓶，小心地收集了泉水。"
-    events: [
+    with events: [
         0, play_sound("bottle_fill.wav"),
         10, show_item_obtained("holy_water")
     ]
@@ -83,7 +83,7 @@ node CollectWater {
 // ========== 直接饮用分支 ==========
 node DirectDrink {
     text: "不管三七二十一，你直接痛饮了一大口！"
-    events: [
+    with events: [
         12, play_sound("gulp.wav")
     ]
     
@@ -101,7 +101,7 @@ node DirectDrink {
 
 node DirectDrinkSuccess {
     text: "多亏你强大的魔法抗性，泉水的力量被完美吸收了！"
-    events: [
+    with events: [
         0, play_sound("success.wav")
     ]
     
@@ -111,7 +111,7 @@ node DirectDrinkSuccess {
 
 node DirectDrinkFail {
     text: "糟糕！魔力太强了，你的身体承受不住！"
-    events: [
+    with events: [
         0, screen_shake(),
         0, play_sound("magic_overload.wav")
     ]
@@ -127,7 +127,7 @@ node ChooseLeave {
     text: "走了几步，你回头看了一眼..."
     
     text: "那池泉水的光芒渐渐暗淡，仿佛在说：'机会已失。'"
-    events: [
+    with events: [
         18, fade_out_effect()
     ]
     
@@ -136,7 +136,7 @@ node ChooseLeave {
 // ========== 结局节点 ==========
 node GoodEndingPower {
     text: "=== 结局：力量觉醒 ==="
-    events: [
+    with events: [
         0, play_music("victory_theme.ogg")
     ]
     
@@ -149,7 +149,7 @@ node GoodEndingPower {
 
 node GoodEndingWisdom {
     text: "=== 结局：智者之路 ==="
-    events: [
+    with events: [
         0, play_music("wisdom_theme.ogg")
     ]
     
@@ -162,7 +162,7 @@ node GoodEndingWisdom {
 
 node BadEndingUnconscious {
     text: "=== 结局：贪婪的代价 ==="
-    events: [
+    with events: [
         0, play_music("bad_ending.ogg"),
         0, screen_fade_black()
     ]
@@ -176,7 +176,7 @@ node BadEndingUnconscious {
 
 node NormalEndingCautious {
     text: "=== 结局：平凡之路 ==="
-    events: [
+    with events: [
         0, play_music("normal_ending.ogg")
     ]
     
@@ -275,7 +275,7 @@ text: $"最终力量：{get_final_power()}"
 在同一位置触发多个事件：
 
 ```mortar
-events: [
+with events: [
     0, screen_flash("#00FFFF"),
     0, play_sound("power_up.wav")  // 同时触发
 ]

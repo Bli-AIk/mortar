@@ -1,757 +1,197 @@
 # JSON 输出说明
 
-Mortar 编译后生成的是标准 JSON 格式，这一章详细说明 JSON 的结构。
+Mortar v0.4 将 `.mortared` 文件整理成一条有序的执行流。本章对新的结构做英文、中文并行的总结，方便引擎按顺序重放内容。
 
-## 整体结构
+## 顶层结构
 
 ```json
 {
-  "nodes": { ... },
+  "metadata": { "version": "0.4.0", "generated_at": "2025-01-31T12:00:00Z" },
+  "variables": [ ... ],
+  "constants": [ ... ],
+  "enums": [ ... ],
+  "nodes": [ ... ],
   "functions": [ ... ],
-  "metadata": { ... }
+  "events": [ ... ],
+  "timelines": [ ... ]
 }
 ```
 
-有三个顶层字段：
+- `variables` 对应脚本中的 `let` 声明（v0.4 中正式引入），初始值会直接写入。
+- `constants` 保存 `pub const`，并带有 `public` 标记，便于导出本地化文本。
+- `enums` 记录枚举及其分支，供 branch 插值使用。
 
-- **node Dialogue节点
-- **functions** - 函数声明列表
-- **metadata** - 元数据（版本等）
+## metadata
 
-## nodes 字段
+`metadata` 中包含 `version` 与 `generated_at`，两者均为字符串。时间戳遵循 UTC 的 ISO 8601 格式，可用于缓存或回滚判定。
 
-一个字典（对象），键是"NodeName"，值是节点数据：
+## 节点与线性内容
+
+`nodes` 现在是 **数组** 而不再是字典。每个节点形如：
 
 ```json
 {
-  "nodes": {
-    "NodeName1": { ... },
-    "NodeName2": { ... }
+  "name": "Start",
+  "content": [ ... ],
+  "branches": [ ... ],
+  "variables": [ ... ],
+  "next": "NextNode"
+}
+```
+
+`content` 数组就是对话/事件的真实顺序，已经把旧版本的 `texts`、`runs`、`choice_position` 全部折叠到一起，引擎只需从头到尾迭代即可。
+
+### 内容项（Content Item）类型
+
+所有元素都拥有 `type` 字段：
+
+1. **`type: "text"`** — 对话行或插值文本。
+   - `value`：可直接显示的字符串。
+   - `interpolated_parts`：按片段描述文本/表达式/branch case，方便编辑器回放。
+   - `condition`：当该行来自 `if/else` 时记录完整条件树。
+   - `pre_statements`：在显示前需要执行的赋值语句。
+   - `events`：与具体字符位置绑定的事件，元素格式为 `{ "index": 4.2, "index_variable": null, "actions": [{ "type": "set_color", "args": ["#FF6B6B"] }] }`。
+
+2. **`type: "run_event"`** — 调用顶层 `events` 中的命名事件。
+   - `name`：事件名。
+   - `args`：序列化后的参数。
+   - `index_override`：`{ "type": "value" | "variable", "value": "..." }`，用于重写触发位置（可绑定变量）。
+   - `ignore_duration`：为 `true` 时忽略事件自带的 `duration`，立即执行。
+
+3. **`type: "run_timeline"`** — 执行一条 `timelines` 描述的演出序列（参见计划文档第 5 节的演出系统）。
+
+4. **`type: "choice"`** — 在脚本写入的位置展示选项。
+   - `options` 数组中，每个选项拥有 `text`、可选的 `next`、可选的 `action`（`"return"` 或 `"break"`）、可选的嵌套 `choice`、以及可选的 `condition`（函数名与参数）。这完全取代了旧版 `choices`/`choice_position`。
+
+### Branch 定义
+
+若节点包含 `$"..."` 的 `branch` 插值，编译器会在节点对象中生成 `branches`。每个 case 自带文本与可选 `events`，满足 v0.4 中“分支插值拥有独立索引”的要求。
+
+## 命名事件与时间线
+
+顶层 `events` 记录可复用的事件：
+
+```json
+{
+  "name": "ColorYellow",
+  "index": 1.0,
+  "duration": 0.35,
+  "action": {
+    "type": "set_color",
+    "args": ["#FFFF00"]
   }
 }
 ```
 
-### 节点结构
+在节点里 `run_event` 调用这个定义，从而保证“with events”与“单独运行”两种场景使用同一套参数。
 
-每个节点包含：
-
-```json
-{
-  "texts": [ ... ],      // 文本块列表
-  "choices": [ ... ],    // 选项列表（可选）
-  "next_node": "..."     // 下一个节点（可选）
-}
-```
-
-## texts 字段
-
-文本块列表，每个文本块的结构：
+`timelines` 用于复杂演出：
 
 ```json
 {
-  "content": "对话内容",
-  "interpolated": false,
-  "events": [ ... ]
-}
-```
-
-### 字段说明
-
-- **content** (string) - 文本内容
-- **interpolated** (boolean) - 是否包含插值（`$"...{...}..."`）
-- **events** (array) - 事件列表
-
-### 示例
-
-#### 简单文本
-
-```mortar
-text: "你好！"
-```
-
-生成：
-
-```json
-{
-  "content": "你好！",
-  "interpolated": false,
-  "events": []
-}
-```
-
-#### 带插值的文本
-
-```mortar
-text: $"你好，{get_name()}！"
-```
-
-生成：
-
-```json
-{
-  "content": "你好，{get_name()}！",
-  "interpolated": true,
-  "events": []
-}
-```
-
-注意：插值的实际处理由游戏代码负责。
-
-#### 带事件的文本
-
-```mortar
-text: "欢迎回来！"
-events: [
-    0, play_sound("welcome.wav"),
-    3, fade_in()
-]
-```
-
-生成：
-
-```json
-{
-  "content": "欢迎回来！",
-  "interpolated": false,
-  "events": [
-    {
-      "index": 0,
-      "calls": [
-        {
-          "function": "play_sound",
-          "args": ["welcome.wav"]
-        }
-      ]
-    },
-    {
-      "index": 3,
-      "calls": [
-        {
-          "function": "fade_in",
-          "args": []
-        }
-      ]
-    }
+  "name": "IntroScene",
+  "statements": [
+    { "type": "run", "event_name": "ShowAlice" },
+    { "type": "wait", "duration": 2.0 },
+    { "type": "run", "event_name": "PlayMusic", "ignore_duration": true }
   ]
 }
 ```
 
-## events 字段详解
+`run` 会触发指定事件，`wait` 则暂停光标，可组合出 Unity Timeline 风格的序列。
 
-事件列表的结构：
+## 节点示例
 
 ```json
 {
-  "index": 0.0,           // 触发位置（数字）
-  "calls": [              // 函数调用列表
+  "name": "Start",
+  "content": [
     {
-      "function": "函数名",
-      "args": [ ... ]     // 参数列表
-    }
-  ]
-}
-```
-
-### 多个事件在同一位置
-
-```mortar
-events: [
-    0, effect_a(),
-    0, effect_b(),
-    0, effect_c()
-]
-```
-
-生成：
-
-```json
-{
-  "index": 0,
-  "calls": [
-    {"function": "effect_a", "args": []},
-    {"function": "effect_b", "args": []},
-    {"function": "effect_c", "args": []}
-  ]
-}
-```
-
-### 小数索引
-
-```mortar
-events: [
-    0.5, sound_a(),
-    1.25, sound_b()
-]
-```
-
-生成：
-
-```json
-[
-  {
-    "index": 0.5,
-    "calls": [{"function": "sound_a", "args": []}]
-  },
-  {
-    "index": 1.25,
-    "calls": [{"function": "sound_b", "args": []}]
-  }
-]
-```
-
-### 函数参数
-
-```mortar
-events: [
-    0, play_sound("bgm.ogg"),
-    1, set_color("#FF0000"),
-    2, set_volume(0.8)
-]
-```
-
-生成：
-
-```json
-[
-  {
-    "index": 0,
-    "calls": [{
-      "function": "play_sound",
-      "args": ["bgm.ogg"]
-    }]
-  },
-  {
-    "index": 1,
-    "calls": [{
-      "function": "set_color",
-      "args": ["#FF0000"]
-    }]
-  },
-  {
-    "index": 2,
-    "calls": [{
-      "function": "set_volume",
-      "args": [0.8]
-    }]
-  }
-]
-```
-
-参数类型在 JSON 中：
-- 字符串 → `"string"`
-- 数字 → `0.8`（JSON number）
-- 布尔 → `true` / `false`
-
-## choices 字段
-
-选项列表，每个选项的结构：
-
-```json
-{
-  "text": "选项文字",
-  "target": "目标节点",
-  "condition": "条件函数"  // 可选
-}
-```
-
-### 简单选项
-
-```mortar
-choice: [
-    "选项A" -> NodeA,
-    "选项B" -> NodeB
-]
-```
-
-生成：
-
-```json
-[
-  {
-    "text": "选项A",
-    "target": "NodeA"
-  },
-  {
-    "text": "选项B",
-    "target": "NodeB"
-  }
-]
-```
-
-### 带条件的选项
-
-```mortar
-choice: [
-    "选项A" -> NodeA,
-    "选项B" when has_key() -> NodeB
-]
-```
-
-生成：
-
-```json
-[
-  {
-    "text": "选项A",
-    "target": "NodeA"
-  },
-  {
-    "text": "选项B",
-    "target": "NodeB",
-    "condition": "has_key"
-  }
-]
-```
-
-游戏需要检查 `condition` 字段，调用对应函数判断是否显示该选项。
-
-### 嵌套选项
-
-```mortar
-choice: [
-    "主选项" -> [
-        "子选项A" -> NodeA,
-        "子选项B" -> NodeB
-    ]
-]
-```
-
-生成：
-
-```json
-[
-  {
-    "text": "主选项",
-    "nested": [
-      {
-        "text": "子选项A",
-        "target": "NodeA"
-      },
-      {
-        "text": "子选项B",
-        "target": "NodeB"
-      }
-    ]
-  }
-]
-```
-
-嵌套选项用 `nested` 字段表示。
-
-### 特殊目标
-
-```mortar
-choice: [
-    "返回" -> return,
-    "终止" -> break
-]
-```
-
-生成：
-
-```json
-[
-  {
-    "text": "返回",
-    "target": "return"
-  },
-  {
-    "text": "终止",
-    "target": "break"
-  }
-]
-```
-
-`return` 和 `break` 是特殊关键字，游戏需要特殊处理。
-
-## functions 字段
-
-函数声明列表：
-
-```json
-[
-  {
-    "name": "函数名",
-    "params": [ ... ],
-    "return_type": "返回类型"  // 可选
-  }
-]
-```
-
-### 无参数无返回
-
-```mortar
-fn simple_func()
-```
-
-生成：
-
-```json
-{
-  "name": "simple_func",
-  "params": [],
-  "return_type": null
-}
-```
-
-### 有参数无返回
-
-```mortar
-fn play_sound(file_name: String)
-```
-
-生成：
-
-```json
-{
-  "name": "play_sound",
-  "params": [
-    {
-      "name": "filename",
-      "type": "String"
-    }
-  ],
-  "return_type": null
-}
-```
-
-### 有参数有返回
-
-```mortar
-fn get_score(player_id: Number) -> Number
-```
-
-生成：
-
-```json
-{
-  "name": "get_score",
-  "params": [
-    {
-      "name": "player_id",
-      "type": "Number"
-    }
-  ],
-  "return_type": "Number"
-}
-```
-
-### 多参数
-
-```mortar
-fn complex_func(a: String, b: Number, c: Bool) -> Bool
-```
-
-生成：
-
-```json
-{
-  "name": "complex_func",
-  "params": [
-    {"name": "a", "type": "String"},
-    {"name": "b", "type": "Number"},
-    {"name": "c", "type": "Bool"}
-  ],
-  "return_type": "Bool"
-}
-```
-
-## metadata 字段
-
-元数据，包含编译信息：
-
-```json
-{
-  "version": "0.3.0",
-  "compiler": "mortar_cli",
-  "compiled_at": "2024-01-15T10:30:00Z"
-}
-```
-
-## 完整示例
-
-### Mortar 源文件
-
-```mortar
-node StartScene {
-    text: "你好！"
-    events: [
-        0, play_sound("hi.wav")
-    ]
-    
-    text: $"你的名字是{get_name()}吗？"
-    
-    choice: [
-        "是的" -> Confirm,
-        "不是" -> Deny
-    ]
-}
-
-node Confirm {
-    text: "很高兴认识你！"
-}
-
-node Deny {
-    text: "哦，那你叫什么？"
-}
-
-fn play_sound(file: String)
-fn get_name() -> String
-```
-
-### 编译后的 JSON
-
-```json
-{
-  "nodes": {
-    "开始": {
-      "texts": [
+      "type": "text",
+      "value": "欢迎来到冒险！",
+      "events": [
         {
-          "content": "你好！",
-          "interpolated": false,
-          "events": [
-            {
-              "index": 0,
-              "calls": [
-                {
-                  "function": "play_sound",
-                  "args": ["hi.wav"]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "content": "你的名字是{get_name()}吗？",
-          "interpolated": true,
-          "events": []
-        }
-      ],
-      "choices": [
-        {
-          "text": "是的",
-          "target": "确认"
-        },
-        {
-          "text": "不是",
-          "target": "否认"
+          "index": 0,
+          "actions": [{ "type": "play_music", "args": ["intro.mp3"] }]
         }
       ]
     },
-    "确认": {
-      "texts": [
-        {
-          "content": "很高兴认识你！",
-          "interpolated": false,
-          "events": []
-        }
-      ]
-    },
-    "否认": {
-      "texts": [
-        {
-          "content": "哦，那你叫什么？",
-          "interpolated": false,
-          "events": []
-        }
-      ]
-    }
-  },
-  "functions": [
     {
-      "name": "play_sound",
-      "params": [
-        {
-          "name": "file",
-          "type": "String"
-        }
-      ],
-      "return_type": null
-    },
-    {
-      "name": "get_name",
-      "params": [],
-      "return_type": "String"
+      "type": "choice",
+      "options": [
+        { "text": "开始", "next": "GameStart" },
+        { "text": "再想想", "action": "break" }
+      ]
     }
   ],
-  "metadata": {
-    "version": "0.3.0",
-    "compiler": "mortar_cli"
-  }
+  "next": "MainMenu"
 }
 ```
 
 ## 解析建议
 
-### TypeScript 类型定义
+建议使用强类型来建模 `.mortared` 文件，便于在扩展字段时快速升级。下面给出与序列化代码一致的 TypeScript/Python 草图：
 
 ```typescript
-interface MortarDialogue {
-  nodes: Record<string, Node>;
-  functions: FunctionDecl[];
+type ContentItem =
+  | {
+      type: "text";
+      value: string;
+      interpolated_parts?: StringPart[];
+      condition?: Condition;
+      pre_statements?: Statement[];
+      events?: EventTrigger[];
+    }
+  | {
+      type: "run_event";
+      name: string;
+      args?: string[];
+      index_override?: { type: "value" | "variable"; value: string };
+      ignore_duration?: boolean;
+    }
+  | { type: "run_timeline"; name: string }
+  | { type: "choice"; options: ChoiceOption[] };
+
+interface MortaredFile {
   metadata: Metadata;
-}
-
-interface Node {
-  texts: TextBlock[];
-  choices?: Choice[];
-  next_node?: string;
-}
-
-interface TextBlock {
-  content: string;
-  interpolated: boolean;
-  events: EventGroup[];
-}
-
-interface EventGroup {
-  index: number;
-  calls: FunctionCall[];
-}
-
-interface FunctionCall {
-  function: string;
-  args: any[];
-}
-
-interface Choice {
-  text: string;
-  target?: string;
-  nested?: Choice[];
-  condition?: string;
-}
-
-interface FunctionDecl {
-  name: string;
-  params: Param[];
-  return_type: string | null;
-}
-
-interface Param {
-  name: string;
-  type: string;
-}
-
-interface Metadata {
-  version: string;
-  compiler: string;
-  compiled_at?: string;
+  variables: VariableDecl[];
+  constants: ConstantDecl[];
+  enums: EnumDecl[];
+  nodes: Node[];
+  functions: FunctionDecl[];
+  events: EventDef[];
+  timelines: TimelineDef[];
 }
 ```
 
-### Python 数据类
-
 ```python
-from dataclasses import dataclass
-from typing import List, Dict, Optional, Any
-
 @dataclass
-class FunctionCall:
-    function: str
-    args: List[Any]
-
-@dataclass
-class EventGroup:
+class EventTrigger:
     index: float
-    calls: List[FunctionCall]
+    actions: List[Action]
+    index_variable: Optional[str] = None
 
 @dataclass
-class TextBlock:
-    content: str
-    interpolated: bool
-    events: List[EventGroup]
+class ContentText:
+    type: Literal["text"]
+    value: str
+    interpolated_parts: Optional[List[StringPart]] = None
+    condition: Optional[Condition] = None
+    pre_statements: Optional[List[Statement]] = None
+    events: Optional[List[EventTrigger]] = None
 
 @dataclass
-class Choice:
-    text: str
-    target: Optional[str] = None
-    nested: Optional[List['Choice']] = None
-    condition: Optional[str] = None
-
-@dataclass
-class Node:
-    texts: List[TextBlock]
-    choices: Optional[List[Choice]] = None
-    next_node: Optional[str] = None
-
-@dataclass
-class Param:
+class ContentRunEvent:
+    type: Literal["run_event"]
     name: str
-    type: str
+    args: List[str] = field(default_factory=list)
+    index_override: Optional[IndexOverride] = None
+    ignore_duration: bool = False
 
 @dataclass
-class FunctionDecl:
-    name: str
-    params: List[Param]
-    return_type: Optional[str]
-
-@dataclass
-class Metadata:
-    version: str
-    compiler: str
-    compiled_at: Optional[str] = None
-
-@dataclass
-class MortarDialogue:
-    nodes: Dict[str, Node]
-    functions: List[FunctionDecl]
-    metadata: Metadata
+class ContentChoice:
+    type: Literal["choice"]
+    options: List[ChoiceOption]
 ```
 
-## 注意事项
-
-### 1. 字符编码
-
-JSON 文件始终是 UTF-8 编码，确保正确读取。
-
-### 2. 节点顺序
-
-`nodes` 是字典，**不保证顺序**。不要依赖节点的顺序！
-
-### 3. 空数组 vs null
-
-- 没有事件：`"events": []`（空数组）
-- 没有选项：`"choices": null` 或不存在该字段
-
-### 4. 插值处理
-
-`interpolated: true` 的文本，需要游戏代码进行实际的替换：
-
-```javascript
-if (textBlock.interpolated) {
-  let result = textBlock.content;
-  // 找到 {function_name()} 并替换
-  result = result.replace(/\{(\w+)\(\)\}/g, (_, funcName) => {
-    return callFunction(funcName);
-  });
-  displayText(result);
-}
-```
-
-### 5. 条件判断
-
-带 `condition` 的选项，需要调用函数检查：
-
-```python
-for choice in node['choices']:
-    if 'condition' in choice:
-        if not call_function(choice['condition']):
-            continue  # 不显示此选项
-    show_choice(choice['text'])
-```
-
-## 小结
-
-Mortar JSON 结构清晰：
-- ✅ 标准 JSON 格式
-- ✅ 分层明确
-- ✅ 易于解析
-- ✅ 类型明确
-
-掌握了这个结构，就能轻松集成到任何游戏引擎！
-
-## 接下来
-
-- 看完整集成示例：[接入你的游戏](../5_3_game-integration.md)
-- 了解常见问题：[FAQ](./7_2_faq.md)
-- 查看贡献指南：[贡献指南](./7_3_contributing.md)
+依照同样的方式定义 timelines、命名事件与选项结构，就能让运行时代码和 Mortar 编译器保持一致。
