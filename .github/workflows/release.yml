@@ -38,7 +38,7 @@ jobs:
             artifact_name: mortar
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     
     - name: Compute Cargo.lock hash
       id: cargo_lock_hash
@@ -126,7 +126,7 @@ jobs:
     outputs:
       release_id: ${{ steps.create_release.outputs.id }}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     
     - name: Get tag name
       id: tag_name
@@ -182,7 +182,7 @@ jobs:
             binary_suffix: ""
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     
     - name: Compute Cargo.lock hash
       id: cargo_lock_hash
@@ -290,7 +290,7 @@ jobs:
           - mortar_lsp
           - mortar_cli
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     
     - name: Compute Cargo.lock hash
       id: cargo_lock_hash
