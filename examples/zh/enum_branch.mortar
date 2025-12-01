@@ -1,4 +1,4 @@
-// Enum and Branch Variable Example
+// 枚举和分支变量示例
 
 // 定义枚举类型
 enum GameState {
