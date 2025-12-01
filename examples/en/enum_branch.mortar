@@ -1,0 +1,67 @@
+// Enum and Branch Variable Example
+
+// Define enum types
+enum GameState {
+    start
+    playing
+    game_over
+}
+
+enum Location {
+    forest
+    city
+    town
+}
+
+// Define enum variables
+let current_state: GameState
+let current_location: Location
+
+// Define branch type variables, selecting text based on enum value
+let status: branch<current_state> [
+    start, "Game Start"
+    playing, "Playing"
+    game_over, "Game Over"
+]
+
+let place: branch<current_location> [
+    forest, "deep forest"
+    city, "bustling city"
+    town, "quiet town"
+]
+
+// Using branch variables in nodes (via string interpolation)
+node StatusDisplay {
+    text: $"Game status is {status}."
+}
+
+node LocationDisplay {
+    text: $"You are now in the {place}."
+}
+
+// More complex example: branch with events
+enum Weather {
+    sunny
+    rainy
+    snowy
+}
+
+let current_weather: Weather
+
+let weather_desc: branch<current_weather> [
+    sunny, "Sunny", events: [
+        0, set_color("#FFD700")
+    ]
+    rainy, "Raining", events: [
+        0, set_color("#4682B4")
+    ]
+    snowy, "Snowing", events: [
+        0, set_color("#E0E0E0")
+    ]
+]
+
+node WeatherDisplay {
+    text: $"Today's weather is {weather_desc}."
+}
+
+fn set_color(color: String)

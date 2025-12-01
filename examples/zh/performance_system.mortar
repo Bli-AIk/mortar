@@ -1,0 +1,168 @@
+// ==============================================================================
+// 演出系统示例
+// ==============================================================================
+// 本示例展示了 Mortar 中新的演出系统功能，
+// 包括事件定义、时间线、run 语句以及 with 事件。
+
+// ------------------------------------------------------------------------------
+// 事件定义
+// ------------------------------------------------------------------------------
+// 事件是可重用的动作，可以独立触发或附加到文本上。
+// 它们可以拥有一个索引（用于文本关联）和一个持续时间（duration）。
+
+event SetColor {
+    index: 0
+    action: set_color("#228B22")
+}
+event SetColor2 {
+    index: 10
+    action: set_color("#FFFFFF")
+}
+
+event TPRight {
+    action: set_animation("right")
+    duration: 2.0
+}
+
+event TPLeft {
+    action: set_animation("left")
+    duration: 1.5
+}
+
+event PlaySound {
+    index: 20
+    action: play_sound("random-sound-1-80941.wav")
+    duration: 0.0
+}
+
+event SetBlack {
+    action: set_color("#000000")
+    duration: 1.0
+}
+
+// ------------------------------------------------------------------------------
+// 变量定义
+// ------------------------------------------------------------------------------
+// 变量必须在顶层定义，位于节点之外。
+
+let custom_time: Number = 5
+let reveal_time: Number = 3
+
+// ------------------------------------------------------------------------------
+// 时间线定义
+// ------------------------------------------------------------------------------
+// 时间线是按顺序执行的事件和等待语句的序列。
+// 它们非常适合用于复杂的过场动画或演出。
+
+// 按照时间线顺序执行事件和等待
+// 如果某个事件有 duration，那么时间线会等待该事件 duration 秒后再继续
+timeline OpeningCutscene {
+    run TPRight
+    wait 1.0
+    run TPLeft
+    wait 0.5
+    // now 关键字表示忽略事件的 duration，立即执行下一个事件
+    now run PlaySound
+    wait 10
+    run SetColor2
+}
+
+// ------------------------------------------------------------------------------
+// 节点示例
+// ------------------------------------------------------------------------------
+
+// 示例 1: 基本的 run 语句
+// 'run' 关键字会立即执行一个事件，忽略它的 index。
+node Start {
+    text: "演出开始……"
+
+    // 因为它是直接运行的，所以它会忽略 index 并立即运行，
+    // 但是下一个 run 会在其 duration（2秒）之后运行
+    run TPRight
+    // 立即执行，然后执行下一个
+    run SetColor
+
+    text: "爱丽丝出现在森林中。"
+} -> WithEventsExample
+
+// 示例 2: With 事件（文本关联）
+// 'with' 关键字将事件关联到上一段文本。
+// 事件会按照它们的 index 排序，并在文本显示时执行。
+node WithEventsExample {
+    text: "欢迎来到这场冒险！"
+    // with 和 duration 无关。因为 duration 作用于“事件本身”，而不是“与文本关联的事件”。
+    with SetColor2  // 单个事件
+
+    text: "森林因声音和色彩而变得生动。"
+    with events: [
+        TPLeft
+        PlaySound
+    ]
+} -> CustomIndexExample
+
+// 示例 3: 使用自定义 index 运行
+// 你可以在运行时覆盖事件的 index。
+node CustomIndexExample {
+    text: "这段文本有一个自定义的事件时机。"
+    // 这里的 with custom_time 覆盖了 PlaySound 事件的默认 index（20） 为 5。
+    // 但由于 run 前面没有 with 关键字，所以它是立即执行的。
+    run PlaySound with custom_time
+
+    // 赋值是允许的，修改变量的值
+    custom_time = 14; // 调整为14以适应中文文本长度
+    text: "保持安静……直到你听见……爆炸声！"
+    // 应该在播放到第 14 个字符时触发 PlaySound 事件。
+    with run PlaySound with custom_time
+} -> MixedExample
+
+// 示例 4: 混合使用
+node MixedExample {
+    // 直接运行（立即执行）
+    run SetColor
+
+    // 带有文本关联的事件
+    text: "一个人影从阴影中浮现……"
+    with TPRight
+
+    // 另一段文本块
+    text: "是爱丽丝！爱丽丝！爱丽丝！爱丽丝！爱丽丝！"
+    // custom_time 应该仍然是 14
+    with run PlaySound with custom_time
+
+    // 使用自定义 index 运行
+    run PlaySound with reveal_time
+
+    // 带有事件的选项
+    choice: [
+        "接近爱丽丝" -> AliceRoute
+        "躲藏" -> HideRoute
+        "等待中……" -> break
+    ]
+
+    text: "好吧，我们可以走了。"
+} -> TimelineExample
+
+// 示例 5: 节点中的时间线
+node TimelineExample {
+    text: "观看开场动画……"
+    run OpeningCutscene  // 执行整个时间线
+}
+
+// 选项的占位符节点
+node AliceRoute {
+    text: "你走近了爱丽丝……"
+}
+
+node HideRoute {
+    text: "你躲在了一棵树后……"
+}
+
+// ------------------------------------------------------------------------------
+// 函数声明
+// ------------------------------------------------------------------------------
+// 所有在事件中使用的函数都必须声明。
+// 这些对应于 bevy 绑定中 handle_mortar_action 的操作。
+
+fn set_animation(anim_name: String)
+fn set_color(color: String)
+fn play_sound(file_name: String)
