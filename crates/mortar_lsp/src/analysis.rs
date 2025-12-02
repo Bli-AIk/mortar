@@ -1,8 +1,7 @@
 use std::collections::HashSet;
 
-use mortar_compiler::{
-    NodeDef, NodeJump, NodeStmt, Program, TopLevel,
-    parser::{ChoiceDest, FunctionDecl},
+use mortar_compiler::ast::{
+    ChoiceDest, FunctionDecl, NodeDef, NodeJump, NodeStmt, Program, TopLevel,
 };
 
 #[derive(Debug, Clone, Default)]

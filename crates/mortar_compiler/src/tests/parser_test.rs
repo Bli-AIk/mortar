@@ -1,7 +1,8 @@
-use crate::parser::{
+use crate::ast::{
     Arg, ChoiceDest, ChoiceItem, Condition, Event, EventAction, FuncCall, FunctionDecl, NodeDef,
-    NodeJump, NodeStmt, Param, ParseHandler, Program, TopLevel, WithEventItem, WithEventsStmt,
+    NodeJump, NodeStmt, Param, Program, TopLevel, WithEventItem, WithEventsStmt,
 };
+use crate::parser::ParseHandler;
 
 fn check_parsing(source: &str, expected_program: Program) {
     let program = ParseHandler::parse_source_code(source, false).unwrap();

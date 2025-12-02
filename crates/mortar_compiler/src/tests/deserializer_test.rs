@@ -1,6 +1,8 @@
 use crate::deserializer::Deserializer;
 use serde_json::Value;
 use tempfile::TempDir;
+// Create a program, serialize it, then deserialize it
+use crate::ast::{FunctionDecl, NodeDef, NodeStmt, Program, TopLevel};
 
 #[test]
 fn test_deserialize_basic_json() {
@@ -335,7 +337,6 @@ fn test_deserialize_error_invalid_json() {
 #[test]
 fn test_roundtrip_serialization() {
     // Create a program, serialize it, then deserialize it
-    use crate::parser::{FunctionDecl, NodeDef, NodeStmt, Program, TopLevel};
     use crate::serializer::Serializer;
 
     let program = Program {

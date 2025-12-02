@@ -1,4 +1,5 @@
-use crate::parser::{ParseHandler, TopLevel, VarValue};
+use crate::ast::{TopLevel, VarValue};
+use crate::parser::ParseHandler;
 
 #[test]
 fn test_parse_variable_declaration_without_value() {

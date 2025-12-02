@@ -1,4 +1,5 @@
-use crate::parser::{NodeStmt, ParseHandler, StringPart, TopLevel};
+use crate::ast::{NodeStmt, StringPart, TopLevel, VarValue};
+use crate::parser::ParseHandler;
 
 #[test]
 fn test_parse_placeholder_in_text() {

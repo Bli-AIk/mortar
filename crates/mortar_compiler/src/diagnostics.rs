@@ -1,5 +1,5 @@
 use crate::Language;
-use crate::parser::{
+use crate::ast::{
     Arg, ChoiceDest, ChoiceItem, Condition, EventAction, FuncCall, FunctionDecl,
     InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TimelineStmt, TopLevel,
 };

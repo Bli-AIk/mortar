@@ -1,5 +1,10 @@
 use crate::Language;
-use crate::parser::*;
+use crate::ast::{
+    Arg, AssignValue, BranchDef, ChoiceDest, ChoiceItem, ComparisonOp, Condition, ConstDecl,
+    EnumDef, Event, EventDef, FuncCall, FunctionDecl, IfCondition, IfElseStmt, IndexOverride,
+    InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TimelineDef,
+    TimelineStmt, TopLevel, VarDecl, VarValue, WithEventItem, WithEventsStmt,
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::Path;

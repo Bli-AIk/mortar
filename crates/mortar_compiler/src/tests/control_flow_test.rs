@@ -1,4 +1,5 @@
-use crate::parser::{ComparisonOp, IfCondition, NodeStmt, ParseHandler, TopLevel};
+use crate::ast::{ComparisonOp, IfCondition, NodeStmt, TopLevel};
+use crate::parser::ParseHandler;
 
 #[test]
 fn test_parse_simple_if() {
