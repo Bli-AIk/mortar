@@ -16,7 +16,7 @@ Read the [official guide](https://bli-aik.github.io/mortar/en) to learn how to u
 
 | English         | Simplified Chinese          |
 |-----------------|-----------------------------|
-| English Version | [简体中文](./readme_zh-hant.md) |
+| English Version | [简体中文](./readme_zh-hans.md) |
 
 ## Introduction
 
@@ -200,8 +200,8 @@ Features:
 
 ## Contributing
 
-Community contributions are welcome\! Please see
-the [Contributing Guide](https://www.google.com/search?q=./CONTRIBUTING.md) for details.
+Community contributions are welcome! Please see
+the [Contributing Guide](./CONTRIBUTING.md) for details.
 
 ### Contributors
 

@@ -190,7 +190,7 @@ mortar hello.mortar -o custom.json --pretty
 
 ## 参与贡献
 
-欢迎社区贡献！详细信息请参阅 [贡献指南](./CONTRIBUTING.md)。
+欢迎社区贡献！详细信息请参阅 [贡献指南](./CONTRIBUTING_zh-hans.md)。
 
 ### 贡献者
 
