@@ -53,7 +53,14 @@ impl ParseHandler {
         };
 
         let mut parser = Parser::new(tokens);
-        parser.parse_program()
+        let result = parser.parse_program();
+
+        // If there are accumulated errors, return the first one (since this API returns simple Result)
+        if !parser.errors.is_empty() {
+            return Err(parser.errors[0].0.clone());
+        }
+
+        result
     }
 
     pub fn parse_source_code_with_diagnostics(
@@ -94,7 +101,19 @@ impl ParseHandler {
 
         let result = parser.parse_program();
 
-        // If parsing failed, add parse error to diagnostics
+        // Handle accumulated errors (from recovery)
+        for (error, span) in &parser.errors {
+             diagnostics.add_diagnostic(Diagnostic {
+                kind: DiagnosticKind::SyntaxError {
+                    message: error.to_string(),
+                },
+                severity: Severity::Error,
+                span: Some(*span),
+                message: error.to_string(),
+            });
+        }
+
+        // If parsing failed fatally, add parse error to diagnostics
         if let Err(ref parse_error) = result {
             let current_span = parser.get_current_span();
             diagnostics.add_diagnostic(Diagnostic {
@@ -107,7 +126,7 @@ impl ParseHandler {
             });
         }
 
-        // If parsing succeeded, run semantic analysis
+        // If parsing succeeded (even partially), run semantic analysis
         if let Ok(ref program) = result {
             diagnostics.analyze_program(program);
         }
@@ -119,11 +138,13 @@ impl ParseHandler {
 pub struct Parser<'a> {
     pub(super) tokens: Vec<TokenInfo<'a>>,
     pub(super) current: usize,
+    /// Accumulated errors with their span (start, end)
+    pub(super) errors: Vec<(ParseError, (usize, usize))>,
 }
 
 impl<'a> Parser<'a> {
     fn new(tokens: Vec<TokenInfo<'a>>) -> Self {
-        Self { tokens, current: 0 }
+        Self { tokens, current: 0, errors: Vec::new() }
     }
 
     fn is_at_end(&self) -> bool {
@@ -250,6 +271,35 @@ impl<'a> Parser<'a> {
             if !skipped_something {
                 break;
             }
+        }
+    }
+
+    /// Synchronize parser state after an error.
+    /// Skips tokens until a semicolon or a keyword that starts a statement.
+    pub(super) fn synchronize(&mut self) {
+        self.advance(); // Consume the token that caused the error
+
+        while !self.is_at_end() {
+            // If previous token was semicolon, we are probably at a new statement
+            if self.current > 0 {
+                 if let Some(prev) = self.tokens.get(self.current - 1) {
+                     if matches!(prev.token, Token::Semicolon) {
+                         return;
+                     }
+                 }
+            }
+
+            // If current token is a keyword that starts a top-level declaration
+            if let Some(curr) = self.peek() {
+                match curr.token {
+                    Token::Node | Token::Fn | Token::Let | Token::Const | Token::Pub | Token::Enum | Token::Event | Token::Timeline => {
+                        return;
+                    }
+                    _ => {}
+                }
+            }
+
+            self.advance();
         }
     }
 }

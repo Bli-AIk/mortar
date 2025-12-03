@@ -36,7 +36,15 @@ impl<'a> TopLevelParser for Parser<'a> {
             self.skip_comments_and_separators();
 
             if !self.is_at_end() {
-                body.push(self.parse_top_level()?);
+                match self.parse_top_level() {
+                    Ok(stmt) => body.push(stmt),
+                    Err(err) => {
+                        // Capture the span of the error token (approximately)
+                        let span = self.get_current_span().unwrap_or((0, 0));
+                        self.errors.push((err, span));
+                        self.synchronize();
+                    }
+                }
             }
         }
 
