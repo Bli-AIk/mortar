@@ -19,6 +19,7 @@ pub struct Backend {
     pub diagnostics: Arc<DashMap<Uri, Vec<Diagnostic>>>,
     pub symbol_tables: Arc<DashMap<Uri, SymbolTable>>,
     pub language: Arc<RwLock<Language>>,
+    pub debouncers: Arc<DashMap<Uri, tokio::task::JoinHandle<()>>>,
 }
 
 impl Backend {
@@ -30,6 +31,7 @@ impl Backend {
             diagnostics: Arc::new(DashMap::new()),
             symbol_tables: Arc::new(DashMap::new()),
             language: Arc::new(RwLock::new(Language::English)), // Default to English
+            debouncers: Arc::new(DashMap::new()),
         }
     }
 
@@ -48,6 +50,12 @@ impl Backend {
     pub async fn cleanup(&self) {
         let language = self.get_language().await;
         info!("{}", i18n::get_lsp_text("cleanup_resources", language));
+
+        // Abort all pending debounce tasks
+        for entry in self.debouncers.iter() {
+            entry.value().abort();
+        }
+        self.debouncers.clear();
 
         let documents_count = self.documents.len();
         self.documents.clear();
@@ -84,6 +92,12 @@ impl Backend {
     /// Simplified cleanup operations to avoid asynchronous blocking
     pub fn cleanup_sync(&self) {
         info!("Start synchronously cleaning up LSP server resources...");
+
+        // Abort all pending debounce tasks
+        for entry in self.debouncers.iter() {
+            entry.value().abort();
+        }
+        self.debouncers.clear();
 
         let documents_count = self.documents.len();
         self.documents.clear();

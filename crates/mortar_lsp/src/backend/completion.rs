@@ -257,7 +257,7 @@ impl Backend {
                     completions.push(CompletionItem {
                         label: "fn".to_string(),
                         kind: Some(CompletionItemKind::KEYWORD),
-                        insert_text: Some("fn ${1:function_name}() {\n\t$0\n}".to_string()),
+                        insert_text: Some("fn ${1:function_name}()".to_string()),
                         insert_text_format: Some(InsertTextFormat::SNIPPET),
                         detail: Some("Create a function".to_string()),
                         documentation: Some(Documentation::String(
