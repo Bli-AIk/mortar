@@ -211,8 +211,6 @@ fn test_save_to_file_with_language() {
 
 #[test]
 fn test_serialize_variable_declarations() {
-    
-
     let program = Program {
         body: vec![
             TopLevel::VarDecl(VarDecl {

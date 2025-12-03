@@ -1,3 +1,27 @@
+//! # ast.rs
+//!
+//! # ast.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Defines the Abstract Syntax Tree (AST) for the Mortar language.
+//!
+//! 定义 Mortar 语言的抽象语法树 (AST)。
+//!
+//! These structures represent the parsed code in a hierarchical format, serving as the intermediate representation between parsing and code generation.
+//!
+//!这些结构以分层格式表示解析后的代码，充当解析和代码生成之间的中间表示。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Contains the struct and enum definitions for all language constructs, including `Program`, `NodeDef`, `Event`, and `Statement`.
+//!
+//! 包含所有语言构造的结构体和枚举定义，包括 `Program`、`NodeDef`、`Event` 和 `Statement`。
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
     pub body: Vec<TopLevel>,
