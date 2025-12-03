@@ -1,3 +1,23 @@
+//! # deserializer_test.rs
+//!
+//! # deserializer_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for the deserializer module.
+//!
+//! 反序列化器模块的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Verifies that JSON data can be correctly converted back into Rust structures.
+//!
+//! 验证 JSON 数据能否被正确转换回 Rust 结构体。
+
 use crate::deserializer::Deserializer;
 use serde_json::Value;
 use tempfile::TempDir;

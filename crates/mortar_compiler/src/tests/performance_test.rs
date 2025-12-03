@@ -1,3 +1,23 @@
+//! # performance_test.rs
+//!
+//! # performance_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for the performance system (events and timelines).
+//!
+//! 性能系统（事件和时间轴）的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Verifies parsing and logic for events, timelines, and synchronization.
+//!
+//! 验证事件、时间轴和同步的解析与逻辑。
+
 use crate::ast::{Arg, IndexOverride, NodeStmt, TimelineStmt, TopLevel, WithEventItem};
 use crate::parser::*;
 use crate::token::{Token, tokenize};

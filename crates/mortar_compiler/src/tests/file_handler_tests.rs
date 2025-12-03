@@ -1,3 +1,23 @@
+//! # tests.rs
+//!
+//! # tests.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for the file handler module.
+//!
+//! 文件处理模块的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Validates file reading and error handling logic.
+//!
+//! 验证文件读取和错误处理逻辑。
+
 #[cfg(test)]
 mod tests {
     use crate::handler::file_handler::{FileError, FileHandler};

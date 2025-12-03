@@ -1,3 +1,23 @@
+//! # parser_test.rs
+//!
+//! # parser_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Comprehensive tests for the parser.
+//!
+//! 解析器的综合测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Tests parsing of nodes, choices, events, functions, and other core language constructs.
+//!
+//! 测试节点、选项、事件、函数和其他核心语言构造的解析。
+
 use crate::ast::{
     Arg, ChoiceDest, ChoiceItem, Condition, Event, EventAction, FuncCall, FunctionDecl, NodeDef,
     NodeJump, NodeStmt, Param, Program, TopLevel, WithEventItem, WithEventsStmt,

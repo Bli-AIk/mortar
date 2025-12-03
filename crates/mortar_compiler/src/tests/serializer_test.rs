@@ -1,3 +1,23 @@
+//! # serializer_test.rs
+//!
+//! # serializer_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for the serializer module.
+//!
+//! 序列化器模块的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Verifies that AST structures are correctly converted to the JSON format.
+//!
+//! 验证 AST 结构体能否被正确转换为 JSON 格式。
+
 use crate::ast::{
     Arg, ChoiceDest, ChoiceItem, Condition, ConstDecl, EnumDef, Event, EventAction, FuncCall,
     FunctionDecl, NodeDef, NodeJump, NodeStmt, Param, Program, TopLevel, VarDecl, VarValue,

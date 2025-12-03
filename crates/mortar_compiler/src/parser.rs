@@ -1,3 +1,27 @@
+//! # parser.rs
+//!
+//! # parser.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Implements the parser for the Mortar language, converting a stream of tokens into an Abstract Syntax Tree (AST).
+//!
+//! 实现 Mortar 语言的解析器，将 token 流转换为抽象语法树 (AST)。
+//!
+//! The parser is a recursive descent parser that handles grammar rules for nodes, expressions, and control flow.
+//!
+//! 该解析器是一个递归下降解析器，处理节点、表达式和控制流的语法规则。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! This file defines the `Parser` struct and its methods for parsing different language constructs, as well as the public `ParseHandler`.
+//!
+//! 此文件定义了 `Parser` 结构体及其解析各种语言构造的方法，以及公共的 `ParseHandler`。
+
 use crate::ast::{
     Arg, AssignValue, Assignment, BinaryCondition, BranchCase, BranchDef, BranchValue, ChoiceDest,
     ChoiceItem, ComparisonOp, Condition, ConstDecl, EnumDef, Event, EventAction, EventDef,

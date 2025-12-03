@@ -1,3 +1,27 @@
+//! # serializer.rs
+//!
+//! # serializer.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Handles the serialization of the parsed AST into the compiled JSON format (`.mortared`).
+//!
+//! 处理将解析后的 AST 序列化为编译后的 JSON 格式 (`.mortared`)。
+//!
+//! This transformation converts the rich AST into a flatter, runtime-optimized JSON structure.
+//!
+//! 此转换将丰富的 AST 转换为更扁平、针对运行时优化的 JSON 结构。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! This file contains the `Serializer` struct and logic for mapping AST types to JSON schema types.
+//!
+//! 此文件包含 `Serializer` 结构体以及将 AST 类型映射到 JSON 模式类型的逻辑。
+
 use crate::Language;
 use crate::ast::{
     Arg, AssignValue, BranchDef, ChoiceDest, ChoiceItem, ComparisonOp, Condition, ConstDecl,

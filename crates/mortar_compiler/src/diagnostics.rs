@@ -1,3 +1,27 @@
+//! # diagnostics.rs
+//!
+//! # diagnostics.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Provides the diagnostic system for reporting errors and warnings during compilation.
+//!
+//! 提供用于在编译期间报告错误和警告的诊断系统。
+//!
+//! It handles error collection, formatting, and semantic analysis checks (e.g., type checking, unused variables).
+//!
+//! 它处理错误收集、格式化和语义分析检查（例如类型检查、未使用的变量）。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! This file defines `Diagnostic`, `DiagnosticCollector`, and various analysis methods to validate the AST.
+//!
+//! 此文件定义了 `Diagnostic`、`DiagnosticCollector` 以及用于验证 AST 的各种分析方法。
+
 use crate::Language;
 use crate::ast::{
     Arg, ChoiceDest, ChoiceItem, Condition, EventAction, FuncCall, FunctionDecl,

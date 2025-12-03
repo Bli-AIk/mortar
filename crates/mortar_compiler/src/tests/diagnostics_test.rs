@@ -1,3 +1,23 @@
+//! # diagnostics_test.rs
+//!
+//! # diagnostics_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for the diagnostic system.
+//!
+//! 诊断系统的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Validates error reporting, warning generation, and diagnostic message formatting.
+//!
+//! 验证错误报告、警告生成和诊断消息格式化。
+
 use crate::{DiagnosticCollector, Language, ParseHandler};
 
 #[test]
