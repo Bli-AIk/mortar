@@ -22,10 +22,10 @@
 //!
 //! 此文件定义了 `Parser` 结构体及其解析各种语言构造的方法，以及公共的 `ParseHandler`。
 
+pub mod error;
 pub mod expression;
 pub mod statement;
 pub mod top_level;
-pub mod error;
 
 use top_level::TopLevelParser;
 
@@ -103,7 +103,7 @@ impl ParseHandler {
 
         // Handle accumulated errors (from recovery)
         for (error, span) in &parser.errors {
-             diagnostics.add_diagnostic(Diagnostic {
+            diagnostics.add_diagnostic(Diagnostic {
                 kind: DiagnosticKind::SyntaxError {
                     message: error.to_string(),
                 },
@@ -144,7 +144,11 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     fn new(tokens: Vec<TokenInfo<'a>>) -> Self {
-        Self { tokens, current: 0, errors: Vec::new() }
+        Self {
+            tokens,
+            current: 0,
+            errors: Vec::new(),
+        }
     }
 
     fn is_at_end(&self) -> bool {
@@ -191,7 +195,8 @@ impl<'a> Parser<'a> {
         if self.check(expected) {
             Ok(self.advance().unwrap())
         } else {
-            let found = self.peek()
+            let found = self
+                .peek()
                 .map(|t| format!("{}", t.token))
                 .unwrap_or_else(|| "EOF".to_string());
             Err(ParseError::UnexpectedToken {
@@ -211,7 +216,7 @@ impl<'a> Parser<'a> {
                 })
             }
         } else {
-             Err(ParseError::UnexpectedEOF)
+            Err(ParseError::UnexpectedEOF)
         }
     }
 
@@ -282,17 +287,24 @@ impl<'a> Parser<'a> {
         while !self.is_at_end() {
             // If previous token was semicolon, we are probably at a new statement
             if self.current > 0 {
-                 if let Some(prev) = self.tokens.get(self.current - 1) {
-                     if matches!(prev.token, Token::Semicolon) {
-                         return;
-                     }
-                 }
+                if let Some(prev) = self.tokens.get(self.current - 1) {
+                    if matches!(prev.token, Token::Semicolon) {
+                        return;
+                    }
+                }
             }
 
             // If current token is a keyword that starts a top-level declaration
             if let Some(curr) = self.peek() {
                 match curr.token {
-                    Token::Node | Token::Fn | Token::Let | Token::Const | Token::Pub | Token::Enum | Token::Event | Token::Timeline => {
+                    Token::Node
+                    | Token::Fn
+                    | Token::Let
+                    | Token::Const
+                    | Token::Pub
+                    | Token::Enum
+                    | Token::Event
+                    | Token::Timeline => {
                         return;
                     }
                     _ => {}

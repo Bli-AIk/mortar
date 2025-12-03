@@ -1,19 +1,10 @@
 use super::Parser;
+use super::error::ParseError;
 use crate::ast::{
-    Arg,
-    AssignValue,
-    BinaryCondition,
-    ComparisonOp,
-    FuncCall,
-    IfCondition,
-    InterpolatedString,
-    StringPart,
-    UnaryCondition,
-    UnaryOp,
-    VarValue,
+    Arg, AssignValue, BinaryCondition, ComparisonOp, FuncCall, IfCondition, InterpolatedString,
+    StringPart, UnaryCondition, UnaryOp, VarValue,
 };
 use crate::token::Token;
-use super::error::ParseError;
 
 pub trait ExpressionParser {
     fn parse_if_condition(&mut self) -> Result<IfCondition, ParseError>;
@@ -146,7 +137,9 @@ impl<'a> ExpressionParser for Parser<'a> {
             }
         }
 
-        Err(ParseError::Custom("Expected condition expression".to_string()))
+        Err(ParseError::Custom(
+            "Expected condition expression".to_string(),
+        ))
     }
 
     fn peek_comparison_op(&self) -> Option<ComparisonOp> {
@@ -220,7 +213,9 @@ impl<'a> ExpressionParser for Parser<'a> {
                 Ok(Arg::String(s))
             }
             Some(Token::Number(n)) => {
-                let n = n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
+                let n = n
+                    .parse::<f64>()
+                    .map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
                 self.advance();
                 Ok(Arg::Number(n))
             }
@@ -257,7 +252,9 @@ impl<'a> ExpressionParser for Parser<'a> {
                 Ok(AssignValue::String(value))
             }
             Some(Token::Number(n)) => {
-                let value = n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
+                let value = n
+                    .parse::<f64>()
+                    .map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
                 self.advance();
                 Ok(AssignValue::Number(value))
             }
@@ -282,8 +279,8 @@ impl<'a> ExpressionParser for Parser<'a> {
                 }
             }
             _ => Err(ParseError::UnexpectedToken {
-                 expected: "value (string, number, boolean, identifier, or enum member)".to_string(),
-                 found: format!("{:?}", self.peek().map(|t| &t.token))
+                expected: "value (string, number, boolean, identifier, or enum member)".to_string(),
+                found: format!("{:?}", self.peek().map(|t| &t.token)),
             }),
         }
     }
@@ -296,7 +293,9 @@ impl<'a> ExpressionParser for Parser<'a> {
                 Ok(VarValue::String(value))
             }
             Some(Token::Number(n)) => {
-                let value = n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
+                let value = n
+                    .parse::<f64>()
+                    .map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
                 self.advance();
                 Ok(VarValue::Number(value))
             }
@@ -324,8 +323,8 @@ impl<'a> ExpressionParser for Parser<'a> {
                 }
             }
             _ => Err(ParseError::UnexpectedToken {
-                 expected: "value (string, number, boolean, or enum member)".to_string(),
-                 found: format!("{:?}", self.peek().map(|t| &t.token))
+                expected: "value (string, number, boolean, or enum member)".to_string(),
+                found: format!("{:?}", self.peek().map(|t| &t.token)),
             }),
         }
     }
@@ -336,7 +335,7 @@ impl<'a> ExpressionParser for Parser<'a> {
             Some(Token::StringType) => Ok("String".to_string()),
             Some(Token::NumberType) => Ok("Number".to_string()),
             Some(Token::BooleanType) => Ok("Boolean".to_string()),
-            _ => Err(ParseError::Custom("Expected type".to_string()))
+            _ => Err(ParseError::Custom("Expected type".to_string())),
         }
     }
 
@@ -399,11 +398,11 @@ impl<'a> ExpressionParser for Parser<'a> {
                 if brace_count != 0 {
                     eprintln!(
                         "DEBUG: brace_count={}, in_string={}, expr_text={:?}",
-                        brace_count,
-                        in_string,
-                        expr_text
+                        brace_count, in_string, expr_text
                     );
-                    return Err(ParseError::Custom("Unmatched '{' in interpolated string".to_string()));
+                    return Err(ParseError::Custom(
+                        "Unmatched '{' in interpolated string".to_string(),
+                    ));
                 }
 
                 // Check if this is a simple placeholder (identifier) or function call
@@ -438,7 +437,9 @@ impl<'a> ExpressionParser for Parser<'a> {
             let args_part = &expr_text[paren_pos + 1..];
 
             if !args_part.ends_with(')') {
-                return Err(ParseError::Custom("Expected ')' at end of function call".to_string()));
+                return Err(ParseError::Custom(
+                    "Expected ')' at end of function call".to_string(),
+                ));
             }
 
             let args_part = &args_part[..args_part.len() - 1].trim();
@@ -455,7 +456,9 @@ impl<'a> ExpressionParser for Parser<'a> {
                 args,
             })
         } else {
-            Err(ParseError::Custom("Expression in interpolated string must be a function call".to_string()))
+            Err(ParseError::Custom(
+                "Expression in interpolated string must be a function call".to_string(),
+            ))
         }
     }
 

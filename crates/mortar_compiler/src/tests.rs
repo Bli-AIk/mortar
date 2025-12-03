@@ -23,14 +23,14 @@ mod branch_test;
 mod control_flow_test;
 mod deserializer_test;
 mod diagnostics_test;
+#[cfg(test)]
+mod file_handler_tests;
 mod parser_test;
 mod performance_serialization_test;
 mod performance_test;
 mod serializer_test;
 mod token_test;
 mod variable_test;
-#[cfg(test)]
-mod file_handler_tests;
 // Placeholder for future tests
 // mod interpolation_test;
 // mod separator_test;

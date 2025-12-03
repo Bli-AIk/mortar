@@ -1,4 +1,5 @@
 use super::Parser;
+use super::error::ParseError;
 use crate::ast::{
     BranchValue, ConstDecl, EnumDef, EventDef, FunctionDecl, NodeDef, NodeJump, Param, Program,
     TimelineDef, TimelineStmt, TopLevel, VarDecl, VarValue,
@@ -6,7 +7,6 @@ use crate::ast::{
 use crate::parser::expression::ExpressionParser;
 use crate::parser::statement::StatementParser;
 use crate::token::Token;
-use super::error::ParseError;
 
 pub trait TopLevelParser {
     fn parse_program(&mut self) -> Result<Program, ParseError>;
@@ -65,8 +65,12 @@ impl<'a> TopLevelParser for Parser<'a> {
             Some(Token::Event) => Ok(TopLevel::EventDef(self.parse_event_def()?)),
             Some(Token::Timeline) => Ok(TopLevel::TimelineDef(self.parse_timeline_def()?)),
             _ => Err(ParseError::UnexpectedToken {
-                expected: "'node', 'fn', 'let', 'const', 'pub', 'enum', 'event', or 'timeline'".to_string(),
-                found: self.peek().map(|t| format!("{}", t.token)).unwrap_or_else(|| "EOF".to_string())
+                expected: "'node', 'fn', 'let', 'const', 'pub', 'enum', 'event', or 'timeline'"
+                    .to_string(),
+                found: self
+                    .peek()
+                    .map(|t| format!("{}", t.token))
+                    .unwrap_or_else(|| "EOF".to_string()),
             }),
         }
     }
@@ -78,10 +82,14 @@ impl<'a> TopLevelParser for Parser<'a> {
             if let Token::Identifier(name) = &token_info.token {
                 (name.to_string(), Some((token_info.start, token_info.end)))
             } else {
-                return Err(ParseError::Custom("Expected identifier after 'node'".to_string()));
+                return Err(ParseError::Custom(
+                    "Expected identifier after 'node'".to_string(),
+                ));
             }
         } else {
-            return Err(ParseError::Custom("Expected identifier after 'node'".to_string()));
+            return Err(ParseError::Custom(
+                "Expected identifier after 'node'".to_string(),
+            ));
         };
 
         self.consume(&Token::LeftBrace, "Expected '{'")?;
@@ -136,7 +144,10 @@ impl<'a> TopLevelParser for Parser<'a> {
             }
             _ => Err(ParseError::UnexpectedToken {
                 expected: "identifier, 'return', or 'break'".to_string(),
-                found: self.peek().map(|t| format!("{}", t.token)).unwrap_or_else(|| "EOF".to_string())
+                found: self
+                    .peek()
+                    .map(|t| format!("{}", t.token))
+                    .unwrap_or_else(|| "EOF".to_string()),
             }),
         }
     }
@@ -209,7 +220,9 @@ impl<'a> TopLevelParser for Parser<'a> {
             if let Token::Identifier(name) = &token_info.token {
                 (name.to_string(), Some((token_info.start, token_info.end)))
             } else {
-                return Err(ParseError::ExpectedIdentifier { found: format!("{}", token_info.token) });
+                return Err(ParseError::ExpectedIdentifier {
+                    found: format!("{}", token_info.token),
+                });
             }
         } else {
             return Err(ParseError::UnexpectedEOF);
@@ -364,10 +377,14 @@ impl<'a> TopLevelParser for Parser<'a> {
             if let Token::Identifier(name) = &token_info.token {
                 (name.to_string(), Some((token_info.start, token_info.end)))
             } else {
-                return Err(ParseError::Custom("Expected identifier after 'event'".to_string()));
+                return Err(ParseError::Custom(
+                    "Expected identifier after 'event'".to_string(),
+                ));
             }
         } else {
-            return Err(ParseError::Custom("Expected identifier after 'event'".to_string()));
+            return Err(ParseError::Custom(
+                "Expected identifier after 'event'".to_string(),
+            ));
         };
 
         self.consume(&Token::LeftBrace, "Expected '{'")?;
@@ -388,10 +405,15 @@ impl<'a> TopLevelParser for Parser<'a> {
                     self.advance();
                     self.consume(&Token::Colon, "Expected ':' after 'index'")?;
                     if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
-                        index = Some(n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?);
+                        index = Some(
+                            n.parse::<f64>()
+                                .map_err(|_| ParseError::InvalidNumber(n.to_string()))?,
+                        );
                         self.advance();
                     } else {
-                        return Err(ParseError::Custom("Expected number after 'index:'".to_string()));
+                        return Err(ParseError::Custom(
+                            "Expected number after 'index:'".to_string(),
+                        ));
                     }
                 }
                 Some(Token::Action) => {
@@ -403,16 +425,24 @@ impl<'a> TopLevelParser for Parser<'a> {
                     self.advance();
                     self.consume(&Token::Colon, "Expected ':' after 'duration'")?;
                     if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
-                        duration = Some(n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?);
+                        duration = Some(
+                            n.parse::<f64>()
+                                .map_err(|_| ParseError::InvalidNumber(n.to_string()))?,
+                        );
                         self.advance();
                     } else {
-                        return Err(ParseError::Custom("Expected number after 'duration:'".to_string()));
+                        return Err(ParseError::Custom(
+                            "Expected number after 'duration:'".to_string(),
+                        ));
                     }
                 }
                 _ => {
                     return Err(ParseError::UnexpectedToken {
                         expected: "'index', 'action', or 'duration'".to_string(),
-                        found: self.peek().map(|t| format!("{}", t.token)).unwrap_or_else(|| "EOF".to_string())
+                        found: self
+                            .peek()
+                            .map(|t| format!("{}", t.token))
+                            .unwrap_or_else(|| "EOF".to_string()),
                     });
                 }
             }
@@ -422,7 +452,9 @@ impl<'a> TopLevelParser for Parser<'a> {
 
         self.consume(&Token::RightBrace, "Expected '}'")?;
 
-        let action = action.ok_or(ParseError::Custom("Event definition must have an 'action' field".to_string()))?;
+        let action = action.ok_or(ParseError::Custom(
+            "Event definition must have an 'action' field".to_string(),
+        ))?;
 
         Ok(EventDef {
             name,
@@ -440,10 +472,14 @@ impl<'a> TopLevelParser for Parser<'a> {
             if let Token::Identifier(name) = &token_info.token {
                 (name.to_string(), Some((token_info.start, token_info.end)))
             } else {
-                return Err(ParseError::Custom("Expected identifier after 'timeline'".to_string()));
+                return Err(ParseError::Custom(
+                    "Expected identifier after 'timeline'".to_string(),
+                ));
             }
         } else {
-            return Err(ParseError::Custom("Expected identifier after 'timeline'".to_string()));
+            return Err(ParseError::Custom(
+                "Expected identifier after 'timeline'".to_string(),
+            ));
         };
 
         self.consume(&Token::LeftBrace, "Expected '{'")?;
@@ -483,16 +519,23 @@ impl<'a> TopLevelParser for Parser<'a> {
             Some(Token::Wait) => {
                 self.advance();
                 if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
-                    let duration = n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
+                    let duration = n
+                        .parse::<f64>()
+                        .map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
                     self.advance();
                     Ok(TimelineStmt::Wait(duration))
                 } else {
-                    Err(ParseError::Custom("Expected number after 'wait'".to_string()))
+                    Err(ParseError::Custom(
+                        "Expected number after 'wait'".to_string(),
+                    ))
                 }
             }
             _ => Err(ParseError::UnexpectedToken {
                 expected: "'run', 'now', or 'wait'".to_string(),
-                found: self.peek().map(|t| format!("{}", t.token)).unwrap_or_else(|| "EOF".to_string())
+                found: self
+                    .peek()
+                    .map(|t| format!("{}", t.token))
+                    .unwrap_or_else(|| "EOF".to_string()),
             }),
         }
     }

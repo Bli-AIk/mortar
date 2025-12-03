@@ -1,11 +1,11 @@
 use super::Parser;
+use super::error::ParseError;
 use crate::ast::{
     Assignment, BranchCase, BranchDef, ChoiceDest, ChoiceItem, Condition, Event, EventAction,
     IfElseStmt, IndexOverride, NodeStmt, RunStmt, WithEventItem, WithEventsStmt,
 };
 use crate::parser::expression::ExpressionParser;
 use crate::token::Token;
-use super::error::ParseError;
 
 pub trait StatementParser {
     fn parse_node_stmt(&mut self) -> Result<NodeStmt, ParseError>;
@@ -81,7 +81,9 @@ impl<'a> StatementParser for Parser<'a> {
                     let interpolated = self.parse_interpolated_string(&text_copy)?;
                     Ok(NodeStmt::InterpolatedText(interpolated))
                 }
-                _ => Err(ParseError::ExpectedString { found: format!("{}", token_info.token) }),
+                _ => Err(ParseError::ExpectedString {
+                    found: format!("{}", token_info.token),
+                }),
             }
         } else {
             Err(ParseError::UnexpectedEOF)
@@ -116,10 +118,14 @@ impl<'a> StatementParser for Parser<'a> {
                 if let Token::String(s) = &token_info.token {
                     s.to_string()
                 } else {
-                    return Err(ParseError::Custom("Expected string in parentheses".to_string()));
+                    return Err(ParseError::Custom(
+                        "Expected string in parentheses".to_string(),
+                    ));
                 }
             } else {
-                return Err(ParseError::Custom("Expected string in parentheses".to_string()));
+                return Err(ParseError::Custom(
+                    "Expected string in parentheses".to_string(),
+                ));
             };
             self.consume(&Token::RightParen, "Expected ')'")?;
             text
@@ -207,7 +213,10 @@ impl<'a> StatementParser for Parser<'a> {
             }
             _ => Err(ParseError::UnexpectedToken {
                 expected: "choice destination".to_string(),
-                found: self.peek().map(|t| format!("{}", t.token)).unwrap_or_else(|| "EOF".to_string())
+                found: self
+                    .peek()
+                    .map(|t| format!("{}", t.token))
+                    .unwrap_or_else(|| "EOF".to_string()),
             }),
         }
     }
@@ -224,10 +233,14 @@ impl<'a> StatementParser for Parser<'a> {
                     Ok(Condition::Identifier(name))
                 }
             } else {
-                Err(ParseError::Custom("Expected identifier or function call in condition".to_string()))
+                Err(ParseError::Custom(
+                    "Expected identifier or function call in condition".to_string(),
+                ))
             }
         } else {
-            Err(ParseError::Custom("Expected identifier or function call in condition".to_string()))
+            Err(ParseError::Custom(
+                "Expected identifier or function call in condition".to_string(),
+            ))
         }
     }
 
@@ -324,12 +337,17 @@ impl<'a> StatementParser for Parser<'a> {
     fn parse_event(&mut self) -> Result<Event, ParseError> {
         let index = if let Some(token_info) = self.advance() {
             if let Token::Number(n) = &token_info.token {
-                n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?
+                n.parse::<f64>()
+                    .map_err(|_| ParseError::InvalidNumber(n.to_string()))?
             } else {
-                return Err(ParseError::Custom("Expected number for event index".to_string()));
+                return Err(ParseError::Custom(
+                    "Expected number for event index".to_string(),
+                ));
             }
         } else {
-            return Err(ParseError::Custom("Expected number for event index".to_string()));
+            return Err(ParseError::Custom(
+                "Expected number for event index".to_string(),
+            ));
         };
 
         // Skip optional comma or semicolon after event index
@@ -406,7 +424,9 @@ impl<'a> StatementParser for Parser<'a> {
             if let Token::Identifier(name) = &token_info.token {
                 (name.to_string(), Some((token_info.start, token_info.end)))
             } else {
-                return Err(ParseError::ExpectedIdentifier { found: format!("{}", token_info.token) });
+                return Err(ParseError::ExpectedIdentifier {
+                    found: format!("{}", token_info.token),
+                });
             }
         } else {
             return Err(ParseError::UnexpectedEOF);
@@ -435,7 +455,9 @@ impl<'a> StatementParser for Parser<'a> {
             self.advance();
 
             if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
-                let value = n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
+                let value = n
+                    .parse::<f64>()
+                    .map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
                 self.advance();
                 Some(IndexOverride::Value(value))
             } else if let Some(Token::Identifier(name)) = self.peek().map(|t| &t.token) {
@@ -443,7 +465,9 @@ impl<'a> StatementParser for Parser<'a> {
                 self.advance();
                 Some(IndexOverride::Variable(name))
             } else {
-                return Err(ParseError::Custom("Expected number or identifier after 'with'".to_string()));
+                return Err(ParseError::Custom(
+                    "Expected number or identifier after 'with'".to_string(),
+                ));
             }
         } else {
             None
@@ -506,7 +530,9 @@ impl<'a> StatementParser for Parser<'a> {
                     self.advance();
                     events.push(WithEventItem::EventRef(name, span));
                 } else {
-                    return Err(ParseError::Custom("Expected event index or event name in 'with events' list".to_string()));
+                    return Err(ParseError::Custom(
+                        "Expected event index or event name in 'with events' list".to_string(),
+                    ));
                 }
 
                 self.skip_optional_separators();
@@ -519,7 +545,9 @@ impl<'a> StatementParser for Parser<'a> {
             self.advance();
             events.push(WithEventItem::EventRef(name, span));
         } else {
-            return Err(ParseError::Custom("Expected 'events', 'event', or event name after 'with'".to_string()));
+            return Err(ParseError::Custom(
+                "Expected 'events', 'event', or event name after 'with'".to_string(),
+            ));
         }
 
         Ok(WithEventsStmt { events })
@@ -530,10 +558,12 @@ impl<'a> StatementParser for Parser<'a> {
             if let Token::Identifier(name) = &token_info.token {
                 (name.to_string(), Some((token_info.start, token_info.end)))
             } else {
-                return Err(ParseError::ExpectedIdentifier { found: format!("{}", token_info.token) });
+                return Err(ParseError::ExpectedIdentifier {
+                    found: format!("{}", token_info.token),
+                });
             }
         } else {
-             return Err(ParseError::UnexpectedEOF);
+            return Err(ParseError::UnexpectedEOF);
         };
 
         self.consume(&Token::Equals, "Expected '=' after variable name")?;
