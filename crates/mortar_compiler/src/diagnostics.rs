@@ -397,11 +397,7 @@ impl DiagnosticCollector {
                 }
                 TopLevel::VarDecl(var_decl) => {
                     if let Some(value) = &var_decl.value {
-                        self.analyze_var_value(
-                            value,
-                            &declared_functions,
-                            &mut used_functions,
-                        );
+                        self.analyze_var_value(value, &declared_functions, &mut used_functions);
                     }
                 }
                 TopLevel::ConstDecl(const_decl) => {
@@ -501,8 +497,8 @@ impl DiagnosticCollector {
                 NodeStmt::Run(_) => {
                     // Run statements don't need analysis for now
                 }
-                NodeStmt::WithEvents(_) => {
-                    // WithEvents statements don't need analysis for now
+                NodeStmt::WithEvents(with_events) => {
+                    self.analyze_with_events(with_events, declared_functions, used_functions);
                 }
                 NodeStmt::VarDecl(_) => {
                     // Variable declarations in node body are local scope
@@ -510,6 +506,39 @@ impl DiagnosticCollector {
                 NodeStmt::Assignment(_) => {
                     // Assignment statements don't need special analysis for now
                 }
+            }
+        }
+    }
+
+    fn analyze_with_events(
+        &mut self,
+        with_events: &crate::ast::WithEventsStmt,
+        declared_functions: &HashMap<String, &FunctionDecl>,
+        used_functions: &mut HashSet<String>,
+    ) {
+        for item in &with_events.events {
+            self.analyze_with_event_item(item, declared_functions, used_functions);
+        }
+    }
+
+    fn analyze_with_event_item(
+        &mut self,
+        item: &crate::ast::WithEventItem,
+        declared_functions: &HashMap<String, &FunctionDecl>,
+        used_functions: &mut HashSet<String>,
+    ) {
+        match item {
+            crate::ast::WithEventItem::InlineEvent(event) => {
+                self.analyze_event_action(&event.action, declared_functions, used_functions);
+            }
+            crate::ast::WithEventItem::EventList(list) => {
+                for sub_item in list {
+                    self.analyze_with_event_item(sub_item, declared_functions, used_functions);
+                }
+            }
+            crate::ast::WithEventItem::EventRef(_, _)
+            | crate::ast::WithEventItem::EventRefWithOverride(_, _, _) => {
+                // References point to TopLevel::EventDef, which are analyzed separately.
             }
         }
     }
