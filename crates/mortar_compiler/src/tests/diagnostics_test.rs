@@ -252,5 +252,8 @@ fn test_parse_error_generates_diagnostic() {
         ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
 
     // Parser might recover (Ok) or fail (Err), but it MUST report an error
-    assert!(diagnostics.has_errors(), "Expected diagnostics to have errors");
+    assert!(
+        diagnostics.has_errors(),
+        "Expected diagnostics to have errors"
+    );
 }
