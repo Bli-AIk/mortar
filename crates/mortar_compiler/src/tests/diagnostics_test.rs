@@ -248,10 +248,9 @@ fn test_analyze_with_variables() {
 fn test_parse_error_generates_diagnostic() {
     let source = "invalid syntax here {{{{";
 
-    let (result, _diagnostics) =
+    let (_result, diagnostics) =
         ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
 
-    // Should fail to parse
-    assert!(result.is_err());
-    // Diagnostics should contain the error
+    // Parser might recover (Ok) or fail (Err), but it MUST report an error
+    assert!(diagnostics.has_errors(), "Expected diagnostics to have errors");
 }
