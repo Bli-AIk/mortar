@@ -25,17 +25,19 @@
 pub mod expression;
 pub mod statement;
 pub mod top_level;
+pub mod error;
 
 use top_level::TopLevelParser;
 
 use crate::ast::Program;
 use crate::diagnostics::{Diagnostic, DiagnosticCollector, DiagnosticKind, Severity};
 use crate::token::{Token, TokenInfo};
+use error::ParseError;
 
 pub struct ParseHandler;
 
 impl ParseHandler {
-    pub fn parse_source_code(content: &str, verbose_lexer: bool) -> Result<Program, String> {
+    pub fn parse_source_code(content: &str, verbose_lexer: bool) -> Result<Program, ParseError> {
         let tokens = if verbose_lexer {
             crate::token::lex_with_output(content)
                 .into_iter()
@@ -58,7 +60,7 @@ impl ParseHandler {
         content: &str,
         file_name: String,
         verbose_lexer: bool,
-    ) -> (Result<Program, String>, DiagnosticCollector) {
+    ) -> (Result<Program, ParseError>, DiagnosticCollector) {
         Self::parse_source_code_with_diagnostics_and_language(
             content,
             file_name,
@@ -72,7 +74,7 @@ impl ParseHandler {
         file_name: String,
         verbose_lexer: bool,
         language: crate::Language,
-    ) -> (Result<Program, String>, DiagnosticCollector) {
+    ) -> (Result<Program, ParseError>, DiagnosticCollector) {
         let tokens = if verbose_lexer {
             crate::token::lex_with_output(content)
                 .into_iter()
@@ -97,11 +99,11 @@ impl ParseHandler {
             let current_span = parser.get_current_span();
             diagnostics.add_diagnostic(Diagnostic {
                 kind: DiagnosticKind::SyntaxError {
-                    message: parse_error.clone(),
+                    message: parse_error.to_string(),
                 },
                 severity: Severity::Error,
                 span: current_span,
-                message: parse_error.clone(),
+                message: parse_error.to_string(),
             });
         }
 
@@ -163,47 +165,46 @@ impl<'a> Parser<'a> {
     pub(super) fn consume(
         &mut self,
         expected: &Token,
-        error_msg: &str,
-    ) -> Result<&TokenInfo<'_>, String> {
+        _error_msg: &str,
+    ) -> Result<&TokenInfo<'_>, ParseError> {
         if self.check(expected) {
             Ok(self.advance().unwrap())
         } else {
-            Err(format!(
-                "{}: expected {:?}, found {:?}",
-                error_msg,
-                expected,
-                self.peek().map(|t| &t.token)
-            ))
+            let found = self.peek()
+                .map(|t| format!("{}", t.token))
+                .unwrap_or_else(|| "EOF".to_string());
+            Err(ParseError::UnexpectedToken {
+                expected: format!("{}", expected),
+                found,
+            })
         }
     }
 
-    pub(super) fn consume_identifier(&mut self, error_msg: &str) -> Result<String, String> {
+    pub(super) fn consume_identifier(&mut self, _error_msg: &str) -> Result<String, ParseError> {
         if let Some(token_info) = self.advance() {
             if let Token::Identifier(name) = &token_info.token {
                 Ok(name.to_string())
             } else {
-                Err(format!(
-                    "{}: expected identifier, found {:?}",
-                    error_msg, token_info.token
-                ))
+                Err(ParseError::ExpectedIdentifier {
+                    found: format!("{}", token_info.token),
+                })
             }
         } else {
-            Err(format!("{}: unexpected end of input", error_msg))
+             Err(ParseError::UnexpectedEOF)
         }
     }
 
-    pub(super) fn consume_string(&mut self, error_msg: &str) -> Result<String, String> {
+    pub(super) fn consume_string(&mut self, _error_msg: &str) -> Result<String, ParseError> {
         if let Some(token_info) = self.advance() {
             if let Token::String(s) = &token_info.token {
                 Ok(s.to_string())
             } else {
-                Err(format!(
-                    "{}: expected string, found {:?}",
-                    error_msg, token_info.token
-                ))
+                Err(ParseError::ExpectedString {
+                    found: format!("{}", token_info.token),
+                })
             }
         } else {
-            Err(format!("{}: unexpected end of input", error_msg))
+            Err(ParseError::UnexpectedEOF)
         }
     }
 

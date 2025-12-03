@@ -13,34 +13,35 @@ use crate::ast::{
     VarValue,
 };
 use crate::token::Token;
+use super::error::ParseError;
 
 pub trait ExpressionParser {
-    fn parse_if_condition(&mut self) -> Result<IfCondition, String>;
-    fn parse_or_expression(&mut self) -> Result<IfCondition, String>;
-    fn parse_and_expression(&mut self) -> Result<IfCondition, String>;
-    fn parse_comparison_expression(&mut self) -> Result<IfCondition, String>;
-    fn parse_unary_expression(&mut self) -> Result<IfCondition, String>;
-    fn parse_primary_if_condition(&mut self) -> Result<IfCondition, String>;
+    fn parse_if_condition(&mut self) -> Result<IfCondition, ParseError>;
+    fn parse_or_expression(&mut self) -> Result<IfCondition, ParseError>;
+    fn parse_and_expression(&mut self) -> Result<IfCondition, ParseError>;
+    fn parse_comparison_expression(&mut self) -> Result<IfCondition, ParseError>;
+    fn parse_unary_expression(&mut self) -> Result<IfCondition, ParseError>;
+    fn parse_primary_if_condition(&mut self) -> Result<IfCondition, ParseError>;
     fn peek_comparison_op(&self) -> Option<ComparisonOp>;
 
-    fn parse_func_call(&mut self) -> Result<FuncCall, String>;
-    fn parse_arg(&mut self) -> Result<Arg, String>;
+    fn parse_func_call(&mut self) -> Result<FuncCall, ParseError>;
+    fn parse_arg(&mut self) -> Result<Arg, ParseError>;
 
-    fn parse_assign_value(&mut self) -> Result<AssignValue, String>;
-    fn parse_var_value(&mut self) -> Result<VarValue, String>;
-    fn parse_type(&mut self) -> Result<String, String>;
+    fn parse_assign_value(&mut self) -> Result<AssignValue, ParseError>;
+    fn parse_var_value(&mut self) -> Result<VarValue, ParseError>;
+    fn parse_type(&mut self) -> Result<String, ParseError>;
 
-    fn parse_interpolated_string(&mut self, text: &str) -> Result<InterpolatedString, String>;
-    fn parse_expression_from_string(&mut self, expr_text: &str) -> Result<FuncCall, String>;
-    fn parse_simple_args(&mut self, args_text: &str) -> Result<Vec<Arg>, String>;
+    fn parse_interpolated_string(&mut self, text: &str) -> Result<InterpolatedString, ParseError>;
+    fn parse_expression_from_string(&mut self, expr_text: &str) -> Result<FuncCall, ParseError>;
+    fn parse_simple_args(&mut self, args_text: &str) -> Result<Vec<Arg>, ParseError>;
 }
 
 impl<'a> ExpressionParser for Parser<'a> {
-    fn parse_if_condition(&mut self) -> Result<IfCondition, String> {
+    fn parse_if_condition(&mut self) -> Result<IfCondition, ParseError> {
         self.parse_or_expression()
     }
 
-    fn parse_or_expression(&mut self) -> Result<IfCondition, String> {
+    fn parse_or_expression(&mut self) -> Result<IfCondition, ParseError> {
         let mut left = self.parse_and_expression()?;
 
         while self.check(&Token::Or) {
@@ -56,7 +57,7 @@ impl<'a> ExpressionParser for Parser<'a> {
         Ok(left)
     }
 
-    fn parse_and_expression(&mut self) -> Result<IfCondition, String> {
+    fn parse_and_expression(&mut self) -> Result<IfCondition, ParseError> {
         let mut left = self.parse_comparison_expression()?;
 
         while self.check(&Token::And) {
@@ -72,7 +73,7 @@ impl<'a> ExpressionParser for Parser<'a> {
         Ok(left)
     }
 
-    fn parse_comparison_expression(&mut self) -> Result<IfCondition, String> {
+    fn parse_comparison_expression(&mut self) -> Result<IfCondition, ParseError> {
         let mut left = self.parse_unary_expression()?;
 
         while let Some(op) = self.peek_comparison_op() {
@@ -88,7 +89,7 @@ impl<'a> ExpressionParser for Parser<'a> {
         Ok(left)
     }
 
-    fn parse_unary_expression(&mut self) -> Result<IfCondition, String> {
+    fn parse_unary_expression(&mut self) -> Result<IfCondition, ParseError> {
         if self.check(&Token::Not) {
             self.advance();
             let operand = self.parse_unary_expression()?;
@@ -101,7 +102,7 @@ impl<'a> ExpressionParser for Parser<'a> {
         self.parse_primary_if_condition()
     }
 
-    fn parse_primary_if_condition(&mut self) -> Result<IfCondition, String> {
+    fn parse_primary_if_condition(&mut self) -> Result<IfCondition, ParseError> {
         // Handle parenthesized expressions
         if self.check(&Token::LeftParen) {
             self.advance();
@@ -145,7 +146,7 @@ impl<'a> ExpressionParser for Parser<'a> {
             }
         }
 
-        Err("Expected condition expression".to_string())
+        Err(ParseError::Custom("Expected condition expression".to_string()))
     }
 
     fn peek_comparison_op(&self) -> Option<ComparisonOp> {
@@ -160,7 +161,7 @@ impl<'a> ExpressionParser for Parser<'a> {
         }
     }
 
-    fn parse_func_call(&mut self) -> Result<FuncCall, String> {
+    fn parse_func_call(&mut self) -> Result<FuncCall, ParseError> {
         let (name, name_span) = if let Some(token_info) = self.advance() {
             match &token_info.token {
                 Token::Identifier(name) => {
@@ -182,11 +183,11 @@ impl<'a> ExpressionParser for Parser<'a> {
                     Some((token_info.start, token_info.end)),
                 ),
                 _ => {
-                    return Err("Expected function name".to_string());
+                    return Err(ParseError::Custom("Expected function name".to_string()));
                 }
             }
         } else {
-            return Err("Expected function name".to_string());
+            return Err(ParseError::Custom("Expected function name".to_string()));
         };
 
         self.consume(&Token::LeftParen, "Expected '('")?;
@@ -211,7 +212,7 @@ impl<'a> ExpressionParser for Parser<'a> {
         })
     }
 
-    fn parse_arg(&mut self) -> Result<Arg, String> {
+    fn parse_arg(&mut self) -> Result<Arg, ParseError> {
         match self.peek().map(|t| &t.token) {
             Some(Token::String(s)) => {
                 let s = s.to_string();
@@ -219,7 +220,7 @@ impl<'a> ExpressionParser for Parser<'a> {
                 Ok(Arg::String(s))
             }
             Some(Token::Number(n)) => {
-                let n = n.parse::<f64>().map_err(|_| "Invalid number")?;
+                let n = n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
                 self.advance();
                 Ok(Arg::Number(n))
             }
@@ -241,14 +242,14 @@ impl<'a> ExpressionParser for Parser<'a> {
                     Ok(Arg::Identifier(name))
                 }
             }
-            _ => Err(format!(
-                "Expected argument, found {:?}",
-                self.peek().map(|t| &t.token)
-            )),
+            _ => Err(ParseError::UnexpectedToken {
+                expected: "argument".to_string(),
+                found: format!("{:?}", self.peek().map(|t| &t.token)),
+            }),
         }
     }
 
-    fn parse_assign_value(&mut self) -> Result<AssignValue, String> {
+    fn parse_assign_value(&mut self) -> Result<AssignValue, ParseError> {
         match self.peek().map(|t| &t.token) {
             Some(Token::String(s)) => {
                 let value = s.to_string();
@@ -256,7 +257,7 @@ impl<'a> ExpressionParser for Parser<'a> {
                 Ok(AssignValue::String(value))
             }
             Some(Token::Number(n)) => {
-                let value = n.parse::<f64>().map_err(|_| "Invalid number")?;
+                let value = n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
                 self.advance();
                 Ok(AssignValue::Number(value))
             }
@@ -280,14 +281,14 @@ impl<'a> ExpressionParser for Parser<'a> {
                     Ok(AssignValue::Identifier(first_name))
                 }
             }
-            _ => Err(format!(
-                "Expected value (string, number, boolean, identifier, or enum member), found {:?}",
-                self.peek().map(|t| &t.token)
-            )),
+            _ => Err(ParseError::UnexpectedToken {
+                 expected: "value (string, number, boolean, identifier, or enum member)".to_string(),
+                 found: format!("{:?}", self.peek().map(|t| &t.token))
+            }),
         }
     }
 
-    fn parse_var_value(&mut self) -> Result<VarValue, String> {
+    fn parse_var_value(&mut self) -> Result<VarValue, ParseError> {
         match self.peek().map(|t| &t.token) {
             Some(Token::String(s)) => {
                 let value = s.to_string();
@@ -295,7 +296,7 @@ impl<'a> ExpressionParser for Parser<'a> {
                 Ok(VarValue::String(value))
             }
             Some(Token::Number(n)) => {
-                let value = n.parse::<f64>().map_err(|_| "Invalid number")?;
+                let value = n.parse::<f64>().map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
                 self.advance();
                 Ok(VarValue::Number(value))
             }
@@ -316,30 +317,30 @@ impl<'a> ExpressionParser for Parser<'a> {
                     let member = self.consume_identifier("Expected enum member name after '.'")?;
                     Ok(VarValue::EnumMember(enum_name, member))
                 } else {
-                    Err(format!(
+                    Err(ParseError::Custom(format!(
                         "Unexpected identifier '{}' in variable value",
                         enum_name
-                    ))
+                    )))
                 }
             }
-            _ => Err(format!(
-                "Expected value (string, number, boolean, or enum member), found {:?}",
-                self.peek().map(|t| &t.token)
-            )),
+            _ => Err(ParseError::UnexpectedToken {
+                 expected: "value (string, number, boolean, or enum member)".to_string(),
+                 found: format!("{:?}", self.peek().map(|t| &t.token))
+            }),
         }
     }
 
-    fn parse_type(&mut self) -> Result<String, String> {
+    fn parse_type(&mut self) -> Result<String, ParseError> {
         match self.advance().map(|t| &t.token) {
             Some(Token::Identifier(type_name)) => Ok(type_name.to_string()),
             Some(Token::StringType) => Ok("String".to_string()),
             Some(Token::NumberType) => Ok("Number".to_string()),
             Some(Token::BooleanType) => Ok("Boolean".to_string()),
-            _ => Err("Expected type".to_string()),
+            _ => Err(ParseError::Custom("Expected type".to_string()))
         }
     }
 
-    fn parse_interpolated_string(&mut self, text: &str) -> Result<InterpolatedString, String> {
+    fn parse_interpolated_string(&mut self, text: &str) -> Result<InterpolatedString, ParseError> {
         let mut parts = Vec::new();
         let mut chars = text.chars().peekable();
         let mut current_text = String::new();
@@ -365,8 +366,7 @@ impl<'a> ExpressionParser for Parser<'a> {
                         continue;
                     }
 
-                    if expr_ch == '\\'
-                     {
+                    if expr_ch == '\\' {
                         expr_text.push(expr_ch);
                         escape_next = true;
                         continue;
@@ -403,7 +403,7 @@ impl<'a> ExpressionParser for Parser<'a> {
                         in_string,
                         expr_text
                     );
-                    return Err("Unmatched '{' in interpolated string".to_string());
+                    return Err(ParseError::Custom("Unmatched '{' in interpolated string".to_string()));
                 }
 
                 // Check if this is a simple placeholder (identifier) or function call
@@ -429,7 +429,7 @@ impl<'a> ExpressionParser for Parser<'a> {
         Ok(InterpolatedString { parts })
     }
 
-    fn parse_expression_from_string(&mut self, expr_text: &str) -> Result<FuncCall, String> {
+    fn parse_expression_from_string(&mut self, expr_text: &str) -> Result<FuncCall, ParseError> {
         // Simple parsing of "function_name()" or "function_name(args)"
         let expr_text = expr_text.trim();
 
@@ -438,7 +438,7 @@ impl<'a> ExpressionParser for Parser<'a> {
             let args_part = &expr_text[paren_pos + 1..];
 
             if !args_part.ends_with(')') {
-                return Err("Expected ')' at end of function call".to_string());
+                return Err(ParseError::Custom("Expected ')' at end of function call".to_string()));
             }
 
             let args_part = &args_part[..args_part.len() - 1].trim();
@@ -455,11 +455,11 @@ impl<'a> ExpressionParser for Parser<'a> {
                 args,
             })
         } else {
-            Err("Expression in interpolated string must be a function call".to_string())
+            Err(ParseError::Custom("Expression in interpolated string must be a function call".to_string()))
         }
     }
 
-    fn parse_simple_args(&mut self, args_text: &str) -> Result<Vec<Arg>, String> {
+    fn parse_simple_args(&mut self, args_text: &str) -> Result<Vec<Arg>, ParseError> {
         let mut args = Vec::new();
 
         for arg in args_text.split(',') {
@@ -470,7 +470,7 @@ impl<'a> ExpressionParser for Parser<'a> {
                 if let Ok(num) = arg.parse::<f64>() {
                     args.push(Arg::Number(num));
                 } else {
-                    return Err(format!("Invalid number: {}", arg));
+                    return Err(ParseError::InvalidNumber(arg.to_string()));
                 }
             } else {
                 args.push(Arg::Identifier(arg.to_string()));
