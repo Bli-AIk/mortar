@@ -395,6 +395,22 @@ impl DiagnosticCollector {
                         }
                     }
                 }
+                TopLevel::VarDecl(var_decl) => {
+                    if let Some(value) = &var_decl.value {
+                        self.analyze_var_value(
+                            value,
+                            &declared_functions,
+                            &mut used_functions,
+                        );
+                    }
+                }
+                TopLevel::ConstDecl(const_decl) => {
+                    self.analyze_var_value(
+                        &const_decl.value,
+                        &declared_functions,
+                        &mut used_functions,
+                    );
+                }
                 _ => {}
             }
         }
@@ -413,6 +429,27 @@ impl DiagnosticCollector {
                         &[func_name],
                     ),
                 });
+            }
+        }
+    }
+
+    fn analyze_var_value(
+        &mut self,
+        value: &crate::ast::VarValue,
+        declared_functions: &HashMap<String, &FunctionDecl>,
+        used_functions: &mut HashSet<String>,
+    ) {
+        if let crate::ast::VarValue::Branch(branch_val) = value {
+            for case in &branch_val.cases {
+                if let Some(events) = &case.events {
+                    for event in events {
+                        self.analyze_event_action(
+                            &event.action,
+                            declared_functions,
+                            used_functions,
+                        );
+                    }
+                }
             }
         }
     }
