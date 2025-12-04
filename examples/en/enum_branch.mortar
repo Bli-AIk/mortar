@@ -1,6 +1,6 @@
 // Enum and Branch Variable Example
 
-// 定义枚举类型
+// Define enum types
 enum GameState {
     start
     playing
@@ -13,33 +13,33 @@ enum Location {
     town
 }
 
-// 定义枚举变量
+// Define enum variables
 let current_state: GameState
 let current_location: Location
 
-// 定义 branch 类型变量，根据枚举值选择文本
+// Define branch type variables, selecting text based on enum value
 let status: branch<current_state> [
-    start, "游戏开始"
-    playing, "游戏进行中"
-    game_over, "游戏结束"
+    start, "Game Start"
+    playing, "Playing"
+    game_over, "Game Over"
 ]
 
 let place: branch<current_location> [
-    forest, "森林深处"
-    city, "繁华都市"
-    town, "宁静小镇"
+    forest, "deep forest"
+    city, "bustling city"
+    town, "quiet town"
 ]
 
-// 在节点中使用 branch 变量（通过插值字符串）
+// Using branch variables in nodes (via string interpolation)
 node StatusDisplay {
-    text: $"游戏状态是 {status}。"
+    text: $"Game status is {status}."
 }
 
 node LocationDisplay {
-    text: $"你现在在 {place}。"
+    text: $"You are now in the {place}."
 }
 
-// 更复杂的例子：带有 events 的 branch
+// More complex example: branch with events
 enum Weather {
     sunny
     rainy
@@ -49,19 +49,19 @@ enum Weather {
 let current_weather: Weather
 
 let weather_desc: branch<current_weather> [
-    sunny, "晴朗", events: [
+    sunny, "Sunny", events: [
         0, set_color("#FFD700")
     ]
-    rainy, "下雨", events: [
+    rainy, "Raining", events: [
         0, set_color("#4682B4")
     ]
-    snowy, "下雪", events: [
+    snowy, "Snowing", events: [
         0, set_color("#E0E0E0")
     ]
 ]
 
 node WeatherDisplay {
-    text: $"今天的天气是{weather_desc}。"
+    text: $"Today's weather is {weather_desc}."
 }
 
 fn set_color(color: String)

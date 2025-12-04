@@ -1,13 +1,13 @@
-// Control Flow Example - if-else statements
+// 控制流示例 - if-else 语句
 
-// ===== Variables =====
+// ===== 变量 =====
 
 let player_score: Number = 150
 let is_winner: Bool
 let level: Number = 5
 let has_bonus: Bool
 
-// ===== Nodes with Control Flow =====
+// ===== 带有控制流的节点 =====
 
 node ScoreEvaluation {
     if player_score > 100 {

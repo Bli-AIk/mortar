@@ -145,13 +145,33 @@ impl LanguageServer for Backend {
             let rope = Rope::from_str(&content);
             self.documents.insert(uri.clone(), (rope, version));
 
-            // Use the new analyze_document method
-            self.analyze_document(&uri, &content).await;
+            // Cancel any existing debounce task for this URI
+            if let Some(handle) = self.debouncers.get(&uri) {
+                handle.abort();
+            }
+
+            let backend = self.clone();
+            let uri_clone = uri.clone();
+            let content_clone = content.clone();
+
+            let task = tokio::spawn(async move {
+                // Debounce delay
+                tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+                backend.analyze_document(&uri_clone, &content_clone).await;
+            });
+
+            self.debouncers.insert(uri, task);
         }
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let uri = params.text_document.uri;
+
+        // Cancel and remove any pending debounce task
+        if let Some(handle) = self.debouncers.remove(&uri) {
+            handle.1.abort();
+        }
+
         self.documents.remove(&uri);
         self.diagnostics.remove(&uri);
         self.symbol_tables.remove(&uri);

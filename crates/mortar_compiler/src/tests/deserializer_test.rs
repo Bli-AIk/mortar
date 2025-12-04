@@ -1,6 +1,28 @@
+//! # deserializer_test.rs
+//!
+//! # deserializer_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for the deserializer module.
+//!
+//! 反序列化器模块的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Verifies that JSON data can be correctly converted back into Rust structures.
+//!
+//! 验证 JSON 数据能否被正确转换回 Rust 结构体。
+
 use crate::deserializer::Deserializer;
 use serde_json::Value;
 use tempfile::TempDir;
+// Create a program, serialize it, then deserialize it
+use crate::ast::{FunctionDecl, NodeDef, NodeStmt, Program, TopLevel};
 
 #[test]
 fn test_deserialize_basic_json() {
@@ -335,7 +357,6 @@ fn test_deserialize_error_invalid_json() {
 #[test]
 fn test_roundtrip_serialization() {
     // Create a program, serialize it, then deserialize it
-    use crate::parser::{FunctionDecl, NodeDef, NodeStmt, Program, TopLevel};
     use crate::serializer::Serializer;
 
     let program = Program {

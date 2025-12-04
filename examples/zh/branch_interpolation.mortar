@@ -1,6 +1,6 @@
-// Branch Interpolation Example - Non-symmetric Localization
+// 分支插值示例 - 非对称本地化
 
-// ===== Define Variables and Enums =====
+// ===== 定义变量和枚举 =====
 
 // Boolean 变量（用于简单的 branch）
 let is_forest: Bool = true
@@ -59,7 +59,7 @@ let object: branch<current_location> [
     ]
 ]
 
-// ===== Node with Branch Interpolation =====
+// ===== 带有分支插值的节点 =====
 
 node Start {
     text: $"欢迎来到{place}，{greet}！"
@@ -81,9 +81,9 @@ let scene_object: branch<current_location> [
     ]
     town, "老人"
 ]
-// Example combining text events and branch events
+// 结合文本事件和分支事件的示例
 node ComplexScene {
-    // Main text with events (indices refer to non-interpolated parts only)
+    // 带有事件的主文本（索引仅指向非插值部分）
     text: $"你看见{scene_object}后，感到惊讶！"
     with events: [
         0, set_color("#00FF00")
@@ -104,6 +104,6 @@ node ComplexScene {
     text: $"跑到了{location}。"
 }
 
-// ===== Function Declarations =====
+// ===== 函数声明 =====
 
 fn set_color(color: String)

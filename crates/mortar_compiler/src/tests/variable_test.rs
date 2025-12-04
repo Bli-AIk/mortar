@@ -1,4 +1,25 @@
-use crate::parser::{ParseHandler, TopLevel, VarValue};
+//! # variable_test.rs
+//!
+//! # variable_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for variable handling.
+//!
+//! 变量处理的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Verifies parsing of variable declarations, assignments, and scope.
+//!
+//! 验证变量声明、赋值和作用域的解析。
+
+use crate::ast::{TopLevel, VarValue};
+use crate::parser::ParseHandler;
 
 #[test]
 fn test_parse_variable_declaration_without_value() {

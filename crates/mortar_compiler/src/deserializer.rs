@@ -1,3 +1,27 @@
+//! # deserializer.rs
+//!
+//! # deserializer.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Handles the deserialization of compiled JSON (`.mortared`) files back into Rust data structures.
+//!
+//! 处理将编译后的 JSON (`.mortared`) 文件反序列化回 Rust 数据结构。
+//!
+//! This is primarily used by the runtime or tools that need to consume the compiled output.
+//!
+//! 这主要由运行时或需要使用编译输出的工具使用。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! This file defines the `MortaredData` structure and related helper structs that match the JSON schema.
+//!
+//! 此文件定义了与 JSON 模式匹配的 `MortaredData` 结构体和相关辅助结构体。
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fs;

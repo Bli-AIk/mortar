@@ -1,6 +1,27 @@
-use crate::parser::{
-    Arg, ChoiceDest, ChoiceItem, Condition, Event, EventAction, FuncCall, FunctionDecl, NodeDef,
-    NodeJump, NodeStmt, Param, Program, TopLevel, WithEventItem, WithEventsStmt,
+//! # serializer_test.rs
+//!
+//! # serializer_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for the serializer module.
+//!
+//! 序列化器模块的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Verifies that AST structures are correctly converted to the JSON format.
+//!
+//! 验证 AST 结构体能否被正确转换为 JSON 格式。
+
+use crate::ast::{
+    Arg, ChoiceDest, ChoiceItem, Condition, ConstDecl, EnumDef, Event, EventAction, FuncCall,
+    FunctionDecl, NodeDef, NodeJump, NodeStmt, Param, Program, TopLevel, VarDecl, VarValue,
+    WithEventItem, WithEventsStmt,
 };
 use crate::serializer::Serializer;
 use serde_json::Value;
@@ -148,7 +169,7 @@ fn test_serialize_choices() {
 
 #[test]
 fn test_serialize_empty_program() {
-    use crate::parser::Program;
+    use crate::ast::Program;
 
     let program = Program { body: vec![] };
     let result = Serializer::serialize_to_json(&program, false);
@@ -162,7 +183,7 @@ fn test_serialize_empty_program() {
 
 #[test]
 fn test_serialize_to_json_pretty() {
-    use crate::parser::Program;
+    use crate::ast::Program;
 
     let program = Program { body: vec![] };
     let result = Serializer::serialize_to_json(&program, true);
@@ -175,7 +196,7 @@ fn test_serialize_to_json_pretty() {
 
 #[test]
 fn test_save_to_file_basic() {
-    use crate::parser::Program;
+    use crate::ast::Program;
     use tempfile::TempDir;
 
     let program = Program { body: vec![] };
@@ -190,7 +211,7 @@ fn test_save_to_file_basic() {
 
 #[test]
 fn test_save_to_file_with_language() {
-    use crate::{Language, parser::Program};
+    use crate::Language;
     use tempfile::TempDir;
 
     let program = Program { body: vec![] };
@@ -210,8 +231,6 @@ fn test_save_to_file_with_language() {
 
 #[test]
 fn test_serialize_variable_declarations() {
-    use crate::parser::{Program, TopLevel, VarDecl, VarValue};
-
     let program = Program {
         body: vec![
             TopLevel::VarDecl(VarDecl {
@@ -244,8 +263,6 @@ fn test_serialize_variable_declarations() {
 
 #[test]
 fn test_serialize_constant_declarations() {
-    use crate::parser::{ConstDecl, Program, TopLevel, VarValue};
-
     let program = Program {
         body: vec![
             TopLevel::ConstDecl(ConstDecl {
@@ -281,8 +298,6 @@ fn test_serialize_constant_declarations() {
 
 #[test]
 fn test_serialize_enum_definitions() {
-    use crate::parser::{EnumDef, Program, TopLevel};
-
     let program = Program {
         body: vec![TopLevel::EnumDef(EnumDef {
             name: "GameState".to_string(),

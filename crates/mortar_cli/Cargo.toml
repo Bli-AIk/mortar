@@ -16,6 +16,7 @@ name = "mortar"
 path = "src/main.rs"
 
 [dependencies]
+anyhow = "1.0.100"
 clap.workspace = true
 mortar_compiler.workspace = true
 

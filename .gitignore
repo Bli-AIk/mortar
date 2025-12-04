@@ -38,3 +38,7 @@ Thumbs.db
 # Preprocessor outputs
 mermaid-*
 admonish-*
+
+GEMINI.md
+AGENTS.md
+agent_*.md
