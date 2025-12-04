@@ -16,7 +16,7 @@ Read the [official guide](https://bli-aik.github.io/mortar/en) to learn how to u
 
 | English         | Simplified Chinese          |
 |-----------------|-----------------------------|
-| English Version | [简体中文](./readme_zh-hant.md) |
+| English Version | [简体中文](./readme_zh-hans.md) |
 
 ## Introduction
 
@@ -61,98 +61,58 @@ cd mortar
 cargo build --release
 ```
 
-### Basic Usage
+### Minimal Example
 
-Create a simple Mortar file `hello.mortar`:
+Create a file named `hello.mortar`:
 
 ```mortar
-// 'node' is a basic dialogue node.
-// It can also be abbreviated as 'nd'!
 node Start {
-    // Write your text content.
-    // Double quotes (or single quotes) are required, but semicolons and commas can be omitted!
+    text: "Hello, welcome to Mortar!"
+    text: "This is a minimal example."
+}
+```
+
+### Advanced Features
+
+Mortar supports complex events, choices, and logic:
+
+```mortar
+node Start {
     text: "Hello, welcome to this interactive story."
     
-    // This event list is written immediately next to the previous text, so they are related.
+    // Event list associated with the text
     events: [
-        // Use index + event function to write events. Supports chain writing.
-        // The index here represents the character position where the event is triggered (counting starts from 0).
-        // Will it be tied to your game implementation... Where does the typewriter play? Audio timeline? 
-        // Or anything else, it all works, it depends on how you implement it.
         0, play_sound("greeting.wav")
-        6, set_animation("wave").play_sound("wave_sound.wav")
-        17, set_color("#FF6B6B")
+        6, set_animation("wave")
     ]
-    // When we use the text field again, it means that this is another text block for the same node.
-    // You can write several text blocks and they will be played sequentially.
+    
     text: $"I think your name is {get_name()}, right?"
     events: [
-        // The index can be a floating point number! 
-        // Generally speaking, decimal points are used for voice synchronization. And typewriters are integers.
-        // In fact, the numbers in mortar are Number, which is the same as the number type in json.
         4.2, set_color("#33CCFF")
-        10.8, set_color("#FF6B6B")
     ]
     
-    // This text block has no events... which is perfectly legal!
-    text: "Ok, Let's GO!"
-    
-// The arrow after a node indicates jumping to the next node.
 } -> ChoicePoint
-
-/*
-There is also a node here that shows how to write options - by choice field.
-*/
 
 node ChoicePoint {
     text: "What would you like to do?"
     
-    // By choice field, we can also jump to different nodes.
     choice: [
-        // This option does not have any conditional judgment. Logically speaking, you can always choose it.
         "Explore the forest" -> ForestScene,
-        
-        // These two options have the when keyword, which means they have conditional judgment!
-        // The when keyword supports chain writing and functional writing.
         ("Stay in town").when(has_map) -> TownScene,
-        "Check Inventory" when has_backpack  -> Inventory,
-        
-        // A selection field can also be nested within a selection field. You can nest as many levels as you want!
         "Have something to eat" -> [
             "Apple" -> EatApple,
             "Bread" -> EatBread
         ]
-        
-        // Use the return keyword to exit the current node.
-        // By the way, if this node has subsequent nodes, 
-        // then return will not terminate the entire conversation process, but will only exit the current node.
-        "I don't want to talk to you anymore!!" -> return,
-        
-        // Use the break keyword to terminate the option list.
-        "I don't know..." -> break,
-    ],
-    
-    // In this selection field, you will only come to this line if you select "I don't know...".
-    text: "What a shame. So let’s end the conversation first.",
-    
-    // Then, since there are no subsequent nodes, the conversation ends anyway.
+        "Quit" -> return,
+    ]
 }
 
-// The functions called in start don't just appear for a reason - you need to define them in the Mortar file!
-// This is a bit like function declaration in C/C++. 
-// They will eventually be recognized by the compiler and correlated into your game code.
+// Function declarations
 fn play_sound(file_name: String)
-
 fn set_animation(anim_name: String)
-
 fn set_color(value: String)
-
 fn get_name() -> String
-
-// fn can be written as function, and Bool can also be written as Boolean.
 function has_map() -> Bool
-
-fn has_backpack() -> Boolean
 ```
 
 Compile the Mortar file:
@@ -200,8 +160,8 @@ Features:
 
 ## Contributing
 
-Community contributions are welcome\! Please see
-the [Contributing Guide](https://www.google.com/search?q=./CONTRIBUTING.md) for details.
+Community contributions are welcome! Please see
+the [Contributing Guide](./CONTRIBUTING.md) for details.
 
 ### Contributors
 
@@ -215,6 +175,21 @@ The following people have contributed to this project.
 **A heartfelt thank you to each and every one of you! 🎔**
 
 ## Project Structure
+
+```mermaid
+graph TD
+    subgraph "Mortar Ecosystem"
+        Compiler[mortar_compiler<br>(Core Logic)]
+        CLI[mortar_cli<br>(Command Line)]
+        LSP[mortar_lsp<br>(Language Server)]
+        Lib[mortar_language<br>(Main Library)]
+    end
+
+    CLI --> Compiler
+    LSP --> Compiler
+    Lib --> Compiler
+    Lib --> LSP
+```
 
 This project is organized as a Rust workspace with four main crates:
 
@@ -284,8 +259,8 @@ Allows anyone to use, copy, modify, and distribute this software free of charge.
 Distributed under the Apache 2.0 license.
 
 You can choose either license according to your needs.
-See [LICENSE-MIT](https://www.google.com/search?q=./LICENSE-MIT)
-and [LICENSE-APACHE](https://www.google.com/search?q=./LICENSE-APACHE) for details.
+See [LICENSE-MIT](./LICENSE-MIT)
+and [LICENSE-APACHE](./LICENSE-APACHE) for details.
 
 ## Community
 

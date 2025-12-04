@@ -1,3 +1,23 @@
+//! # performance_serialization_test.rs
+//!
+//! # performance_serialization_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for serializing performance-related constructs.
+//!
+//! 性能相关构造的序列化测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Verifies serialization of events, timelines, and run statements.
+//!
+//! 验证事件、时间轴和运行语句的序列化。
+
 use crate::parser::ParseHandler;
 use crate::serializer::Serializer;
 use serde_json::Value;

@@ -1,4 +1,25 @@
-use crate::parser::{NodeStmt, ParseHandler, StringPart, TopLevel};
+//! # branch_test.rs
+//!
+//! # branch_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for branching and variable interpolation logic.
+//!
+//! 分支和变量插值逻辑的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Tests parsing of branch definitions, variable declarations, and interpolated strings.
+//!
+//! 测试分支定义、变量声明和插值字符串的解析。
+
+use crate::ast::{NodeStmt, StringPart, TopLevel, VarValue};
+use crate::parser::ParseHandler;
 
 #[test]
 fn test_parse_placeholder_in_text() {

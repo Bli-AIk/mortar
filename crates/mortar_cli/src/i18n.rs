@@ -231,6 +231,18 @@ fn init_texts() -> &'static HashMap<&'static str, HashMap<Language, &'static str
             [(Language::English, "warning"), (Language::Chinese, "警告")].into(),
         );
 
+        texts.insert(
+            "output_same_as_input",
+            [
+                (
+                    Language::English,
+                    "Output file path is the same as input file path.",
+                ),
+                (Language::Chinese, "输出文件路径与输入文件路径相同。"),
+            ]
+            .into(),
+        );
+
         texts
     })
 }

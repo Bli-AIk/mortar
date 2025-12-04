@@ -1,3 +1,23 @@
+//! # deserialize_example.rs
+//!
+//! # deserialize_example.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Example demonstrating how to use the Mortar deserializer to load and use `.mortared` files.
+//!
+//! 演示如何使用 Mortar 反序列化器加载和使用 `.mortared` 文件的示例。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Contains a complete example of loading JSON data, navigating the node structure, and simulating a dialogue runtime.
+//!
+//! 包含加载 JSON 数据、遍历节点结构以及模拟对话运行时的完整示例。
+
 //! 演示如何使用 Mortar 反序列化器加载和使用 .mortared 文件
 //!
 //! 运行方式:

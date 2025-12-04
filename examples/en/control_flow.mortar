@@ -1,0 +1,90 @@
+// Control Flow Example - if-else statements
+
+// ===== Variables =====
+
+let player_score: Number = 150
+let is_winner: Bool
+let level: Number = 5
+let has_bonus: Bool
+
+// ===== Nodes with Control Flow =====
+
+node ScoreEvaluation {
+    if player_score > 100 {
+        text: "Excellent! Your score is over 100!"
+    } else {
+        text: "Keep trying, aim for 100."
+    }
+}
+
+node BooleanCondition {
+    if is_winner {
+        text: "Congratulations, you won!"
+    } else {
+        text: "Better luck next time."
+    }
+}
+
+node MultipleComparisons {
+    if player_score >= 150 {
+        text: "Perfect!"
+    }
+    
+    if player_score <= 50 {
+        text: "Need more practice."
+    }
+    
+    if player_score == 100 {
+        text: "Exactly 100!"
+    }
+    
+    if player_score != 0 {
+        text: "At least you scored something."
+    }
+}
+
+node LogicalOperators {
+    if player_score > 100 && is_winner {
+        text: "High score and a win, fantastic!"
+    } else {
+        text: "There is room for improvement."
+    }
+    
+    if level > 10 || has_bonus {
+        text: "You get a special reward."
+    }
+}
+
+node NotOperator {
+    if !is_winner {
+        text: "You didn't win, but don't give up."
+    }
+    
+    if !(player_score < 50) {
+        text: "Score is decent."
+    }
+}
+
+node NestedConditions {
+    if player_score > 100 {
+        if is_winner {
+            text: "Perfect combo: High score + Win!"
+        } else {
+            text: "High score but no win, keep going!"
+        }
+    } else {
+        if is_winner {
+            text: "Score low, but you won!"
+        } else {
+            text: "Both score and result need improvement."
+        }
+    }
+}
+
+node ComplexLogic {
+    if (player_score > 100 && level > 5) || has_bonus {
+        text: "Special conditions met, extra reward granted!"
+    } else {
+        text: "Keep working towards the goal."
+    }
+}

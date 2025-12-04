@@ -54,14 +54,14 @@ let reveal_time: Number = 3
 // Timelines are sequences of events and wait statements that execute in order.
 // They're perfect for complex cutscenes or animations.
 
-// 按照时间线顺序执行事件和等待
-// 如果某个事件有 duration，那么时间线会等待该事件duration秒后再继续
+// Execute events and wait statements in timeline order
+// If an event has a duration, the timeline will wait for that duration before continuing
 timeline OpeningCutscene {
     run TPRight
     wait 1.0
     run TPLeft
     wait 0.5
-    // now 关键字表示忽略事件的 duration，立即执行下一个事件
+    // The 'now' keyword ignores the event's duration and executes the next event immediately
     now run PlaySound
     wait 10
     run SetColor2
@@ -104,14 +104,14 @@ node WithEventsExample {
 // You can override an event's index when running it.
 node CustomIndexExample {
     text: "This text has a custom event timing."
-    // 这里的 with custom_time 覆盖了 PlaySound 事件的默认 index（20） 为 5。
-    // 但由于 run 前面没有 with 关键字，所以它是立即执行的。
+    // Here 'with custom_time' overrides the default index (20) of the PlaySound event to 5.
+    // But since there is no 'with' keyword before 'run', it executes immediately.
     run PlaySound with custom_time
 
-    // 赋值是允许的，修改变量的值
+    // Assignment is allowed to modify variable values.
     custom_time = 28;
     text: "Be quiet...until you hear...Blast!"
-    // 应该在播放到第28个字符时触发 PlaySound 事件。
+    // Should trigger PlaySound event when playing to the 28th character.
     with run PlaySound with custom_time
 } -> MixedExample
 
@@ -126,7 +126,7 @@ node MixedExample {
 
     // Another text block
     text: "It's Alice! Alice! Alice! Alice! Alice!"
-    // custom_time 应该仍然是 28
+    // custom_time should still be 28
     with run PlaySound with custom_time
 
     // Run with custom index

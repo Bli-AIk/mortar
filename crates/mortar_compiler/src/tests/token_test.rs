@@ -1,3 +1,23 @@
+//! # token_test.rs
+//!
+//! # token_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for the lexical analyzer (lexer).
+//!
+//! 词法分析器（lexer）的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Verifies that the lexer correctly identifies tokens, keywords, and literals.
+//!
+//! 验证词法分析器能否正确识别 token、关键字和字面量。
+
 use crate::token::{Token, tokenize};
 
 #[test]

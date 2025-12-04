@@ -1,0 +1,85 @@
+// This is a simplified version of basic.mortar.
+
+// 'node' is a basic dialogue node.
+// It can also be abbreviated as 'nd'!
+node Start {
+    // Write your text content.
+    // Double quotes (or single quotes) are required, but semicolons and commas can be omitted!
+    text: "Hello there, welcome to this SIMPLE interactive story."
+
+    // You must now use the 'with' keyword to associate events with the previous text!
+    with events: [
+        // Write events using the Index + Event Function format. Chained calls are supported.
+        // The index here represents the character position where the event triggers (counting starts from 0).
+        // This binds to your specific game implementation—typewriter position? Audio timeline?
+        // Or anything else, it works however you implement it.
+        0, play_sound("random-sound-1-80941.wav")
+        6, set_animation("wave").play_sound("random-sound-1-80941.wav")
+        17, set_color("#AAAAAA")
+    ]
+    text: $"Oh my god, the triangle changed color{get_exclamation(10)}"
+    with events: [
+        // The index can be a floating-point number! Generally, decimal points are used for voice synchronization. Typewriters use integers.
+        // Actually, numbers in Mortar are just Number, which is the same as the number type in JSON.
+        4.2, set_color("#33CCFF")
+        10.8, set_color("#FF6B6B")
+    ]
+
+
+    // When we use the text field again, it indicates another text block for the same node.
+    // You can write multiple text blocks, and they will be played sequentially.
+    text: $"I think your name is {get_name()}, isn't it?"
+
+    // This text block has no events... which is completely legal!
+    text: $"Great, let's go{get_exclamation(5)}"
+    
+    // Testing multi-argument functions
+    text: $"Let's {create_message("start", "adventure", 3)}"
+
+} -> TestEventRef
+
+// Testing standalone event declaration (for subsequent 'with' reference)
+event ColorYellow {
+    index: 1
+    action: set_color("#FFFF00")
+}
+
+event ColorGreen {
+    index: 5
+    action: set_color("#00FF00")
+}
+
+// Node testing separate 'with event'
+node TestEventRef {
+    text: "Testing event reference"
+    with ColorYellow  // Reference a single event
+
+    text: "Testing single inline event"
+    with event { 0, set_color("#000000") }  // Inline event
+    
+    text: "Testing multiple event references"
+    with events: [
+        ColorYellow
+        ColorGreen
+    ]
+    
+    text: "Mixing inline events and event references"
+    with events: [
+        0, set_color("#0000FF")  // Inline event
+        ColorGreen  // Event reference
+    ]
+}
+
+// The functions called in start don't appear for no reason—you need to define them in the Mortar file!
+// It's a bit like function declarations in C / C++. They will eventually be recognized by the compiler and linked to your game code.
+fn play_sound(file_name: String);
+
+fn set_animation(anim_name: String);
+
+fn set_color(value: String);
+
+fn get_name() -> String;
+
+fn get_exclamation(count: Number) -> String;
+
+fn create_message(verb: String, obj: String, level: Number) -> String;

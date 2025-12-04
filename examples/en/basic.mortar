@@ -1,0 +1,110 @@
+// 'node' is a basic dialogue node.
+// It can also be abbreviated as 'nd'!
+node Start {
+    // Write your text content.
+    // Double quotes (or single quotes) are required, but semicolons and commas can be omitted!
+    text: "Hello there, welcome to this interactive story."
+
+    // You must now use the 'with' keyword to associate events with the previous text!
+    with events: [
+        // Write events using the Index + Event Function format. Chained calls are supported.
+        // The index here represents the character position where the event triggers (counting starts from 0).
+        // This binds to your specific game implementation—typewriter position? Audio timeline?
+        // Or anything else, it works however you implement it.
+        0, play_sound("greeting.wav")
+        6, set_animation("wave").play_sound("wave_sound.wav")
+        17, set_color("#FF6B6B")
+    ]
+    // When we use the text field again, it indicates another text block for the same node.
+    // You can write multiple text blocks, and they will be played sequentially.
+    text: $"I think your name is {get_name()}, isn't it?"
+    with events: [
+        // The index can be a floating-point number! Generally, decimal points are used for voice synchronization. Typewriters use integers.
+        // Actually, numbers in Mortar are just Number, which is the same as the number type in JSON.
+        4.2, set_color("#33CCFF")
+        10.8, set_color("#FF6B6B")
+    ]
+
+    // This text block has no events... which is completely legal!
+    text: "Great, let's go!"
+
+// The arrow after a node indicates a jump to the next node.
+} -> ChoicePoint
+
+/*
+Here is another node demonstrating how to write options—using the choice field.
+*/
+
+node ChoicePoint {
+    text: "What do you want to do?"
+
+    // Through the choice field, we can also jump to different nodes.
+    choice: [
+        // This option has no conditions. Theoretically, you can always choose it.
+        "Explore the forest" -> ForestScene,
+
+        // These two options have the 'when' keyword, indicating they have conditions!
+        // The 'when' keyword supports both chained syntax and functional syntax.
+        ("Stay in town").when(has_map()) -> TownScene;
+        "Check backpack" when has_backpack()  -> Inventory;
+
+        // A choice field can also nest another choice field. Nest as many levels as you like!
+        "Eat something" -> [
+            "Apple" -> EatApple;
+            "Bread" -> EatBread;
+        ];
+
+        // Use the 'return' keyword to exit the current node.
+        // By the way, if this node has subsequent nodes, 'return' won't terminate the entire dialogue flow, only the current node.
+        "Stop yapping at me!!" -> return,
+
+        // Use the 'break' keyword to terminate the option list.
+        "I don't know..." -> break,
+    ],
+
+    // inside this choice block, you only reach this line if you picked "I don't know...".
+    text: "I give up. Let's just end the conversation.",
+
+    // Then, since there are no subsequent nodes, the dialogue ends anyway.
+}
+
+// The functions called in start don't appear for no reason—you need to define them in the Mortar file!
+// It's a bit like function declarations in C / C++. They will eventually be recognized by the compiler and linked to your game code.
+fn play_sound(file_name: String);
+
+fn set_animation(anim_name: String);
+
+fn set_color(value: String);
+
+fn get_name() -> String;
+
+// fn can be written as function, and Bool can also be written as Boolean.
+function has_map() -> Bool;
+
+fn has_backpack() -> Boolean;
+
+node test_warning{
+
+}
+
+fn TestWarning2();
+
+node ForestScene {
+    text: "You have entered the forest."
+}
+
+node TownScene {
+    text: "You returned to the town."
+}
+
+node Inventory {
+    text: "This is your backpack."
+}
+
+node EatApple{
+    text: "You ate an apple."
+}
+
+node EatBread{
+    text: "You ate a slice of bread."
+}

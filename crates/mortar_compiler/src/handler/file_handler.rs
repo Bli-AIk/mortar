@@ -1,3 +1,23 @@
+//! # file_handler.rs
+//!
+//! # file_handler.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Provides file system utilities for the compiler.
+//!
+//! 为编译器提供文件系统实用工具。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Contains the `FileHandler` struct for safely reading source files.
+//!
+//! 包含用于安全读取源文件的 `FileHandler` 结构体。
+
 use std::fs;
 use std::io;
 

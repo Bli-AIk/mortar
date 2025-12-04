@@ -1,0 +1,109 @@
+// Branch Interpolation Example - Non-symmetric Localization
+
+// ===== Define Variables and Enums =====
+
+// Boolean variables (for simple branches)
+let is_forest: Bool = true
+let is_city: Bool
+let is_male: Bool = true
+let is_female: Bool
+
+// Define enums
+// Enums are designed similar to C#. Each member is just an identifier.
+enum Location {
+    forest
+    city
+    town
+}
+
+enum Gender {
+    male
+    female
+    other
+}
+
+// Define enum variables
+let current_location: Location = Location.city;
+// current_gender uses the first member of Gender (male) as the default value
+let current_gender: Gender
+
+// Define branch type variables (Boolean-based)
+let place: branch [
+    is_forest, "the forest"
+    is_city, "the city"
+]
+
+let greet: branch [
+    is_male, "Sir"
+    is_female, "Madam"
+]
+
+// Define branch type variables (Enum-based)
+let location: branch<current_location> [
+    forest, "the deep forest"
+    city, "the bustling city"
+    town, "the quiet town"
+]
+
+// Define branch type variables (with events)
+let object: branch<current_location> [
+    forest, "trees", events: [
+        0, set_color("green")
+    ]
+    city, "skyscrapers", events: [
+        0, set_color("gray")
+        1, set_color("blue")
+    ]
+    town, "houses", events: [
+        0, set_color("brown")
+    ]
+]
+
+// ===== Node with Branch Interpolation =====
+
+node Start {
+    text: $"Welcome to {place}, {greet}!"
+} -> LocationDesc
+
+node LocationDesc {
+    text: $"You are now in {location}, surrounded by {object}."
+} -> ComplexScene
+
+// Define another branch variable for this scene
+let scene_object: branch<current_location> [
+    forest, "a beast", events: [
+        0, set_color("#FF0000")
+        1, set_color("#FF7F00")
+        ]
+    city, "a police car", events: [
+        0, set_color("#0000FF")
+        1, set_color("#FF00FF")
+    ]
+    town, "an old man"
+]
+// Example combining text events and branch events
+node ComplexScene {
+    // Main text with events (indices refer to non-interpolated parts only)
+    text: $"You saw {scene_object} and were surprised!"
+    with events: [
+        0, set_color("#00FF00")
+        8, set_color("#FF33FF")
+        15, set_color("33FF22")
+    ]
+    text: $"So you ran from {location}..."
+
+    if (current_location != Location.town)
+    {
+        current_location = Location.town
+    }
+    else
+    {
+        current_location = Location.forest
+    }
+
+    text: $"to {location}."
+}
+
+// ===== Function Declarations =====
+
+fn set_color(color: String)

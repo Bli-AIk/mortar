@@ -1,3 +1,23 @@
+//! # diagnostics_test.rs
+//!
+//! # diagnostics_test.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Tests for the diagnostic system.
+//!
+//! 诊断系统的测试。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! Validates error reporting, warning generation, and diagnostic message formatting.
+//!
+//! 验证错误报告、警告生成和诊断消息格式化。
+
 use crate::{DiagnosticCollector, Language, ParseHandler};
 
 #[test]
@@ -228,10 +248,12 @@ fn test_analyze_with_variables() {
 fn test_parse_error_generates_diagnostic() {
     let source = "invalid syntax here {{{{";
 
-    let (result, _diagnostics) =
+    let (_result, diagnostics) =
         ParseHandler::parse_source_code_with_diagnostics(source, "test.mortar".to_string(), false);
 
-    // Should fail to parse
-    assert!(result.is_err());
-    // Diagnostics should contain the error
+    // Parser might recover (Ok) or fail (Err), but it MUST report an error
+    assert!(
+        diagnostics.has_errors(),
+        "Expected diagnostics to have errors"
+    );
 }

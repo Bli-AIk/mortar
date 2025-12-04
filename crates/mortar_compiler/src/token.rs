@@ -1,3 +1,27 @@
+//! # token.rs
+//!
+//! # token.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Defines the `Token` enum and lexical analysis logic for the Mortar language.
+//!
+//! 定义 Mortar 语言的 `Token` 枚举和词法分析逻辑。
+//!
+//! Uses the `logos` crate to generate a high-performance lexer.
+//!
+//! 使用 `logos` crate 生成高性能的词法分析器。
+//!
+//! ## Source File Overview
+//!
+//! ## 源文件概述
+//!
+//! This file contains the `Token` enum definition, token display formatting, and the `tokenize` function used by the parser and LSP.
+//!
+//! 此文件包含 `Token` 枚举定义、token 显示格式化以及解析器和 LSP 使用的 `tokenize` 函数。
+
 use logos::Logos;
 use owo_colors::OwoColorize;
 use std::fmt;

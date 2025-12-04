@@ -1,3 +1,4 @@
+use anyhow::{Context, Result, bail};
 use clap::{Arg, Command};
 use mortar_compiler::{FileHandler, Language, ParseHandler, Serializer};
 use std::process;
@@ -14,7 +15,7 @@ fn cli_language_to_compiler_language(lang: CliLanguage) -> Language {
 
 fn build_command(language: CliLanguage) -> Command {
     Command::new("mortar")
-        .version("0.1.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("Bli-AIk <haikun2333@gmail.com>")
         .about(get_text("app_about", language))
         .arg(
@@ -68,6 +69,13 @@ fn build_command(language: CliLanguage) -> Command {
 }
 
 fn main() {
+    if let Err(e) = run() {
+        eprintln!("Error: {:#}", e);
+        process::exit(1);
+    }
+}
+
+fn run() -> Result<()> {
     // First parse language setting with a simple parser
     let args: Vec<String> = std::env::args().collect();
     let language = if let Some(pos) = args.iter().position(|arg| arg == "--lang" || arg == "-L") {
@@ -89,13 +97,8 @@ fn main() {
     let check_only = matches.get_flag("check-only");
 
     // Read source file
-    let content = match FileHandler::read_source_file(input_path) {
-        Ok(content) => content,
-        Err(err) => {
-            eprintln!("{} {}", get_text("error_reading_file", language), err);
-            process::exit(1);
-        }
-    };
+    let content = FileHandler::read_source_file(input_path)
+        .with_context(|| get_text("error_reading_file", language))?;
 
     if show_source {
         println!("{}", get_text("original_source", language));
@@ -118,41 +121,46 @@ fn main() {
 
     // Check for errors (including parse errors)
     if diagnostics.has_errors() {
-        eprintln!("\n{}", get_text("compilation_failed", language));
-        process::exit(1);
+        bail!("\n{}", get_text("compilation_failed", language));
     }
 
-    let program = match parse_result {
-        Ok(program) => program,
-        Err(_) => {
-            // Parse error was already reported through diagnostics
-            process::exit(1);
-        }
-    };
+    let program = parse_result.map_err(|_| anyhow::anyhow!("Parse failed (internal)"))?;
 
     println!("{}", get_text("parsed_successfully", language));
 
     // Only generate output if not in check-only mode
     if !check_only {
         // Generate .mortared file
-        let output_path = matches
-            .get_one::<String>("output")
-            .map(|s| s.as_str())
-            .unwrap_or(input_path);
+        let json_content = Serializer::serialize_to_json(&program, pretty)
+            .map_err(|e| anyhow::anyhow!(e))
+            .with_context(|| get_text("failed_to_generate", language))?;
 
-        match Serializer::save_to_file_with_language(
-            &program,
-            output_path,
-            pretty,
-            compiler_language,
-        ) {
-            Ok(()) => println!("{}", get_text("generated_successfully", language)),
-            Err(err) => {
-                eprintln!("{} {}", get_text("failed_to_generate", language), err);
-                process::exit(1);
-            }
+        let output_path = if let Some(out) = matches.get_one::<String>("output") {
+            std::path::PathBuf::from(out)
+        } else {
+            std::path::Path::new(input_path).with_extension("mortared")
+        };
+
+        if std::path::Path::new(input_path) == output_path {
+            bail!("{}", get_text("output_same_as_input", language));
         }
+
+        std::fs::write(&output_path, json_content).with_context(|| {
+            format!(
+                "{} {}",
+                get_text("failed_to_generate", language),
+                output_path.display()
+            )
+        })?;
+
+        println!(
+            "{} {}",
+            get_text("generated", language),
+            output_path.display()
+        );
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
