@@ -170,25 +170,22 @@ mortar hello.mortar -o custom.json --pretty
 
 ```mermaid
 graph TD
-    subgraph "Mortar 生态系统"
-        Compiler[mortar_compiler<br>(核心逻辑)]
-        CLI[mortar_cli<br>(命令行工具)]
-        LSP[mortar_lsp<br>(语言服务器)]
-        Lib[mortar_language<br>(主库)]
-    end
 
-    CLI --> Compiler
-    LSP --> Compiler
-    Lib --> Compiler
-    Lib --> LSP
+    subgraph Language["mortar_language "]
+        Compiler["mortar_compiler (Core Logic)"]
+
+    Compiler --> CLI["mortar_cli (Command Line)"]
+    Compiler --> LSP["mortar_lsp (Language Server)"]
+
+    end
 ```
 
 本项目采用 Rust workspace 组织，包含四个主要的 crate：
 
-* **`mortar_language`** - 主要的库 crate，重新导出所有其他 crate 的功能
 * **`mortar_compiler`** - 核心编译库，包含词法分析、语法解析和代码生成
 * **`mortar_cli`** - 命令行界面，提供 `mortar` 命令
 * **`mortar_lsp`** - 语言服务器协议实现，用于 IDE 集成
+* **`mortar_language`** - 库 crate，重新导出所有其他 crate 的功能
 
 ### 构建项目
 
