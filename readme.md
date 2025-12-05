@@ -178,25 +178,22 @@ The following people have contributed to this project.
 
 ```mermaid
 graph TD
-    subgraph "Mortar Ecosystem"
-        Compiler[mortar_compiler<br>(Core Logic)]
-        CLI[mortar_cli<br>(Command Line)]
-        LSP[mortar_lsp<br>(Language Server)]
-        Lib[mortar_language<br>(Main Library)]
-    end
 
-    CLI --> Compiler
-    LSP --> Compiler
-    Lib --> Compiler
-    Lib --> LSP
+    subgraph Language["mortar_language "]
+        Compiler["mortar_compiler (Core Logic)"]
+
+    Compiler --> CLI["mortar_cli (Command Line)"]
+    Compiler --> LSP["mortar_lsp (Language Server)"]
+
+    end
 ```
 
 This project is organized as a Rust workspace with four main crates:
 
-* **`mortar_language`** - The main library crate that re-exports functionality from all other crates
 * **`mortar_compiler`** - Core compilation library with lexing, parsing, and code generation
 * **`mortar_cli`** - Command-line interface providing the `mortar` command
 * **`mortar_lsp`** - Language Server Protocol implementation for IDE integration
+* **`mortar_language`** - The library crate that re-exports functionality from all other crates
 
 ### Building the Project
 
