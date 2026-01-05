@@ -13,7 +13,7 @@ categories.workspace = true
 
 [dependencies]
 mortar_compiler.workspace = true
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1.49", features = ["full"] }
 tower-lsp-server = "0.22"
 async-trait = "0.1"
 serde = { version = "1.0", features = ["derive"] }
