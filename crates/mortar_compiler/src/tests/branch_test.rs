@@ -284,7 +284,6 @@ fn test_branch_without_enum_type() {
         _ => panic!("Expected NodeDef"),
     }
 }
-use crate::parser::*;
 
 #[test]
 fn test_parse_branch_variable_with_enum() {

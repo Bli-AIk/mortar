@@ -340,11 +340,10 @@ fn lex_interpolated_string<'a>(lex: &mut logos::Lexer<'a, Token<'a>>) -> Option<
         if !in_string_literal {
             if ch == '{' {
                 depth += 1;
-            } else if ch == '}' {
-                if depth > 0 {
+            } else if ch == '}'
+                && depth > 0 {
                     depth -= 1;
                 }
-            }
         }
     }
 
