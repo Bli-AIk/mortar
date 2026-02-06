@@ -2,8 +2,6 @@
 
 [workspace]
 allow_dirty = true
-# Skip semver check due to historical dependency mismatch in v0.5.0 releases
-semver_check = false
 pr_name = "chore{% if package and version %}: release {{ package }} v{{ version }}{% elif packages %}: release ({{ packages | length }} packages updated){% else %}: release{% endif %}"
 
 [changelog]
