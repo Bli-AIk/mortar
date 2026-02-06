@@ -1,0 +1,22 @@
+# Release-plz configuration
+
+[workspace]
+allow_dirty = true
+pr_name = "chore{% if package and version %}: release {{ package }} v{{ version }}{% elif packages %}: release ({{ packages | length }} packages updated){% else %}: release{% endif %}"
+
+[changelog]
+commit_parsers = [
+    { message = ".*release.*", skip = true },
+    { message = "^chore: release", skip = true },
+    { message = "^chore\\(release\\)", skip = true },
+    { message = "^Merge pull request", skip = true },
+    { message = "^feat", group = "Added" },
+    { message = "^fix", group = "Fixed" },
+    { message = "^doc", group = "Documentation" },
+    { message = "^perf", group = "Performance" },
+    { message = "^refactor", group = "Refactor" },
+    { message = "^style", group = "Styling" },
+    { message = "^test", group = "Testing" },
+    { message = "^chore", group = "Miscellaneous Tasks" },
+    { message = "^.*", group = "Other" },
+]

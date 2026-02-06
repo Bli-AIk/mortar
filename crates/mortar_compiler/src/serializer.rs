@@ -546,7 +546,7 @@ impl Serializer {
                     Some(
                         event_list
                             .iter()
-                            .map(|e| Self::convert_event(e))
+                            .map(Self::convert_event)
                             .collect::<Result<Vec<_>, _>>()?,
                     )
                 } else {
@@ -953,7 +953,7 @@ impl Serializer {
                     .map(|case| {
                         let events = case.events.as_ref().and_then(|events| {
                             let converted: Result<Vec<_>, _> =
-                                events.iter().map(|e| Self::convert_event(e)).collect();
+                                events.iter().map(Self::convert_event).collect();
                             converted.ok()
                         });
 
