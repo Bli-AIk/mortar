@@ -288,9 +288,10 @@ impl<'a> Parser<'a> {
             // If previous token was semicolon, we are probably at a new statement
             if self.current > 0
                 && let Some(prev) = self.tokens.get(self.current - 1)
-                    && matches!(prev.token, Token::Semicolon) {
-                        return;
-                    }
+                && matches!(prev.token, Token::Semicolon)
+            {
+                return;
+            }
 
             // If current token is a keyword that starts a top-level declaration
             if let Some(curr) = self.peek() {
