@@ -114,7 +114,7 @@ fn test_parse_variable_declaration_with_bool_true() {
             assert_eq!(var.name, "is_active");
             assert_eq!(var.type_name, "Boolean");
             match &var.value {
-                Some(VarValue::Boolean(b)) => assert_eq!(*b, true),
+                Some(VarValue::Boolean(b)) => assert!(*b),
                 _ => panic!("Expected Boolean value"),
             }
         }
@@ -134,7 +134,7 @@ fn test_parse_variable_declaration_with_bool_false() {
             assert_eq!(var.name, "debug_mode");
             assert_eq!(var.type_name, "Boolean");
             match &var.value {
-                Some(VarValue::Boolean(b)) => assert_eq!(*b, false),
+                Some(VarValue::Boolean(b)) => assert!(!(*b)),
                 _ => panic!("Expected Boolean value"),
             }
         }
