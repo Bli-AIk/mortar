@@ -22,7 +22,15 @@ categories = ["game-development", "parsing"]
 
 exclude = [
     "target/*",
-    ".github/*"
+    ".github/*",
+    "book/*",
+    "**/book/*",
+    "docs/*",
+    "theme-backup/*",
+    "temp-theme/*",
+    "node_modules/*",
+    "examples/*",
+    "theme/*",
 ]
 
 [workspace.dependencies]
