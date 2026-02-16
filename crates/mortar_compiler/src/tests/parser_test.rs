@@ -205,3 +205,72 @@ fn test_parse_multiple_top_level() {
     assert!(matches!(program.body[2], TopLevel::FunctionDecl(_)));
     assert!(matches!(program.body[3], TopLevel::NodeDef(_)));
 }
+
+#[test]
+fn test_parse_text_with_escape_sequences() {
+    let source = r#"
+        node escape_test {
+            text: "Line 1\nLine 2"
+            text: "Tab\there"
+            text: "Quote: \"test\""
+            text: "Backslash: \\"
+        }
+    "#;
+    let program = ParseHandler::parse_source_code(source, false).unwrap();
+
+    if let TopLevel::NodeDef(node) = &program.body[0] {
+        assert_eq!(node.name, "escape_test");
+
+        // Check newline escape
+        if let NodeStmt::Text(text) = &node.body[0] {
+            assert_eq!(text, "Line 1\nLine 2");
+        } else {
+            panic!("Expected Text statement");
+        }
+
+        // Check tab escape
+        if let NodeStmt::Text(text) = &node.body[1] {
+            assert_eq!(text, "Tab\there");
+        } else {
+            panic!("Expected Text statement");
+        }
+
+        // Check quote escape
+        if let NodeStmt::Text(text) = &node.body[2] {
+            assert_eq!(text, "Quote: \"test\"");
+        } else {
+            panic!("Expected Text statement");
+        }
+
+        // Check backslash escape
+        if let NodeStmt::Text(text) = &node.body[3] {
+            assert_eq!(text, "Backslash: \\");
+        } else {
+            panic!("Expected Text statement");
+        }
+    } else {
+        panic!("Expected NodeDef");
+    }
+}
+
+#[test]
+fn test_parse_choice_with_escape_sequences() {
+    let source = r#"
+        node choice_escape {
+            choice: [
+                "Option with\nnewline" -> return
+            ]
+        }
+    "#;
+    let program = ParseHandler::parse_source_code(source, false).unwrap();
+
+    if let TopLevel::NodeDef(node) = &program.body[0] {
+        if let NodeStmt::Choice(choices) = &node.body[0] {
+            assert_eq!(choices[0].text, "Option with\nnewline");
+        } else {
+            panic!("Expected Choice statement");
+        }
+    } else {
+        panic!("Expected NodeDef");
+    }
+}

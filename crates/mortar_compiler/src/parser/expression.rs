@@ -4,6 +4,7 @@ use crate::ast::{
     Arg, AssignValue, BinaryCondition, ComparisonOp, FuncCall, IfCondition, InterpolatedString,
     StringPart, UnaryCondition, UnaryOp, VarValue,
 };
+use crate::escape::unescape;
 use crate::token::Token;
 
 pub trait ExpressionParser {
@@ -208,7 +209,7 @@ impl<'a> ExpressionParser for Parser<'a> {
     fn parse_arg(&mut self) -> Result<Arg, ParseError> {
         match self.peek().map(|t| &t.token) {
             Some(Token::String(s)) => {
-                let s = s.to_string();
+                let s = unescape(s);
                 self.advance();
                 Ok(Arg::String(s))
             }
@@ -247,7 +248,7 @@ impl<'a> ExpressionParser for Parser<'a> {
     fn parse_assign_value(&mut self) -> Result<AssignValue, ParseError> {
         match self.peek().map(|t| &t.token) {
             Some(Token::String(s)) => {
-                let value = s.to_string();
+                let value = unescape(s);
                 self.advance();
                 Ok(AssignValue::String(value))
             }
@@ -288,7 +289,7 @@ impl<'a> ExpressionParser for Parser<'a> {
     fn parse_var_value(&mut self) -> Result<VarValue, ParseError> {
         match self.peek().map(|t| &t.token) {
             Some(Token::String(s)) => {
-                let value = s.to_string();
+                let value = unescape(s);
                 self.advance();
                 Ok(VarValue::String(value))
             }
@@ -345,7 +346,57 @@ impl<'a> ExpressionParser for Parser<'a> {
         let mut current_text = String::new();
 
         while let Some(ch) = chars.next() {
-            if ch == '{' {
+            if ch == '\\' {
+                // Handle escape sequences in the text portion
+                if let Some(&next_ch) = chars.peek() {
+                    match next_ch {
+                        'n' => {
+                            chars.next();
+                            current_text.push('\n');
+                        }
+                        't' => {
+                            chars.next();
+                            current_text.push('\t');
+                        }
+                        'r' => {
+                            chars.next();
+                            current_text.push('\r');
+                        }
+                        '\\' => {
+                            chars.next();
+                            current_text.push('\\');
+                        }
+                        '"' => {
+                            chars.next();
+                            current_text.push('"');
+                        }
+                        '\'' => {
+                            chars.next();
+                            current_text.push('\'');
+                        }
+                        '0' => {
+                            chars.next();
+                            current_text.push('\0');
+                        }
+                        '{' => {
+                            // Escaped brace - literal '{'
+                            chars.next();
+                            current_text.push('{');
+                        }
+                        '}' => {
+                            // Escaped brace - literal '}'
+                            chars.next();
+                            current_text.push('}');
+                        }
+                        _ => {
+                            // Unknown escape, keep as-is
+                            current_text.push('\\');
+                        }
+                    }
+                } else {
+                    current_text.push('\\');
+                }
+            } else if ch == '{' {
                 // Save any accumulated text
                 if !current_text.is_empty() {
                     parts.push(StringPart::Text(current_text.clone()));

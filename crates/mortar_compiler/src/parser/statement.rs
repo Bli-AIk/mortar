@@ -4,6 +4,7 @@ use crate::ast::{
     Assignment, BranchCase, BranchDef, ChoiceDest, ChoiceItem, Condition, Event, EventAction,
     IfElseStmt, IndexOverride, NodeStmt, RunStmt, WithEventItem, WithEventsStmt,
 };
+use crate::escape::unescape;
 use crate::parser::expression::ExpressionParser;
 use crate::token::Token;
 
@@ -75,7 +76,7 @@ impl<'a> StatementParser for Parser<'a> {
 
         if let Some(token_info) = self.advance() {
             match &token_info.token {
-                Token::String(text) => Ok(NodeStmt::Text(text.to_string())),
+                Token::String(text) => Ok(NodeStmt::Text(unescape(text))),
                 Token::InterpolatedString(text) => {
                     let text_copy = text.to_string(); // Make a copy to avoid borrow issues
                     let interpolated = self.parse_interpolated_string(&text_copy)?;
@@ -116,7 +117,7 @@ impl<'a> StatementParser for Parser<'a> {
             self.advance(); // consume '('
             let text = if let Some(token_info) = self.advance() {
                 if let Token::String(s) = &token_info.token {
-                    s.to_string()
+                    unescape(s)
                 } else {
                     return Err(ParseError::Custom(
                         "Expected string in parentheses".to_string(),
@@ -131,7 +132,7 @@ impl<'a> StatementParser for Parser<'a> {
             text
         } else if let Some(token_info) = self.advance() {
             if let Token::String(s) = &token_info.token {
-                s.to_string()
+                unescape(s)
             } else {
                 return Err(ParseError::Custom("Expected choice text".to_string()));
             }

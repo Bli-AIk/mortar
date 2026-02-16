@@ -24,6 +24,7 @@
 
 pub mod deserializer;
 pub mod diagnostics;
+pub mod escape;
 pub mod handler;
 pub mod parser;
 pub mod serializer;
