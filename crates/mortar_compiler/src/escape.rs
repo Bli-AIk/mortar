@@ -60,6 +60,62 @@ pub fn unescape(s: &str) -> String {
     result
 }
 
+/// Processes a triple-quoted string by:
+/// 1. Removing leading/trailing blank lines
+/// 2. Trimming common leading whitespace (dedent)
+/// 3. Applying escape sequences
+///
+/// # Examples
+/// ```
+/// use mortar_compiler::escape::process_triple_quoted_string;
+///
+/// let input = "
+///     Hello
+///     World
+/// ";
+/// assert_eq!(process_triple_quoted_string(input), "Hello\nWorld");
+/// ```
+pub fn process_triple_quoted_string(s: &str) -> String {
+    // Split into lines
+    let lines: Vec<&str> = s.lines().collect();
+
+    // Find first and last non-empty lines
+    let first_non_empty = lines.iter().position(|line| !line.trim().is_empty());
+    let last_non_empty = lines.iter().rposition(|line| !line.trim().is_empty());
+
+    let (start, end) = match (first_non_empty, last_non_empty) {
+        (Some(s), Some(e)) => (s, e),
+        _ => return String::new(), // All empty lines
+    };
+
+    let content_lines = &lines[start..=end];
+
+    // Calculate common leading whitespace
+    let min_indent = content_lines
+        .iter()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| line.len() - line.trim_start().len())
+        .min()
+        .unwrap_or(0);
+
+    // Dedent and join lines
+    let dedented: Vec<String> = content_lines
+        .iter()
+        .map(|line| {
+            if line.len() >= min_indent {
+                line[min_indent..].to_string()
+            } else {
+                line.trim_start().to_string()
+            }
+        })
+        .collect();
+
+    let joined = dedented.join("\n");
+
+    // Apply escape sequences
+    unescape(&joined)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

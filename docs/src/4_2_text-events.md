@@ -86,6 +86,41 @@ node Dialogue {
 }
 ```
 
+### Triple-Quoted Strings (Multiline)
+
+For longer text spanning multiple lines, use triple quotes (`"""`):
+
+```mortar
+node Narration {
+    text: """
+        In a distant kingdom, there lived a brave knight.
+        He had traveled far and wide, seeking adventure.
+        One day, he arrived at a mysterious forest...
+    """
+}
+```
+
+**Features:**
+
+- Preserves line breaks naturally (no need for `\n`)
+- Automatically removes common leading whitespace (dedent)
+- Empty lines at the start and end are trimmed
+- Escape sequences still work inside triple-quoted strings
+
+**Example with mixed content:**
+
+```mortar
+node Introduction {
+    text: """
+        Welcome to the game!
+        
+        Use ARROW KEYS to move
+        Press SPACE to interact
+        Press ESC to open menu
+    """
+}
+```
+
 ## Event System
 
 ### Basic Syntax

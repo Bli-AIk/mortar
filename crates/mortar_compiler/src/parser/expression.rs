@@ -4,7 +4,7 @@ use crate::ast::{
     Arg, AssignValue, BinaryCondition, ComparisonOp, FuncCall, IfCondition, InterpolatedString,
     StringPart, UnaryCondition, UnaryOp, VarValue,
 };
-use crate::escape::unescape;
+use crate::escape::{process_triple_quoted_string, unescape};
 use crate::token::Token;
 
 pub trait ExpressionParser {
@@ -213,6 +213,11 @@ impl<'a> ExpressionParser for Parser<'a> {
                 self.advance();
                 Ok(Arg::String(s))
             }
+            Some(Token::TripleQuotedString(s)) => {
+                let s = process_triple_quoted_string(s);
+                self.advance();
+                Ok(Arg::String(s))
+            }
             Some(Token::Number(n)) => {
                 let n = n
                     .parse::<f64>()
@@ -249,6 +254,11 @@ impl<'a> ExpressionParser for Parser<'a> {
         match self.peek().map(|t| &t.token) {
             Some(Token::String(s)) => {
                 let value = unescape(s);
+                self.advance();
+                Ok(AssignValue::String(value))
+            }
+            Some(Token::TripleQuotedString(s)) => {
+                let value = process_triple_quoted_string(s);
                 self.advance();
                 Ok(AssignValue::String(value))
             }
@@ -290,6 +300,11 @@ impl<'a> ExpressionParser for Parser<'a> {
         match self.peek().map(|t| &t.token) {
             Some(Token::String(s)) => {
                 let value = unescape(s);
+                self.advance();
+                Ok(VarValue::String(value))
+            }
+            Some(Token::TripleQuotedString(s)) => {
+                let value = process_triple_quoted_string(s);
                 self.advance();
                 Ok(VarValue::String(value))
             }

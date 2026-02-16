@@ -274,3 +274,54 @@ fn test_parse_choice_with_escape_sequences() {
         panic!("Expected NodeDef");
     }
 }
+
+#[test]
+fn test_parse_triple_quoted_string() {
+    let source = r#"
+        node multiline_test {
+            text: """
+                Hello, world!
+                This is line 2.
+                And line 3.
+            """
+        }
+    "#;
+    let program = ParseHandler::parse_source_code(source, false).unwrap();
+
+    if let TopLevel::NodeDef(node) = &program.body[0] {
+        assert_eq!(node.name, "multiline_test");
+
+        if let NodeStmt::Text(text) = &node.body[0] {
+            // Should be dedented and joined with newlines
+            assert_eq!(text, "Hello, world!\nThis is line 2.\nAnd line 3.");
+        } else {
+            panic!("Expected Text statement");
+        }
+    } else {
+        panic!("Expected NodeDef");
+    }
+}
+
+#[test]
+fn test_parse_triple_quoted_string_with_escapes() {
+    let source = r#"
+        node escape_multiline {
+            text: """
+                Line with\ttab
+                Line with "quotes"
+            """
+        }
+    "#;
+    let program = ParseHandler::parse_source_code(source, false).unwrap();
+
+    if let TopLevel::NodeDef(node) = &program.body[0] {
+        if let NodeStmt::Text(text) = &node.body[0] {
+            // Tab escape should work, quotes should be literal
+            assert_eq!(text, "Line with\ttab\nLine with \"quotes\"");
+        } else {
+            panic!("Expected Text statement");
+        }
+    } else {
+        panic!("Expected NodeDef");
+    }
+}

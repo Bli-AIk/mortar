@@ -4,7 +4,7 @@ use crate::ast::{
     Assignment, BranchCase, BranchDef, ChoiceDest, ChoiceItem, Condition, Event, EventAction,
     IfElseStmt, IndexOverride, NodeStmt, RunStmt, WithEventItem, WithEventsStmt,
 };
-use crate::escape::unescape;
+use crate::escape::{process_triple_quoted_string, unescape};
 use crate::parser::expression::ExpressionParser;
 use crate::token::Token;
 
@@ -77,6 +77,11 @@ impl<'a> StatementParser for Parser<'a> {
         if let Some(token_info) = self.advance() {
             match &token_info.token {
                 Token::String(text) => Ok(NodeStmt::Text(unescape(text))),
+                Token::TripleQuotedString(text) => {
+                    // Process triple-quoted string: trim common leading whitespace and unescape
+                    let processed = process_triple_quoted_string(text);
+                    Ok(NodeStmt::Text(processed))
+                }
                 Token::InterpolatedString(text) => {
                     let text_copy = text.to_string(); // Make a copy to avoid borrow issues
                     let interpolated = self.parse_interpolated_string(&text_copy)?;
@@ -116,12 +121,14 @@ impl<'a> StatementParser for Parser<'a> {
         let text = if self.check(&Token::LeftParen) {
             self.advance(); // consume '('
             let text = if let Some(token_info) = self.advance() {
-                if let Token::String(s) = &token_info.token {
-                    unescape(s)
-                } else {
-                    return Err(ParseError::Custom(
-                        "Expected string in parentheses".to_string(),
-                    ));
+                match &token_info.token {
+                    Token::String(s) => unescape(s),
+                    Token::TripleQuotedString(s) => process_triple_quoted_string(s),
+                    _ => {
+                        return Err(ParseError::Custom(
+                            "Expected string in parentheses".to_string(),
+                        ));
+                    }
                 }
             } else {
                 return Err(ParseError::Custom(
@@ -131,10 +138,12 @@ impl<'a> StatementParser for Parser<'a> {
             self.consume(&Token::RightParen, "Expected ')'")?;
             text
         } else if let Some(token_info) = self.advance() {
-            if let Token::String(s) = &token_info.token {
-                unescape(s)
-            } else {
-                return Err(ParseError::Custom("Expected choice text".to_string()));
+            match &token_info.token {
+                Token::String(s) => unescape(s),
+                Token::TripleQuotedString(s) => process_triple_quoted_string(s),
+                _ => {
+                    return Err(ParseError::Custom("Expected choice text".to_string()));
+                }
             }
         } else {
             return Err(ParseError::Custom("Expected choice text".to_string()));
