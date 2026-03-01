@@ -11,6 +11,7 @@ Imagine you're writing game dialogue with events, the traditional way might be:
 ```
 
 Problems arise:
+
 - 😰 Writers see a bunch of "markup", hard to focus on the text itself
 - 😰 Programmers need to parse complex markup, error-prone
 - 😰 Adding or removing event parameters is quite cumbersome
@@ -60,6 +61,66 @@ text: "Double quotes"
 text: 'Single quotes'
 ```
 
+### Escape Sequences
+
+Mortar supports standard escape sequences within strings:
+
+| Escape | Character       |
+|--------|-----------------|
+| `\n`   | Newline         |
+| `\t`   | Tab             |
+| `\r`   | Carriage return |
+| `\\`   | Backslash       |
+| `\"`   | Double quote    |
+| `\'`   | Single quote    |
+| `\0`   | Null character  |
+
+**Examples:**
+
+```mortar
+node Dialogue {
+    text: "Line 1\nLine 2"           // Two lines
+    text: "Name:\tAlice"             // With tab
+    text: "She said \"Hello!\""      // With quotes
+    text: "Path: C:\\Users\\Alice"   // With backslashes
+}
+```
+
+### Triple-Quoted Strings (Multiline)
+
+For longer text spanning multiple lines, use triple quotes (`"""`):
+
+```mortar
+node Narration {
+    text: """
+        In a distant kingdom, there lived a brave knight.
+        He had traveled far and wide, seeking adventure.
+        One day, he arrived at a mysterious forest...
+    """
+}
+```
+
+**Features:**
+
+- Preserves line breaks naturally (no need for `\n`)
+- Automatically removes common leading whitespace (dedent)
+- Empty lines at the start and end are trimmed
+- Escape sequences still work inside triple-quoted strings
+
+**Example with mixed content:**
+
+```mortar
+node Introduction {
+    text: """
+        Welcome to the game!
+        
+        Use ARROW KEYS to move
+        Press SPACE to interact
+        Press ESC to open menu
+    """
+}
+```
+
 ## Event System
 
 ### Basic Syntax
@@ -71,7 +132,9 @@ with events: [
 ]
 ```
 
-`with events` attaches the event list to the most recent `text` statement. Indices start from 0, type is Number, and support integers or decimals. Your engine decides how to interpret these indices (typewriter steps, timeline positions, etc.).
+`with events` attaches the event list to the most recent `text` statement. Indices start from 0, type is Number, and
+support integers or decimals. Your engine decides how to interpret these indices (typewriter steps, timeline positions,
+etc.).
 
 ### Simple Example
 
@@ -87,6 +150,7 @@ with events: [
 ```
 
 **Character indices**:
+
 - "H" = position 0
 - "e" = position 1
 - "l" = position 2
@@ -135,6 +199,7 @@ with events: [
 **When to use decimals?**
 
 Our recommendation:
+
 - Typewriter effect: use integers (one trigger per character)
 - Voice sync: use decimals (trigger by timeline)
 - Video sync: use decimals (precise to frames)
@@ -150,6 +215,7 @@ text: $"Today is {get_date()}."
 ```
 
 **Note**:
+
 - Add `$` before the string to declare it as an "interpolated string"
 - Put variables/functions inside `{}`
 - Functions must be declared in advance
@@ -247,9 +313,11 @@ with events: [
 ## Common Questions
 
 ### Q: What happens if position exceeds text length?
+
 Compiler will warn, but won't error. Runtime behavior depends on your game.
 
 ### Q: Can there be no events?
+
 Of course! Not every text segment needs events. But events must be attached to text.
 
 ```mortar
@@ -258,6 +326,7 @@ text: "This is pure text."
 ```
 
 ### Q: Execution order of multiple events at same position?
+
 Executes in written order:
 
 ```mortar

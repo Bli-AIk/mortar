@@ -31,6 +31,7 @@ use top_level::TopLevelParser;
 
 use crate::ast::Program;
 use crate::diagnostics::{Diagnostic, DiagnosticCollector, DiagnosticKind, Severity};
+use crate::escape::unescape;
 use crate::token::{Token, TokenInfo};
 use error::ParseError;
 
@@ -223,7 +224,7 @@ impl<'a> Parser<'a> {
     pub(super) fn consume_string(&mut self, _error_msg: &str) -> Result<String, ParseError> {
         if let Some(token_info) = self.advance() {
             if let Token::String(s) = &token_info.token {
-                Ok(s.to_string())
+                Ok(unescape(s))
             } else {
                 Err(ParseError::ExpectedString {
                     found: format!("{}", token_info.token),

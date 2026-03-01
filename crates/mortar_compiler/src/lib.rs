@@ -24,9 +24,11 @@
 
 pub mod deserializer;
 pub mod diagnostics;
+pub mod escape;
 pub mod handler;
 pub mod parser;
 pub mod serializer;
+pub mod serializer_types;
 pub mod token;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
