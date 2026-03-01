@@ -165,6 +165,10 @@ pub enum Token<'a> {
     // endregion
 
     // region Literals
+    // Triple-quoted multiline string: """..."""
+    #[token("\"\"\"", lex_triple_quoted_string)]
+    TripleQuotedString(&'a str),
+
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
         &s[1..s.len()-1]
@@ -292,6 +296,7 @@ impl fmt::Display for Token<'_> {
             Or => write!(f, "||"),
             Not => write!(f, "!"),
 
+            TripleQuotedString(s) => write!(f, "\"\"\"{}\"\"\"", s),
             String(s) => write!(f, "\"{}\"", s),
             InterpolatedString(s) => write!(f, "$\"{}\"", s),
             Number(s) => write!(f, "{}", s),
@@ -346,6 +351,39 @@ fn lex_interpolated_string<'a>(lex: &mut logos::Lexer<'a, Token<'a>>) -> Option<
         }
     }
 
+    None
+}
+
+/// Lexes a triple-quoted string: """..."""
+/// Returns the content between the opening and closing triple quotes.
+fn lex_triple_quoted_string<'a>(lex: &mut logos::Lexer<'a, Token<'a>>) -> Option<&'a str> {
+    let start = lex.span().end; // Position after opening """
+    let source = lex.source();
+    let bytes = source.as_bytes();
+
+    let mut pos = start;
+
+    // Look for closing """
+    while pos + 2 < bytes.len() {
+        if bytes[pos] == b'"' && bytes[pos + 1] == b'"' && bytes[pos + 2] == b'"' {
+            // Found closing """
+            lex.bump(pos - start + 3); // Include the closing """
+            return Some(&source[start..pos]);
+        }
+        pos += 1;
+    }
+
+    // Check edge case: """ at the very end
+    if pos + 2 == bytes.len()
+        && bytes[pos] == b'"'
+        && bytes[pos + 1] == b'"'
+        && bytes.get(pos + 2) == Some(&b'"')
+    {
+        lex.bump(pos - start + 3);
+        return Some(&source[start..pos]);
+    }
+
+    // No closing """ found
     None
 }
 
