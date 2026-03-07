@@ -139,6 +139,91 @@ impl Serializer {
         })
     }
 
+    fn convert_arg_to_string(arg: &Arg) -> String {
+        match arg {
+            Arg::String(s) => format!("\"{}\"", s),
+            Arg::Number(n) => n.to_string(),
+            Arg::Boolean(b) => b.to_string(),
+            Arg::Identifier(id) => id.clone(),
+            Arg::FuncCall(fc) => format!("{}(...)", fc.name),
+        }
+    }
+
+    fn convert_assign_value_to_string(value: &AssignValue) -> String {
+        match value {
+            AssignValue::EnumMember(enum_name, member) => format!("{}.{}", enum_name, member),
+            AssignValue::Identifier(id) => id.clone(),
+            AssignValue::Number(n) => n.to_string(),
+            AssignValue::Boolean(b) => b.to_string(),
+            AssignValue::String(s) => s.clone(),
+        }
+    }
+
+    fn peek_with_events(
+        body_iter: &mut std::iter::Peekable<std::slice::Iter<'_, NodeStmt>>,
+        event_map: &std::collections::HashMap<String, &EventDef>,
+    ) -> Result<Option<Vec<JsonEvent>>, String> {
+        let Some(NodeStmt::WithEvents(with_events)) = body_iter.peek() else {
+            return Ok(None);
+        };
+        let mut events = Vec::new();
+        Self::process_with_events(with_events, &mut events, event_map)?;
+        body_iter.next();
+        Ok(if events.is_empty() {
+            None
+        } else {
+            Some(events)
+        })
+    }
+
+    fn combine_conditions(
+        outer: &Option<JsonIfCondition>,
+        inner: Option<JsonIfCondition>,
+    ) -> Option<JsonIfCondition> {
+        match (outer, inner) {
+            (Some(current_cond), Some(inner_cond)) => Some(JsonIfCondition {
+                cond_type: "binary".to_string(),
+                operator: Some("&&".to_string()),
+                left: Some(Box::new(current_cond.clone())),
+                right: Some(Box::new(inner_cond)),
+                operand: None,
+                value: None,
+            }),
+            (Some(current_cond), None) => Some(current_cond.clone()),
+            (None, inner_cond) => inner_cond,
+        }
+    }
+
+    fn merge_nested_content(
+        nested_content: Vec<ContentItem>,
+        condition: &Option<JsonIfCondition>,
+        content: &mut Vec<ContentItem>,
+    ) {
+        for item in nested_content {
+            if let ContentItem::Text {
+                value,
+                interpolated_parts,
+                condition: nested_cond,
+                pre_statements,
+                events,
+            } = item
+            {
+                let combined_cond = Self::combine_conditions(condition, nested_cond);
+                content.push(ContentItem::Text {
+                    value,
+                    interpolated_parts,
+                    condition: combined_cond,
+                    pre_statements,
+                    events,
+                });
+            } else {
+                // Non-text items from nested blocks are pushed directly.
+                // Their execution is implicitly conditional on the client side.
+                content.push(item);
+            }
+        }
+    }
+
     fn convert_node_def(
         node_def: &NodeDef,
         event_map: &std::collections::HashMap<String, &EventDef>,
@@ -153,40 +238,24 @@ impl Serializer {
         while let Some(stmt) = body_iter.next() {
             match stmt {
                 NodeStmt::Text(text) => {
-                    let mut events = Vec::new();
-                    if let Some(NodeStmt::WithEvents(with_events)) = body_iter.peek() {
-                        Self::process_with_events(with_events, &mut events, event_map)?;
-                        body_iter.next(); // Consume the WithEvents statement
-                    }
+                    let events = Self::peek_with_events(&mut body_iter, event_map)?;
                     content.push(ContentItem::Text {
                         value: text.clone(),
                         interpolated_parts: None,
                         condition: None,
                         pre_statements: std::mem::take(&mut pending_statements),
-                        events: if events.is_empty() {
-                            None
-                        } else {
-                            Some(events)
-                        },
+                        events,
                     });
                 }
                 NodeStmt::InterpolatedText(interpolated) => {
                     let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
-                    let mut events = Vec::new();
-                    if let Some(NodeStmt::WithEvents(with_events)) = body_iter.peek() {
-                        Self::process_with_events(with_events, &mut events, event_map)?;
-                        body_iter.next(); // Consume the WithEvents statement
-                    }
+                    let events = Self::peek_with_events(&mut body_iter, event_map)?;
                     content.push(ContentItem::Text {
                         value: rendered_text,
                         interpolated_parts: Some(parts),
                         condition: None,
                         pre_statements: std::mem::take(&mut pending_statements),
-                        events: if events.is_empty() {
-                            None
-                        } else {
-                            Some(events)
-                        },
+                        events,
                     });
                 }
                 NodeStmt::Run(run_stmt) => {
@@ -198,15 +267,7 @@ impl Serializer {
                     let args: Vec<String> = run_stmt
                         .args
                         .iter()
-                        .map(|arg| match arg {
-                            Arg::String(s) => format!("\"{}\"", s),
-                            Arg::Number(n) => n.to_string(),
-                            Arg::Boolean(b) => b.to_string(),
-                            Arg::Identifier(id) => id.clone(),
-                            Arg::FuncCall(func_call) => {
-                                format!("{}(...)", func_call.name)
-                            }
-                        })
+                        .map(Self::convert_arg_to_string)
                         .collect();
 
                     let index_override =
@@ -232,10 +293,10 @@ impl Serializer {
                     });
                 }
                 NodeStmt::Choice(choice_items) => {
-                    let mut json_choices = Vec::new();
-                    for item in choice_items {
-                        json_choices.push(Self::convert_choice_item(item)?);
-                    }
+                    let json_choices = choice_items
+                        .iter()
+                        .map(Self::convert_choice_item)
+                        .collect::<Result<Vec<_>, String>>()?;
                     content.push(ContentItem::Choice {
                         options: json_choices,
                     });
@@ -250,15 +311,7 @@ impl Serializer {
                     local_variables.push(Self::convert_var_decl(var_decl));
                 }
                 NodeStmt::Assignment(assignment) => {
-                    let value_str = match &assignment.value {
-                        AssignValue::EnumMember(enum_name, member) => {
-                            format!("{}.{}", enum_name, member)
-                        }
-                        AssignValue::Identifier(id) => id.clone(),
-                        AssignValue::Number(n) => n.to_string(),
-                        AssignValue::Boolean(b) => b.to_string(),
-                        AssignValue::String(s) => s.clone(),
-                    };
+                    let value_str = Self::convert_assign_value_to_string(&assignment.value);
 
                     pending_statements.push(JsonStatement {
                         stmt_type: "assignment".to_string(),
@@ -330,46 +383,52 @@ impl Serializer {
         event_map: &std::collections::HashMap<String, &EventDef>,
     ) -> Result<(), String> {
         for item in &with_events.events {
-            match item {
-                WithEventItem::InlineEvent(event) => {
-                    events.push(Self::convert_event(event)?);
-                }
-                WithEventItem::EventRef(name, _span) => {
-                    if let Some(event_def) = event_map.get(name) {
-                        let event = Event {
-                            index: event_def.index.unwrap_or(0.0),
-                            action: event_def.action.clone(),
-                        };
-                        events.push(Self::convert_event(&event)?);
-                    } else {
-                        return Err(format!("Event '{}' not found", name));
-                    }
-                }
-                WithEventItem::EventRefWithOverride(name, _span, override_val) => {
-                    if let Some(event_def) = event_map.get(name) {
-                        let (index, index_variable) = match override_val {
-                            IndexOverride::Value(v) => (*v, None),
-                            IndexOverride::Variable(var_name) => (0.0, Some(var_name.clone())),
-                        };
+            Self::process_with_event_item(item, events, event_map)?;
+        }
+        Ok(())
+    }
 
-                        let mut actions =
-                            vec![Self::convert_func_call_to_action(&event_def.action.call)?];
-                        for chain_call in &event_def.action.chains {
-                            actions.push(Self::convert_func_call_to_action(chain_call)?);
-                        }
+    fn process_with_event_item(
+        item: &WithEventItem,
+        events: &mut Vec<JsonEvent>,
+        event_map: &std::collections::HashMap<String, &EventDef>,
+    ) -> Result<(), String> {
+        match item {
+            WithEventItem::InlineEvent(event) => {
+                events.push(Self::convert_event(event)?);
+            }
+            WithEventItem::EventRef(name, _span) => {
+                let event_def = event_map
+                    .get(name)
+                    .ok_or_else(|| format!("Event '{}' not found", name))?;
+                let event = Event {
+                    index: event_def.index.unwrap_or(0.0),
+                    action: event_def.action.clone(),
+                };
+                events.push(Self::convert_event(&event)?);
+            }
+            WithEventItem::EventRefWithOverride(name, _span, override_val) => {
+                let event_def = event_map
+                    .get(name)
+                    .ok_or_else(|| format!("Event '{}' not found", name))?;
+                let (index, index_variable) = match override_val {
+                    IndexOverride::Value(v) => (*v, None),
+                    IndexOverride::Variable(var_name) => (0.0, Some(var_name.clone())),
+                };
 
-                        events.push(JsonEvent {
-                            index,
-                            index_variable,
-                            actions,
-                        });
-                    } else {
-                        return Err(format!("Event '{}' not found", name));
-                    }
+                let mut actions = vec![Self::convert_func_call_to_action(&event_def.action.call)?];
+                for chain_call in &event_def.action.chains {
+                    actions.push(Self::convert_func_call_to_action(chain_call)?);
                 }
-                WithEventItem::EventList(_) => {
-                    // TODO: Handle nested event lists if needed
-                }
+
+                events.push(JsonEvent {
+                    index,
+                    index_variable,
+                    actions,
+                });
+            }
+            WithEventItem::EventList(_) => {
+                // TODO: Handle nested event lists if needed
             }
         }
         Ok(())
@@ -436,15 +495,7 @@ impl Serializer {
                     });
                 }
                 NodeStmt::Assignment(assignment) => {
-                    let value_str = match &assignment.value {
-                        AssignValue::EnumMember(enum_name, member) => {
-                            format!("{}.{}", enum_name, member)
-                        }
-                        AssignValue::Identifier(id) => id.clone(),
-                        AssignValue::Number(n) => n.to_string(),
-                        AssignValue::Boolean(b) => b.to_string(),
-                        AssignValue::String(s) => s.clone(),
-                    };
+                    let value_str = Self::convert_assign_value_to_string(&assignment.value);
                     pending_stmts.push(JsonStatement {
                         stmt_type: "assignment".to_string(),
                         var_name: Some(assignment.var_name.clone()),
@@ -454,46 +505,7 @@ impl Serializer {
                 NodeStmt::IfElse(nested_if) => {
                     let mut nested_content = Vec::new();
                     Self::process_if_else_to_content(nested_if, &mut nested_content)?;
-
-                    for item in nested_content {
-                        if let ContentItem::Text {
-                            value,
-                            interpolated_parts,
-                            condition: nested_cond,
-                            pre_statements,
-                            events,
-                        } = item
-                        {
-                            let combined_cond = if let Some(current_cond) = &condition {
-                                if let Some(inner_cond) = nested_cond {
-                                    Some(JsonIfCondition {
-                                        cond_type: "binary".to_string(),
-                                        operator: Some("&&".to_string()),
-                                        left: Some(Box::new(current_cond.clone())),
-                                        right: Some(Box::new(inner_cond)),
-                                        operand: None,
-                                        value: None,
-                                    })
-                                } else {
-                                    Some(current_cond.clone())
-                                }
-                            } else {
-                                nested_cond
-                            };
-
-                            content.push(ContentItem::Text {
-                                value,
-                                interpolated_parts,
-                                condition: combined_cond,
-                                pre_statements,
-                                events,
-                            });
-                        } else {
-                            // Non-text items from nested blocks are pushed directly.
-                            // Their execution is implicitly conditional on the client side.
-                            content.push(item);
-                        }
-                    }
+                    Self::merge_nested_content(nested_content, &condition, content);
                 }
                 _ => {} // Other statements like Run, Choice, etc., are not valid inside if/else text blocks
             }
@@ -707,11 +719,10 @@ impl Serializer {
                     .cases
                     .iter()
                     .map(|case| {
-                        let events = case.events.as_ref().and_then(|events| {
-                            let converted: Result<Vec<_>, _> =
-                                events.iter().map(Self::convert_event).collect();
-                            converted.ok()
-                        });
+                        let events = case
+                            .events
+                            .as_ref()
+                            .and_then(|e| e.iter().map(Self::convert_event).collect::<Result<Vec<_>, _>>().ok());
 
                         serde_json::json!({
                             "condition": case.condition,
@@ -757,15 +768,7 @@ impl Serializer {
                     let args: Vec<String> = func_call
                         .args
                         .iter()
-                        .map(|arg| {
-                            match arg {
-                                Arg::String(s) => format!("\"{}\"", s),
-                                Arg::Number(n) => n.to_string(),
-                                Arg::Boolean(b) => b.to_string(),
-                                Arg::Identifier(id) => id.clone(),
-                                Arg::FuncCall(nested) => format!("{}()", nested.name), // Simplified
-                            }
-                        })
+                        .map(Self::convert_arg_to_string)
                         .collect();
 
                     parts.push(JsonStringPart {

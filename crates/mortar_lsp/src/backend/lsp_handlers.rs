@@ -316,58 +316,62 @@ impl LanguageServer for Backend {
         params: ExecuteCommandParams,
     ) -> Result<Option<serde_json::Value>> {
         match params.command.as_str() {
-            "mortar.setLanguage" => {
-                if !params.arguments.is_empty()
-                    && let Some(lang_arg) = params.arguments.first()
-                    && let Ok(lang_str) = serde_json::from_value::<String>(lang_arg.clone())
-                {
-                    let language = match lang_str.as_str() {
-                        "en" | "english" => mortar_compiler::Language::English,
-                        "zh" | "chinese" => mortar_compiler::Language::Chinese,
-                        _ => {
-                            let error_msg = crate::backend::i18n::get_lsp_text(
-                                "unsupported_language_error",
-                                self.get_language().await,
-                            );
-                            return Ok(Some(serde_json::json!({
-                                "error": error_msg
-                            })));
-                        }
-                    };
-
-                    self.set_language(language).await;
-
-                    // Re-analyze all open documents with the new language
-                    let documents_snapshot: Vec<(Uri, String)> = self
-                        .documents
-                        .iter()
-                        .map(|entry| {
-                            let uri = entry.key().clone();
-                            let content = entry.value().0.to_string();
-                            (uri, content)
-                        })
-                        .collect();
-
-                    for (uri, content) in documents_snapshot {
-                        self.analyze_document(&uri, &content).await;
-                    }
-
-                    let success_msg =
-                        crate::backend::i18n::get_lsp_text("language_changed_success", language);
-                    return Ok(Some(serde_json::json!({
-                        "message": success_msg,
-                        "language": lang_str
-                    })));
-                }
-                let error_msg = crate::backend::i18n::get_lsp_text(
-                    "invalid_command_arguments",
-                    self.get_language().await,
-                );
-                Ok(Some(serde_json::json!({
-                    "error": error_msg
-                })))
-            }
+            "mortar.setLanguage" => self.handle_set_language(&params).await,
             _ => Ok(None),
         }
+    }
+}
+
+impl Backend {
+    async fn handle_set_language(
+        &self,
+        params: &ExecuteCommandParams,
+    ) -> Result<Option<serde_json::Value>> {
+        let Some(lang_arg) = params.arguments.first() else {
+            return self.invalid_command_arguments_error().await;
+        };
+        let Ok(lang_str) = serde_json::from_value::<String>(lang_arg.clone()) else {
+            return self.invalid_command_arguments_error().await;
+        };
+
+        let language = match lang_str.as_str() {
+            "en" | "english" => mortar_compiler::Language::English,
+            "zh" | "chinese" => mortar_compiler::Language::Chinese,
+            _ => {
+                let error_msg = crate::backend::i18n::get_lsp_text(
+                    "unsupported_language_error",
+                    self.get_language().await,
+                );
+                return Ok(Some(serde_json::json!({ "error": error_msg })));
+            }
+        };
+
+        self.set_language(language).await;
+
+        // Re-analyze all open documents with the new language
+        let documents_snapshot: Vec<(Uri, String)> = self
+            .documents
+            .iter()
+            .map(|entry| (entry.key().clone(), entry.value().0.to_string()))
+            .collect();
+
+        for (uri, content) in documents_snapshot {
+            self.analyze_document(&uri, &content).await;
+        }
+
+        let success_msg =
+            crate::backend::i18n::get_lsp_text("language_changed_success", language);
+        Ok(Some(serde_json::json!({
+            "message": success_msg,
+            "language": lang_str
+        })))
+    }
+
+    async fn invalid_command_arguments_error(&self) -> Result<Option<serde_json::Value>> {
+        let error_msg = crate::backend::i18n::get_lsp_text(
+            "invalid_command_arguments",
+            self.get_language().await,
+        );
+        Ok(Some(serde_json::json!({ "error": error_msg })))
     }
 }

@@ -236,28 +236,19 @@ fn test_parse_not_operator() {
     assert!(result.is_ok());
 
     let program = result.unwrap();
-    match &program.body[1] {
-        TopLevel::NodeDef(node) => {
-            match &node.body[0] {
-                NodeStmt::IfElse(if_else) => {
-                    match &if_else.condition {
-                        IfCondition::Unary(unary) => {
-                            // Check operand
-                            match &unary.operand {
-                                IfCondition::Identifier(name) => {
-                                    assert_eq!(name, "flag");
-                                }
-                                _ => panic!("Expected Identifier operand"),
-                            }
-                        }
-                        _ => panic!("Expected Unary condition"),
-                    }
-                }
-                _ => panic!("Expected IfElse"),
-            }
-        }
-        _ => panic!("Expected NodeDef"),
-    }
+    let TopLevel::NodeDef(node) = &program.body[1] else {
+        panic!("Expected NodeDef");
+    };
+    let NodeStmt::IfElse(if_else) = &node.body[0] else {
+        panic!("Expected IfElse");
+    };
+    let IfCondition::Unary(unary) = &if_else.condition else {
+        panic!("Expected Unary condition");
+    };
+    let IfCondition::Identifier(name) = &unary.operand else {
+        panic!("Expected Identifier operand");
+    };
+    assert_eq!(name, "flag");
 }
 
 #[test]

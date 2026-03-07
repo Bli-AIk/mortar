@@ -25,7 +25,8 @@
 use crate::Language;
 use crate::ast::{
     Arg, ChoiceDest, ChoiceItem, Condition, EventAction, FuncCall, FunctionDecl,
-    InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TimelineStmt, TopLevel,
+    InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TimelineDef,
+    TimelineStmt, TopLevel,
 };
 use owo_colors::OwoColorize;
 use std::collections::{HashMap, HashSet};
@@ -244,58 +245,7 @@ impl DiagnosticCollector {
                 Severity::Warning => get_text("warning", self.language),
             };
 
-            if let Some((start, _end)) = diagnostic.span {
-                // Calculate line and column numbers
-                let (line, col) = get_line_col(source, start);
-
-                // Print colored error header
-                let header = format!(
-                    "{}: {}:{}:{}: {}",
-                    severity_str, self.file_name, line, col, diagnostic.message
-                );
-
-                match diagnostic.severity {
-                    Severity::Error => println!("{}", header.red()),
-                    Severity::Warning => println!("{}", header.yellow()),
-                }
-
-                // Show source code snippet
-                let lines: Vec<&str> = source.lines().collect();
-                if line > 0 && (line - 1) < lines.len() {
-                    let source_line = lines[line - 1];
-                    println!(
-                        "{:3} {} {}",
-                        line.to_string().bright_blue(),
-                        "|".bright_blue(),
-                        source_line
-                    );
-
-                    // Calculate character count within error range for equal-length indicators
-                    let error_length = if let Some((span_start, span_end)) = diagnostic.span {
-                        // Convert byte length to character length
-                        let error_text = &source[span_start..std::cmp::min(span_end, source.len())];
-                        std::cmp::max(1, error_text.chars().count())
-                    } else {
-                        1
-                    };
-
-                    // Create pointer indicators with equal-length ^ characters
-                    let padding = " ".repeat(col - 1); // col is 1-based, subtract 1 for correct position
-                    let pointer_str = "^".repeat(error_length);
-                    let pointer = match diagnostic.severity {
-                        Severity::Error => {
-                            format!("    {} {}{}", "|".bright_blue(), padding, pointer_str.red())
-                        }
-                        Severity::Warning => format!(
-                            "    {} {}{}",
-                            "|".bright_blue(),
-                            padding,
-                            pointer_str.yellow()
-                        ),
-                    };
-                    println!("{}", pointer);
-                }
-            } else {
+            let Some((start, _end)) = diagnostic.span else {
                 let header = format!(
                     "{}: {}: {}",
                     severity_str, self.file_name, diagnostic.message
@@ -304,9 +254,67 @@ impl DiagnosticCollector {
                     Severity::Error => println!("{}", header.red()),
                     Severity::Warning => println!("{}", header.yellow()),
                 }
+                println!();
+                continue;
+            };
+
+            // Calculate line and column numbers
+            let (line, col) = get_line_col(source, start);
+
+            // Print colored error header
+            let header = format!(
+                "{}: {}:{}:{}: {}",
+                severity_str, self.file_name, line, col, diagnostic.message
+            );
+
+            match diagnostic.severity {
+                Severity::Error => println!("{}", header.red()),
+                Severity::Warning => println!("{}", header.yellow()),
             }
+
+            // Show source code snippet
+            self.print_source_snippet(diagnostic, source, line, col);
             println!();
         }
+    }
+
+    fn print_source_snippet(&self, diagnostic: &Diagnostic, source: &str, line: usize, col: usize) {
+        let lines: Vec<&str> = source.lines().collect();
+        if line == 0 || (line - 1) >= lines.len() {
+            return;
+        }
+        let source_line = lines[line - 1];
+        println!(
+            "{:3} {} {}",
+            line.to_string().bright_blue(),
+            "|".bright_blue(),
+            source_line
+        );
+
+        // Calculate character count within error range for equal-length indicators
+        let error_length = if let Some((span_start, span_end)) = diagnostic.span {
+            // Convert byte length to character length
+            let error_text = &source[span_start..std::cmp::min(span_end, source.len())];
+            std::cmp::max(1, error_text.chars().count())
+        } else {
+            1
+        };
+
+        // Create pointer indicators with equal-length ^ characters
+        let padding = " ".repeat(col - 1); // col is 1-based, subtract 1 for correct position
+        let pointer_str = "^".repeat(error_length);
+        let pointer = match diagnostic.severity {
+            Severity::Error => {
+                format!("    {} {}{}", "|".bright_blue(), padding, pointer_str.red())
+            }
+            Severity::Warning => format!(
+                "    {} {}{}",
+                "|".bright_blue(),
+                padding,
+                pointer_str.yellow()
+            ),
+        };
+        println!("{}", pointer);
     }
 
     pub fn get_diagnostics(&self) -> &Vec<Diagnostic> {
@@ -324,39 +332,11 @@ impl DiagnosticCollector {
         for item in &program.body {
             match item {
                 TopLevel::FunctionDecl(func) => {
-                    // Check function naming convention
-                    if !is_snake_case(&func.name) {
-                        self.add_diagnostic(Diagnostic {
-                            kind: DiagnosticKind::NonSnakeCaseFunction {
-                                function_name: func.name.clone(),
-                            },
-                            severity: Severity::Warning,
-                            span: func.name_span,
-                            message: format_message(
-                                get_text("function_should_use_snake_case", self.language),
-                                &[&func.name],
-                            ),
-                        });
-                    }
-
+                    self.check_snake_case_naming(&func.name, func.name_span);
                     declared_functions.insert(func.name.clone(), func);
                 }
                 TopLevel::NodeDef(node) => {
-                    // Check node naming convention
-                    if !is_pascal_case(&node.name) {
-                        self.add_diagnostic(Diagnostic {
-                            kind: DiagnosticKind::NonPascalCaseNode {
-                                node_name: node.name.clone(),
-                            },
-                            severity: Severity::Warning,
-                            span: node.name_span,
-                            message: format_message(
-                                get_text("node_should_use_pascal_case", self.language),
-                                &[&node.name],
-                            ),
-                        });
-                    }
-
+                    self.check_pascal_case_naming(&node.name, node.name_span);
                     declared_nodes.insert(node.name.clone(), node);
                 }
                 TopLevel::VarDecl(_) | TopLevel::ConstDecl(_) | TopLevel::EnumDef(_) => {
@@ -388,18 +368,11 @@ impl DiagnosticCollector {
                     );
                 }
                 TopLevel::TimelineDef(timeline_def) => {
-                    for stmt in &timeline_def.body {
-                        if let TimelineStmt::Run(run_stmt) = stmt {
-                            // Mark the event/function as used
-                            used_functions.insert(run_stmt.event_name.clone());
-                        }
-                    }
+                    Self::collect_timeline_usages(timeline_def, &mut used_functions)
                 }
-                TopLevel::VarDecl(var_decl) => {
-                    if let Some(value) = &var_decl.value {
-                        self.analyze_var_value(value, &declared_functions, &mut used_functions);
-                    }
-                }
+                TopLevel::VarDecl(var_decl) => if let Some(value) = &var_decl.value {
+                    self.analyze_var_value(value, &declared_functions, &mut used_functions);
+                },
                 TopLevel::ConstDecl(const_decl) => {
                     self.analyze_var_value(
                         &const_decl.value,
@@ -435,17 +408,13 @@ impl DiagnosticCollector {
         declared_functions: &HashMap<String, &FunctionDecl>,
         used_functions: &mut HashSet<String>,
     ) {
-        if let crate::ast::VarValue::Branch(branch_val) = value {
-            for case in &branch_val.cases {
-                if let Some(events) = &case.events {
-                    for event in events {
-                        self.analyze_event_action(
-                            &event.action,
-                            declared_functions,
-                            used_functions,
-                        );
-                    }
-                }
+        let crate::ast::VarValue::Branch(branch_val) = value else {
+            return;
+        };
+        for case in &branch_val.cases {
+            let Some(events) = &case.events else { continue };
+            for event in events {
+                self.analyze_event_action(&event.action, declared_functions, used_functions);
             }
         }
     }
@@ -583,53 +552,13 @@ impl DiagnosticCollector {
         for choice in choices {
             // Analyze condition
             if let Some(condition) = &choice.condition {
-                match condition {
-                    Condition::Identifier(_) => {
-                        // TODO: Check if identifier is valid in scope
-                        // For now, we assume identifiers are boolean
-                    }
-                    Condition::FuncCall(func_call) => {
-                        self.analyze_func_call(func_call, declared_functions, used_functions);
-
-                        // Check that the function returns a boolean type
-                        if let Some(func_decl) = declared_functions.get(&func_call.name)
-                            && let Some(return_type) = &func_decl.return_type
-                            && !self.is_boolean_type(return_type)
-                        {
-                            self.add_diagnostic(Diagnostic {
-                                kind: DiagnosticKind::ConditionTypeMismatch {
-                                    expected: "Boolean".to_string(),
-                                    actual: return_type.clone(),
-                                },
-                                severity: Severity::Error,
-                                span: func_call.name_span,
-                                message: format_message(
-                                    get_text("condition_must_return_boolean", self.language),
-                                    &[&func_call.name, return_type],
-                                ),
-                            });
-                        }
-                    }
-                }
+                self.analyze_choice_condition(condition, declared_functions, used_functions);
             }
 
             // Analyze choice destination
             match &choice.target {
                 ChoiceDest::Identifier(node_name, span) => {
-                    used_nodes.insert(node_name.clone());
-                    if !declared_nodes.contains_key(node_name) {
-                        self.add_diagnostic(Diagnostic {
-                            kind: DiagnosticKind::NodeNotFound {
-                                node_name: node_name.clone(),
-                            },
-                            severity: Severity::Error,
-                            span: *span,
-                            message: format_message(
-                                get_text("node_not_defined", self.language),
-                                &[node_name],
-                            ),
-                        });
-                    }
+                    self.check_node_exists(node_name, *span, declared_nodes, used_nodes);
                 }
                 ChoiceDest::NestedChoices(nested) => {
                     self.analyze_choices(
@@ -706,32 +635,7 @@ impl DiagnosticCollector {
                 ),
             });
         } else {
-            // Check argument types if count matches
-            for (arg, param) in func_call.args.iter().zip(func_decl.params.iter()) {
-                let arg_type = self.infer_argument_type(arg, declared_functions);
-                if !self.is_type_compatible(&arg_type, &param.type_name) {
-                    let arg_type_for_message = self.infer_argument_type(arg, declared_functions);
-                    self.add_diagnostic(Diagnostic {
-                        kind: DiagnosticKind::ArgumentTypeMismatch {
-                            function_name: func_call.name.clone(),
-                            parameter: param.name.clone(),
-                            expected: param.type_name.clone(),
-                            actual: arg_type,
-                        },
-                        severity: Severity::Error,
-                        span: func_call.name_span,
-                        message: format_message(
-                            get_text("function_parameter_type_mismatch", self.language),
-                            &[
-                                &func_call.name,
-                                &param.name,
-                                &param.type_name,
-                                &arg_type_for_message,
-                            ],
-                        ),
-                    });
-                }
-            }
+            self.check_argument_types(func_call, func_decl, declared_functions);
         }
 
         // Analyze nested function calls in arguments
@@ -811,24 +715,159 @@ impl DiagnosticCollector {
         // Simple regex-like parsing to find function calls in {function_name()} pattern
         let mut chars = text.chars().peekable();
         while let Some(ch) = chars.next() {
-            if ch == '{' {
-                // Found potential function call
-                let mut func_call = String::new();
-                while let Some(&next_ch) = chars.peek() {
-                    if next_ch == '}' {
-                        chars.next(); // consume '}'
-                        break;
-                    }
-                    func_call.push(chars.next().unwrap());
-                }
+            if ch != '{' {
+                continue;
+            }
+            let func_call = Self::collect_interpolation_expr(&mut chars);
 
-                // Check if it looks like a function call
-                if let Some(paren_pos) = func_call.find('(') {
-                    let func_name = func_call[..paren_pos].trim().to_string();
-                    if declared_functions.contains_key(&func_name) {
-                        used_functions.insert(func_name);
-                    }
+            // Check if it looks like a function call and mark as used
+            if let Some(func_name) = func_call
+                .find('(')
+                .map(|pos| func_call[..pos].trim().to_string())
+                .filter(|name| declared_functions.contains_key(name))
+            {
+                used_functions.insert(func_name);
+            }
+        }
+    }
+
+    fn collect_interpolation_expr(chars: &mut std::iter::Peekable<std::str::Chars>) -> String {
+        let mut expr = String::new();
+        while let Some(&next_ch) = chars.peek() {
+            if next_ch == '}' {
+                chars.next();
+                break;
+            }
+            expr.push(chars.next().unwrap());
+        }
+        expr
+    }
+
+    fn collect_timeline_usages(timeline_def: &TimelineDef, used_functions: &mut HashSet<String>) {
+        for stmt in &timeline_def.body {
+            if let TimelineStmt::Run(run_stmt) = stmt {
+                used_functions.insert(run_stmt.event_name.clone());
+            }
+        }
+    }
+
+    fn check_snake_case_naming(&mut self, name: &str, span: Option<(usize, usize)>) {
+        if !is_snake_case(name) {
+            self.add_diagnostic(Diagnostic {
+                kind: DiagnosticKind::NonSnakeCaseFunction {
+                    function_name: name.to_string(),
+                },
+                severity: Severity::Warning,
+                span,
+                message: format_message(
+                    get_text("function_should_use_snake_case", self.language),
+                    &[name],
+                ),
+            });
+        }
+    }
+
+    fn check_pascal_case_naming(&mut self, name: &str, span: Option<(usize, usize)>) {
+        if !is_pascal_case(name) {
+            self.add_diagnostic(Diagnostic {
+                kind: DiagnosticKind::NonPascalCaseNode {
+                    node_name: name.to_string(),
+                },
+                severity: Severity::Warning,
+                span,
+                message: format_message(
+                    get_text("node_should_use_pascal_case", self.language),
+                    &[name],
+                ),
+            });
+        }
+    }
+
+    fn analyze_choice_condition(
+        &mut self,
+        condition: &Condition,
+        declared_functions: &HashMap<String, &FunctionDecl>,
+        used_functions: &mut HashSet<String>,
+    ) {
+        match condition {
+            Condition::Identifier(_) => {
+                // TODO: Check if identifier is valid in scope
+                // For now, we assume identifiers are boolean
+            }
+            Condition::FuncCall(func_call) => {
+                self.analyze_func_call(func_call, declared_functions, used_functions);
+
+                // Check that the function returns a boolean type
+                if let Some(func_decl) = declared_functions.get(&func_call.name)
+                    && let Some(return_type) = &func_decl.return_type
+                    && !self.is_boolean_type(return_type)
+                {
+                    self.add_diagnostic(Diagnostic {
+                        kind: DiagnosticKind::ConditionTypeMismatch {
+                            expected: "Boolean".to_string(),
+                            actual: return_type.clone(),
+                        },
+                        severity: Severity::Error,
+                        span: func_call.name_span,
+                        message: format_message(
+                            get_text("condition_must_return_boolean", self.language),
+                            &[&func_call.name, return_type],
+                        ),
+                    });
                 }
+            }
+        }
+    }
+
+    fn check_node_exists(
+        &mut self,
+        node_name: &str,
+        span: Option<(usize, usize)>,
+        declared_nodes: &HashMap<String, &NodeDef>,
+        used_nodes: &mut HashSet<String>,
+    ) {
+        used_nodes.insert(node_name.to_string());
+        if !declared_nodes.contains_key(node_name) {
+            self.add_diagnostic(Diagnostic {
+                kind: DiagnosticKind::NodeNotFound {
+                    node_name: node_name.to_string(),
+                },
+                severity: Severity::Error,
+                span,
+                message: format_message(get_text("node_not_defined", self.language), &[node_name]),
+            });
+        }
+    }
+
+    fn check_argument_types(
+        &mut self,
+        func_call: &FuncCall,
+        func_decl: &FunctionDecl,
+        declared_functions: &HashMap<String, &FunctionDecl>,
+    ) {
+        for (arg, param) in func_call.args.iter().zip(func_decl.params.iter()) {
+            let arg_type = self.infer_argument_type(arg, declared_functions);
+            if !self.is_type_compatible(&arg_type, &param.type_name) {
+                let arg_type_for_message = self.infer_argument_type(arg, declared_functions);
+                self.add_diagnostic(Diagnostic {
+                    kind: DiagnosticKind::ArgumentTypeMismatch {
+                        function_name: func_call.name.clone(),
+                        parameter: param.name.clone(),
+                        expected: param.type_name.clone(),
+                        actual: arg_type,
+                    },
+                    severity: Severity::Error,
+                    span: func_call.name_span,
+                    message: format_message(
+                        get_text("function_parameter_type_mismatch", self.language),
+                        &[
+                            &func_call.name,
+                            &param.name,
+                            &param.type_name,
+                            &arg_type_for_message,
+                        ],
+                    ),
+                });
             }
         }
     }

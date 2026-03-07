@@ -252,26 +252,22 @@ impl<'a> Parser<'a> {
             let mut skipped_something = false;
 
             // Skip comments
-            while let Some(token_info) = self.peek() {
-                if matches!(
+            while let Some(token_info) = self.peek()
+                && matches!(
                     token_info.token,
                     Token::SingleLineComment(_) | Token::MultiLineComment(_)
-                ) {
-                    self.advance();
-                    skipped_something = true;
-                } else {
-                    break;
-                }
+                )
+            {
+                self.advance();
+                skipped_something = true;
             }
 
             // Skip separators
-            while let Some(token_info) = self.peek() {
-                if matches!(token_info.token, Token::Comma | Token::Semicolon) {
-                    self.advance();
-                    skipped_something = true;
-                } else {
-                    break;
-                }
+            while let Some(token_info) = self.peek()
+                && matches!(token_info.token, Token::Comma | Token::Semicolon)
+            {
+                self.advance();
+                skipped_something = true;
             }
 
             if !skipped_something {
@@ -295,20 +291,20 @@ impl<'a> Parser<'a> {
             }
 
             // If current token is a keyword that starts a top-level declaration
-            if let Some(curr) = self.peek() {
-                match curr.token {
+            if let Some(curr) = self.peek()
+                && matches!(
+                    curr.token,
                     Token::Node
-                    | Token::Fn
-                    | Token::Let
-                    | Token::Const
-                    | Token::Pub
-                    | Token::Enum
-                    | Token::Event
-                    | Token::Timeline => {
-                        return;
-                    }
-                    _ => {}
-                }
+                        | Token::Fn
+                        | Token::Let
+                        | Token::Const
+                        | Token::Pub
+                        | Token::Enum
+                        | Token::Event
+                        | Token::Timeline
+                )
+            {
+                return;
             }
 
             self.advance();

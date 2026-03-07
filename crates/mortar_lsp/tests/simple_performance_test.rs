@@ -250,14 +250,9 @@ fn concurrent_test(id: Number) -> String
             let task_start = Instant::now();
 
             // Each task parses multiple times
-            let mut results = Vec::new();
-            for _ in 0..20 {
-                if let Ok(program) =
-                    mortar_compiler::ParseHandler::parse_source_code(&content_copy, false)
-                {
-                    results.push(program);
-                }
-            }
+            let results: Vec<_> = (0..20)
+                .filter_map(|_| mortar_compiler::ParseHandler::parse_source_code(&content_copy, false).ok())
+                .collect();
 
             let task_duration = task_start.elapsed();
             println!(
