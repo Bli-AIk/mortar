@@ -42,27 +42,7 @@ impl<'a> StatementParser for Parser<'a> {
             Some(Token::Run) => Ok(NodeStmt::Run(self.parse_run_stmt()?)),
             Some(Token::With) => Ok(NodeStmt::WithEvents(self.parse_with_events_stmt()?)),
             Some(Token::Let) => Err(ParseError::Custom("Variable declarations with 'let' are not allowed inside nodes. Please define variables at the top level (outside of nodes).".to_string())),
-            Some(Token::Identifier(_)) => {
-                // Could be:
-                // 1. Assignment (name = value)
-                // 2. Branch definition (name: branch [...])
-                if self.current + 1 < self.tokens.len() {
-                    match &self.tokens[self.current + 1].token {
-                        Token::Equals => {
-                            return Ok(NodeStmt::Assignment(self.parse_assignment()?));
-                        }
-                        Token::Colon => {
-                            if self.current + 2 < self.tokens.len()
-                                && matches!(self.tokens[self.current + 2].token, Token::Branch) {
-                                    return Ok(NodeStmt::Branch(self.parse_branch_def()?));
-                                }
-
-                        }
-                        _ => {}
-                    }
-                }
-                Err(ParseError::Custom("Unexpected identifier in node body. Expected 'text', 'choice', 'run', 'with', assignment, or branch definition".to_string()))
-            }
+            Some(Token::Identifier(_)) => self.parse_identifier_node_stmt(),
             _ => Err(ParseError::UnexpectedToken {
                 expected: "'text', 'choice', 'run', 'with', assignment, or branch definition".to_string(),
                 found: self.peek().map(|t| format!("{}", t.token)).unwrap_or_else(|| "EOF".to_string())
@@ -120,20 +100,19 @@ impl<'a> StatementParser for Parser<'a> {
         // Parse choice text
         let text = if self.check(&Token::LeftParen) {
             self.advance(); // consume '('
-            let text = if let Some(token_info) = self.advance() {
-                match &token_info.token {
-                    Token::String(s) => unescape(s),
-                    Token::TripleQuotedString(s) => process_triple_quoted_string(s),
-                    _ => {
-                        return Err(ParseError::Custom(
-                            "Expected string in parentheses".to_string(),
-                        ));
-                    }
-                }
-            } else {
+            let Some(token_info) = self.advance() else {
                 return Err(ParseError::Custom(
                     "Expected string in parentheses".to_string(),
                 ));
+            };
+            let text = match &token_info.token {
+                Token::String(s) => unescape(s),
+                Token::TripleQuotedString(s) => process_triple_quoted_string(s),
+                _ => {
+                    return Err(ParseError::Custom(
+                        "Expected string in parentheses".to_string(),
+                    ));
+                }
             };
             self.consume(&Token::RightParen, "Expected ')'")?;
             text
@@ -204,23 +183,7 @@ impl<'a> StatementParser for Parser<'a> {
                 self.advance();
                 Ok(ChoiceDest::Break)
             }
-            Some(Token::LeftBracket) => {
-                self.advance(); // consume '['
-
-                let mut items = Vec::new();
-
-                while !self.check(&Token::RightBracket) && !self.is_at_end() {
-                    self.skip_comments_and_separators();
-
-                    if !self.check(&Token::RightBracket) && !self.is_at_end() {
-                        items.push(self.parse_choice_item()?);
-                        self.skip_optional_separators();
-                    }
-                }
-
-                self.consume(&Token::RightBracket, "Expected ']'")?;
-                Ok(ChoiceDest::NestedChoices(items))
-            }
+            Some(Token::LeftBracket) => self.parse_nested_choice_dest(),
             _ => Err(ParseError::UnexpectedToken {
                 expected: "choice destination".to_string(),
                 found: self
@@ -232,25 +195,22 @@ impl<'a> StatementParser for Parser<'a> {
     }
 
     fn parse_condition(&mut self) -> Result<Condition, ParseError> {
-        if let Some(token_info) = self.peek() {
-            if let Token::Identifier(name) = &token_info.token {
-                // Look ahead to see if it's a function call
-                if self.tokens.get(self.current + 1).map(|t| &t.token) == Some(&Token::LeftParen) {
-                    Ok(Condition::FuncCall(self.parse_func_call()?))
-                } else {
-                    let name = name.to_string();
-                    self.advance();
-                    Ok(Condition::Identifier(name))
-                }
-            } else {
-                Err(ParseError::Custom(
-                    "Expected identifier or function call in condition".to_string(),
-                ))
-            }
-        } else {
-            Err(ParseError::Custom(
+        let Some(token_info) = self.peek() else {
+            return Err(ParseError::Custom(
                 "Expected identifier or function call in condition".to_string(),
-            ))
+            ));
+        };
+        let Token::Identifier(name) = &token_info.token else {
+            return Err(ParseError::Custom(
+                "Expected identifier or function call in condition".to_string(),
+            ));
+        };
+        if self.tokens.get(self.current + 1).map(|t| &t.token) == Some(&Token::LeftParen) {
+            Ok(Condition::FuncCall(self.parse_func_call()?))
+        } else {
+            let name = name.to_string();
+            self.advance();
+            Ok(Condition::Identifier(name))
         }
     }
 
@@ -403,19 +363,10 @@ impl<'a> StatementParser for Parser<'a> {
         // Parse optional else body
         let else_body = if self.check(&Token::Else) {
             self.advance(); // consume 'else'
-            self.consume(&Token::LeftBrace, "Expected '{' after else")?;
-
-            let mut body = Vec::new();
-            while !self.check(&Token::RightBrace) && !self.is_at_end() {
-                self.skip_comments_and_separators();
-                if self.check(&Token::RightBrace) {
-                    break;
-                }
-                body.push(self.parse_node_stmt()?);
-            }
-
-            self.consume(&Token::RightBrace, "Expected '}' to end else body")?;
-            Some(body)
+            Some(self.parse_node_stmts_in_braces(
+                "Expected '{' after else",
+                "Expected '}' to end else body",
+            )?)
         } else {
             None
         };
@@ -451,10 +402,6 @@ impl<'a> StatementParser for Parser<'a> {
             while !self.check(&Token::RightParen) && !self.is_at_end() {
                 args.push(self.parse_arg()?);
                 self.skip_optional_separators();
-
-                if self.check(&Token::RightParen) {
-                    break;
-                }
             }
 
             self.consume(&Token::RightParen, "Expected ')'")?;
@@ -520,35 +467,7 @@ impl<'a> StatementParser for Parser<'a> {
             events.push(WithEventItem::InlineEvent(event));
             self.consume(&Token::RightBrace, "Expected '}' after event")?;
         } else if self.check(&Token::Events) {
-            self.advance();
-            self.consume(&Token::Colon, "Expected ':' after 'events'")?;
-            self.consume(&Token::LeftBracket, "Expected '['")?;
-
-            while !self.check(&Token::RightBracket) && !self.is_at_end() {
-                self.skip_comments_and_separators();
-
-                if self.check(&Token::RightBracket) {
-                    break;
-                }
-
-                if let Some(Token::Number(_)) = self.peek().map(|t| &t.token) {
-                    let event = self.parse_event()?;
-                    events.push(WithEventItem::InlineEvent(event));
-                } else if let Some(Token::Identifier(name)) = self.peek().map(|t| &t.token) {
-                    let name = name.to_string();
-                    let span = self.peek().map(|t| (t.start, t.end));
-                    self.advance();
-                    events.push(WithEventItem::EventRef(name, span));
-                } else {
-                    return Err(ParseError::Custom(
-                        "Expected event index or event name in 'with events' list".to_string(),
-                    ));
-                }
-
-                self.skip_optional_separators();
-            }
-
-            self.consume(&Token::RightBracket, "Expected ']'")?;
+            events = self.parse_with_events_list()?;
         } else if let Some(Token::Identifier(name)) = self.peek().map(|t| &t.token) {
             let name = name.to_string();
             let span = self.peek().map(|t| (t.start, t.end));
@@ -585,5 +504,99 @@ impl<'a> StatementParser for Parser<'a> {
             var_name_span,
             value,
         })
+    }
+}
+
+/// Private helpers to reduce nesting depth in `StatementParser` methods.
+impl<'a> Parser<'a> {
+    fn parse_identifier_node_stmt(&mut self) -> Result<NodeStmt, ParseError> {
+        if self
+            .tokens
+            .get(self.current + 1)
+            .is_some_and(|t| t.token == Token::Equals)
+        {
+            return Ok(NodeStmt::Assignment(self.parse_assignment()?));
+        }
+        let is_branch = self
+            .tokens
+            .get(self.current + 1)
+            .is_some_and(|t| t.token == Token::Colon)
+            && self
+                .tokens
+                .get(self.current + 2)
+                .is_some_and(|t| matches!(t.token, Token::Branch));
+        if is_branch {
+            return Ok(NodeStmt::Branch(self.parse_branch_def()?));
+        }
+        Err(ParseError::Custom(
+            "Unexpected identifier in node body. Expected 'text', 'choice', 'run', 'with', assignment, or branch definition".to_string(),
+        ))
+    }
+
+    fn parse_nested_choice_dest(&mut self) -> Result<ChoiceDest, ParseError> {
+        self.advance(); // consume '['
+        let mut items = Vec::new();
+        while !self.check(&Token::RightBracket) && !self.is_at_end() {
+            self.skip_comments_and_separators();
+            if self.check(&Token::RightBracket) || self.is_at_end() {
+                continue;
+            }
+            items.push(self.parse_choice_item()?);
+            self.skip_optional_separators();
+        }
+        self.consume(&Token::RightBracket, "Expected ']'")?;
+        Ok(ChoiceDest::NestedChoices(items))
+    }
+
+    fn parse_node_stmts_in_braces(
+        &mut self,
+        open_msg: &str,
+        close_msg: &str,
+    ) -> Result<Vec<NodeStmt>, ParseError> {
+        self.consume(&Token::LeftBrace, open_msg)?;
+        let mut body = Vec::new();
+        while !self.check(&Token::RightBrace) && !self.is_at_end() {
+            self.skip_comments_and_separators();
+            if self.check(&Token::RightBrace) || self.is_at_end() {
+                break;
+            }
+            body.push(self.parse_node_stmt()?);
+        }
+        self.consume(&Token::RightBrace, close_msg)?;
+        Ok(body)
+    }
+
+    fn parse_with_events_list(&mut self) -> Result<Vec<WithEventItem>, ParseError> {
+        self.advance(); // consume 'events'
+        self.consume(&Token::Colon, "Expected ':' after 'events'")?;
+        self.consume(&Token::LeftBracket, "Expected '['")?;
+
+        let mut events = Vec::new();
+        while !self.check(&Token::RightBracket) && !self.is_at_end() {
+            self.skip_comments_and_separators();
+            if self.check(&Token::RightBracket) || self.is_at_end() {
+                break;
+            }
+            events.push(self.parse_with_events_item()?);
+            self.skip_optional_separators();
+        }
+        self.consume(&Token::RightBracket, "Expected ']'")?;
+        Ok(events)
+    }
+
+    fn parse_with_events_item(&mut self) -> Result<WithEventItem, ParseError> {
+        if let Some(Token::Number(_)) = self.peek().map(|t| &t.token) {
+            let event = self.parse_event()?;
+            Ok(WithEventItem::InlineEvent(event))
+        } else if let Some(Token::Identifier(name)) = self.peek().map(|t| &t.token) {
+            let name = name.to_string();
+            let span = self.peek().map(|t| (t.start, t.end));
+            self.advance();
+            Ok(WithEventItem::EventRef(name, span))
+        } else {
+            Err(ParseError::Custom(
+                "Expected event index or event name in 'with events' list".to_string(),
+            ))
+        }
     }
 }

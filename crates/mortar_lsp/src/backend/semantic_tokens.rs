@@ -71,28 +71,27 @@ impl Backend {
         (line, utf16_column)
     }
 
+    /// Check if a `choice` keyword appears before `bracket_index`, stopping at node boundaries.
+    fn has_choice_before_bracket(&self, all_tokens: &[TokenInfo], bracket_index: usize) -> bool {
+        for j in (0..bracket_index).rev() {
+            match all_tokens[j].token {
+                Token::Choice => return true,
+                Token::LeftBrace | Token::RightBrace => break,
+                _ => continue,
+            }
+        }
+        false
+    }
+
     /// Check if the current identifier is in a choice context (e.g., choice list)
     fn is_in_choice_context(&self, all_tokens: &[TokenInfo], current_index: usize) -> bool {
-        // Look backward to find 'choice' keyword and corresponding structure
-        let mut bracket_depth = 0;
+        let mut bracket_depth: i32 = 0;
 
         for i in (0..current_index).rev() {
             match all_tokens[i].token {
                 Token::RightBracket => bracket_depth += 1,
-                Token::LeftBracket => {
-                    bracket_depth -= 1;
-                    if bracket_depth < 0 {
-                        // Found matching left bracket, continue looking for choice keyword
-                        for j in (0..i).rev() {
-                            match all_tokens[j].token {
-                                Token::Choice => return true,
-                                Token::LeftBrace | Token::RightBrace => break, // Crossed node boundary
-                                _ => continue,
-                            }
-                        }
-                        break;
-                    }
-                }
+                Token::LeftBracket if bracket_depth > 0 => bracket_depth -= 1,
+                Token::LeftBracket => return self.has_choice_before_bracket(all_tokens, i),
                 _ => {}
             }
         }
@@ -111,9 +110,6 @@ impl Backend {
         const STRING: u32 = 1;
         const NUMBER: u32 = 2;
         const COMMENT: u32 = 3;
-        const FUNCTION: u32 = 4;
-        const VARIABLE: u32 = 5;
-        const METHOD: u32 = 6; // Used for function calls
         const OPERATOR: u32 = 7;
         const PUNCTUATION: u32 = 8;
 
@@ -179,47 +175,47 @@ impl Backend {
             | Token::Or
             | Token::Not => PUNCTUATION,
 
-            Token::Identifier(_) => {
-                // Check if it's an identifier after node/nd or fn (function/node definition)
-                if current_index > 0
-                    && let Some(prev_token_info) = all_tokens.get(current_index - 1)
-                {
-                    match prev_token_info.token {
-                        Token::Node | Token::Fn => return FUNCTION,
-                        _ => {}
-                    }
-                }
-
-                // Check if it's a function call (identifier followed by left parenthesis)
-                if current_index + 1 < all_tokens.len()
-                    && let Some(next_token_info) = all_tokens.get(current_index + 1)
-                    && matches!(next_token_info.token, Token::LeftParen)
-                {
-                    return METHOD;
-                }
-
-                // Check if it's a node call (identifier in choice or jump context)
-                // In this case, identifier usually appears after arrow (->) or comma
-                if current_index > 0
-                    && let Some(prev_token_info) = all_tokens.get(current_index - 1)
-                {
-                    match prev_token_info.token {
-                        Token::Arrow => return METHOD, // Node jump
-                        Token::Comma => {
-                            // Node reference in choice list
-                            // Check if previous tokens indicate this is a choice context
-                            if self.is_in_choice_context(all_tokens, current_index) {
-                                return METHOD;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-
-                VARIABLE
-            }
+            Token::Identifier(_) => self.classify_identifier(all_tokens, current_index),
 
             Token::Error => KEYWORD,
         }
+    }
+
+    /// Classify an identifier token based on surrounding context.
+    fn classify_identifier(&self, all_tokens: &[TokenInfo], current_index: usize) -> u32 {
+        const FUNCTION: u32 = 4;
+        const VARIABLE: u32 = 5;
+        const METHOD: u32 = 6;
+
+        let prev_token = current_index
+            .checked_sub(1)
+            .and_then(|i| all_tokens.get(i))
+            .map(|ti| &ti.token);
+
+        // Identifier after node/fn keyword is a definition name
+        if matches!(prev_token, Some(Token::Node | Token::Fn)) {
+            return FUNCTION;
+        }
+
+        // Identifier followed by left parenthesis is a function call
+        if let Some(next) = all_tokens.get(current_index + 1)
+            && matches!(next.token, Token::LeftParen)
+        {
+            return METHOD;
+        }
+
+        // Identifier after arrow is a node jump
+        if matches!(prev_token, Some(Token::Arrow)) {
+            return METHOD;
+        }
+
+        // Identifier after comma in a choice context is a node reference
+        if matches!(prev_token, Some(Token::Comma))
+            && self.is_in_choice_context(all_tokens, current_index)
+        {
+            return METHOD;
+        }
+
+        VARIABLE
     }
 }

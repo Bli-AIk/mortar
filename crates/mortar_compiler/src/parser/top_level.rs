@@ -35,15 +35,16 @@ impl<'a> TopLevelParser for Parser<'a> {
         while !self.is_at_end() {
             self.skip_comments_and_separators();
 
-            if !self.is_at_end() {
-                match self.parse_top_level() {
-                    Ok(stmt) => body.push(stmt),
-                    Err(err) => {
-                        // Capture the span of the error token (approximately)
-                        let span = self.get_current_span().unwrap_or((0, 0));
-                        self.errors.push((err, span));
-                        self.synchronize();
-                    }
+            if self.is_at_end() {
+                break;
+            }
+
+            match self.parse_top_level() {
+                Ok(stmt) => body.push(stmt),
+                Err(err) => {
+                    let span = self.get_current_span().unwrap_or((0, 0));
+                    self.errors.push((err, span));
+                    self.synchronize();
                 }
             }
         }
@@ -230,45 +231,7 @@ impl<'a> TopLevelParser for Parser<'a> {
 
         self.consume(&Token::Colon, "Expected ':' after variable name")?;
 
-        // Check if this is a branch type variable
-        if self.check(&Token::Branch) {
-            self.advance(); // consume 'branch'
-
-            // Check for optional enum type: branch<EnumType>
-            let enum_type = if self.check(&Token::Less) {
-                self.advance(); // consume <
-                let type_token = self.consume_identifier("Expected enum type or variable name")?;
-                self.consume(&Token::Greater, "Expected '>' after type")?;
-                Some(type_token)
-            } else {
-                None
-            };
-
-            // Parse branch cases in brackets: [condition, text, ...]
-            self.consume(&Token::LeftBracket, "Expected '[' to start branch cases")?;
-
-            let mut cases = Vec::new();
-
-            while !self.check(&Token::RightBracket) && !self.is_at_end() {
-                let case = self.parse_branch_case()?;
-                cases.push(case);
-
-                // Cases can be separated by newlines or commas (optional)
-                if self.check(&Token::Comma) {
-                    self.advance();
-                }
-            }
-
-            self.consume(&Token::RightBracket, "Expected ']' to end branch cases")?;
-
-            Ok(VarDecl {
-                name,
-                name_span,
-                type_name: "Branch".to_string(),
-                value: Some(VarValue::Branch(BranchValue { enum_type, cases })),
-            })
-        } else {
-            // Regular variable declaration
+        if !self.check(&Token::Branch) {
             let type_name = self.parse_type()?;
 
             let value = if self.check(&Token::Equals) {
@@ -278,13 +241,46 @@ impl<'a> TopLevelParser for Parser<'a> {
                 None
             };
 
-            Ok(VarDecl {
+            return Ok(VarDecl {
                 name,
                 name_span,
                 type_name,
                 value,
-            })
+            });
         }
+
+        self.advance(); // consume 'branch'
+
+        let enum_type = if !self.check(&Token::Less) {
+            None
+        } else {
+            self.advance(); // consume <
+            let type_token = self.consume_identifier("Expected enum type or variable name")?;
+            self.consume(&Token::Greater, "Expected '>' after type")?;
+            Some(type_token)
+        };
+
+        self.consume(&Token::LeftBracket, "Expected '[' to start branch cases")?;
+
+        let mut cases = Vec::new();
+
+        while !self.check(&Token::RightBracket) && !self.is_at_end() {
+            let case = self.parse_branch_case()?;
+            cases.push(case);
+
+            if self.check(&Token::Comma) {
+                self.advance();
+            }
+        }
+
+        self.consume(&Token::RightBracket, "Expected ']' to end branch cases")?;
+
+        Ok(VarDecl {
+            name,
+            name_span,
+            type_name: "Branch".to_string(),
+            value: Some(VarValue::Branch(BranchValue { enum_type, cases })),
+        })
     }
 
     fn parse_const_decl(&mut self) -> Result<ConstDecl, ParseError> {
@@ -348,15 +344,13 @@ impl<'a> TopLevelParser for Parser<'a> {
                 break;
             }
 
-            if let Some(token_info) = self.advance() {
-                if let Token::Identifier(variant) = &token_info.token {
-                    variants.push(variant.to_string());
-                } else {
-                    return Err(ParseError::Custom("Expected enum variant name".to_string()));
-                }
-            } else {
+            let Some(token_info) = self.advance() else {
                 return Err(ParseError::Custom("Expected enum variant name".to_string()));
-            }
+            };
+            let Token::Identifier(variant) = &token_info.token else {
+                return Err(ParseError::Custom("Expected enum variant name".to_string()));
+            };
+            variants.push(variant.to_string());
 
             self.skip_optional_separators();
         }
@@ -404,17 +398,7 @@ impl<'a> TopLevelParser for Parser<'a> {
                 Some(Token::Index) => {
                     self.advance();
                     self.consume(&Token::Colon, "Expected ':' after 'index'")?;
-                    if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
-                        index = Some(
-                            n.parse::<f64>()
-                                .map_err(|_| ParseError::InvalidNumber(n.to_string()))?,
-                        );
-                        self.advance();
-                    } else {
-                        return Err(ParseError::Custom(
-                            "Expected number after 'index:'".to_string(),
-                        ));
-                    }
+                    index = Some(self.consume_number_field("index")?);
                 }
                 Some(Token::Action) => {
                     self.advance();
@@ -424,17 +408,7 @@ impl<'a> TopLevelParser for Parser<'a> {
                 Some(Token::Duration) => {
                     self.advance();
                     self.consume(&Token::Colon, "Expected ':' after 'duration'")?;
-                    if let Some(Token::Number(n)) = self.peek().map(|t| &t.token) {
-                        duration = Some(
-                            n.parse::<f64>()
-                                .map_err(|_| ParseError::InvalidNumber(n.to_string()))?,
-                        );
-                        self.advance();
-                    } else {
-                        return Err(ParseError::Custom(
-                            "Expected number after 'duration:'".to_string(),
-                        ));
-                    }
+                    duration = Some(self.consume_number_field("duration")?);
                 }
                 _ => {
                     return Err(ParseError::UnexpectedToken {
@@ -538,5 +512,20 @@ impl<'a> TopLevelParser for Parser<'a> {
                     .unwrap_or_else(|| "EOF".to_string()),
             }),
         }
+    }
+}
+
+impl Parser<'_> {
+    fn consume_number_field(&mut self, field_name: &str) -> Result<f64, ParseError> {
+        let Some(Token::Number(n)) = self.peek().map(|t| &t.token) else {
+            return Err(ParseError::Custom(format!(
+                "Expected number after '{field_name}:'"
+            )));
+        };
+        let value = n
+            .parse::<f64>()
+            .map_err(|_| ParseError::InvalidNumber(n.to_string()))?;
+        self.advance();
+        Ok(value)
     }
 }

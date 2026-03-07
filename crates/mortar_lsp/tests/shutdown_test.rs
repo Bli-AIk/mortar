@@ -71,9 +71,7 @@ async fn test_concurrent_operations() {
                     "Concurrent task {} completed, took: {:?}",
                     task_id, duration
                 );
-                if duration > max_duration {
-                    max_duration = duration;
-                }
+                max_duration = max_duration.max(duration);
             }
             Err(e) => {
                 println!("Concurrent task failed: {:?}", e);

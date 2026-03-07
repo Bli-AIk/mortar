@@ -141,90 +141,90 @@ fn print_basic_info(data: &MortaredData) {
     println!("  枚举数量: {}", data.enums.len());
 }
 
+fn print_text_content(item_value: &Value, index: usize) {
+    let text = item_value
+        .get("value")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    println!("    内容 {}: [文本] {}", index + 1, text);
+    let Some(events) = item_value.get("events").and_then(Value::as_array) else {
+        return;
+    };
+    for event in events {
+        let index = event.get("index").and_then(Value::as_f64).unwrap_or(0.0);
+        println!("      事件 @ {}", index);
+        let Some(actions) = event.get("actions").and_then(Value::as_array) else {
+            continue;
+        };
+        for action in actions {
+            let action_type = action.get("type").and_then(Value::as_str).unwrap_or("");
+            let args = action
+                .get("args")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            println!("        - {}({:?})", action_type, args);
+        }
+    }
+}
+
+fn print_choice_content(item_value: &Value, index: usize) {
+    println!("    内容 {}: [选项]", index + 1);
+    let Some(options) = item_value.get("options").and_then(Value::as_array) else {
+        return;
+    };
+    for (opt_idx, choice) in options.iter().enumerate() {
+        let text = choice.get("text").and_then(Value::as_str).unwrap_or("");
+        print!("      {}. {}", opt_idx + 1, text);
+        if let Some(next) = choice.get("next").and_then(Value::as_str) {
+            print!(" -> {}", next);
+        }
+        if let Some(action) = choice.get("action").and_then(Value::as_str) {
+            print!(" [{}]", action);
+        }
+        println!();
+    }
+}
+
 fn access_nodes(data: &MortaredData) {
     let node_names = data.node_names();
     println!("  所有节点: {:?}", node_names);
 
-    if let Some(node) = data.get_node("Start") {
-        println!("\n  节点 '{}' 详情:", node.name);
+    let Some(node) = data.get_node("Start") else {
+        return;
+    };
+    println!("\n  节点 '{}' 详情:", node.name);
 
-        for (i, item_value) in node.content.iter().enumerate() {
-            let item_type = item_value.get("type").and_then(Value::as_str).unwrap_or("");
+    for (i, item_value) in node.content.iter().enumerate() {
+        let item_type = item_value.get("type").and_then(Value::as_str).unwrap_or("");
 
-            match item_type {
-                "text" => {
-                    let text = item_value
-                        .get("value")
-                        .and_then(Value::as_str)
-                        .unwrap_or("");
-                    println!("    内容 {}: [文本] {}", i + 1, text);
-                    if let Some(events) = item_value.get("events").and_then(Value::as_array) {
-                        for event in events {
-                            let index = event.get("index").and_then(Value::as_f64).unwrap_or(0.0);
-                            println!("      事件 @ {}", index);
-                            if let Some(actions) = event.get("actions").and_then(Value::as_array) {
-                                for action in actions {
-                                    let action_type =
-                                        action.get("type").and_then(Value::as_str).unwrap_or("");
-                                    let args = action
-                                        .get("args")
-                                        .and_then(Value::as_array)
-                                        .cloned()
-                                        .unwrap_or_default();
-                                    println!("        - {}({:?})", action_type, args);
-                                }
-                            }
-                        }
-                    }
-                }
-                "choice" => {
-                    println!("    内容 {}: [选项]", i + 1);
-                    if let Some(options) = item_value.get("options").and_then(Value::as_array) {
-                        for (opt_idx, choice) in options.iter().enumerate() {
-                            let text = choice.get("text").and_then(Value::as_str).unwrap_or("");
-                            print!("      {}. {}", opt_idx + 1, text);
-                            if let Some(next) = choice.get("next").and_then(Value::as_str) {
-                                print!(" -> {}", next);
-                            }
-                            if let Some(action) = choice.get("action").and_then(Value::as_str) {
-                                print!(" [{}]", action);
-                            }
-                            println!();
-                        }
-                    }
-                }
-                "run_event" => {
-                    let name = item_value.get("name").and_then(Value::as_str).unwrap_or("");
-                    println!("    内容 {}: [运行事件] {}", i + 1, name);
-                }
-                _ => {
-                    println!("    内容 {}: [未知类型]", i + 1);
-                }
+        match item_type {
+            "text" => print_text_content(item_value, i),
+            "choice" => print_choice_content(item_value, i),
+            "run_event" => {
+                let name = item_value.get("name").and_then(Value::as_str).unwrap_or("");
+                println!("    内容 {}: [运行事件] {}", i + 1, name);
+            }
+            _ => {
+                println!("    内容 {}: [未知类型]", i + 1);
             }
         }
+    }
 
-        if let Some(next) = &node.next {
-            println!("    默认跳转: {}", next);
-        }
+    if let Some(next) = &node.next {
+        println!("    默认跳转: {}", next);
     }
 }
 
 fn access_functions(data: &MortaredData) {
     for func in &data.functions {
-        print!("  函数: {}", func.name);
-
-        if !func.params.is_empty() {
-            print!("(");
-            for (i, param) in func.params.iter().enumerate() {
-                if i > 0 {
-                    print!(", ");
-                }
-                print!("{}: {}", param.name, param.param_type);
-            }
-            print!(")");
-        } else {
-            print!("()");
-        }
+        let params_str = func
+            .params
+            .iter()
+            .map(|p| format!("{}: {}", p.name, p.param_type))
+            .collect::<Vec<_>>()
+            .join(", ");
+        print!("  函数: {}({})", func.name, params_str);
 
         if let Some(ret) = &func.return_type {
             print!(" -> {}", ret);
@@ -266,78 +266,81 @@ fn access_enums(data: &MortaredData) {
     }
 }
 
+fn print_dialogue_events(item_value: &Value) {
+    let Some(events) = item_value.get("events").and_then(Value::as_array) else {
+        return;
+    };
+    for event in events {
+        let Some(actions) = event.get("actions").and_then(Value::as_array) else {
+            continue;
+        };
+        for action in actions {
+            let action_type = action.get("type").and_then(Value::as_str).unwrap_or("");
+            let args = action
+                .get("args")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            println!("  [触发事件: {}({:?})]", action_type, args);
+        }
+    }
+}
+
+/// Returns `true` if the simulation should stop (choice encountered).
+fn process_dialogue_item(item_value: &Value) -> bool {
+    let item_type = item_value.get("type").and_then(Value::as_str).unwrap_or("");
+    match item_type {
+        "text" => {
+            let text = item_value
+                .get("value")
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            println!("  {}", text);
+            print_dialogue_events(item_value);
+            false
+        }
+        "choice" => {
+            if let Some(options) = item_value.get("options").and_then(Value::as_array) {
+                println!("\n  可用选项:");
+                for (i, choice) in options.iter().enumerate() {
+                    let text = choice.get("text").and_then(Value::as_str).unwrap_or("");
+                    println!("    {}. {}", i + 1, text);
+                }
+                println!("  (在实际游戏中，玩家会在这里做出选择)\n");
+            }
+            // In a real game, we'd wait for input. Here, we stop.
+            true
+        }
+        "run_event" => {
+            let name = item_value.get("name").and_then(Value::as_str).unwrap_or("");
+            println!("  [运行事件: {}]", name);
+            false
+        }
+        _ => false,
+    }
+}
+
 fn simulate_dialogue(data: &MortaredData) {
     println!("  开始模拟对话...\n");
 
     let mut current_node_name = "Start";
 
     loop {
-        if let Some(node) = data.get_node(current_node_name) {
-            println!("  === {} ===", node.name);
-
-            for item_value in &node.content {
-                let item_type = item_value.get("type").and_then(Value::as_str).unwrap_or("");
-                match item_type {
-                    "text" => {
-                        let text = item_value
-                            .get("value")
-                            .and_then(Value::as_str)
-                            .unwrap_or("");
-                        println!("  {}", text);
-                        if let Some(events) = item_value.get("events").and_then(Value::as_array) {
-                            for event in events {
-                                if let Some(actions) =
-                                    event.get("actions").and_then(Value::as_array)
-                                {
-                                    for action in actions {
-                                        let action_type = action
-                                            .get("type")
-                                            .and_then(Value::as_str)
-                                            .unwrap_or("");
-                                        let args = action
-                                            .get("args")
-                                            .and_then(Value::as_array)
-                                            .cloned()
-                                            .unwrap_or_default();
-                                        println!("  [触发事件: {}({:?})]", action_type, args);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    "choice" => {
-                        if let Some(options) = item_value.get("options").and_then(Value::as_array) {
-                            println!("\n  可用选项:");
-                            for (i, choice) in options.iter().enumerate() {
-                                let text = choice.get("text").and_then(Value::as_str).unwrap_or("");
-                                println!("    {}. {}", i + 1, text);
-                            }
-                            println!("  (在实际游戏中，玩家会在这里做出选择)\n");
-                        }
-                        // In a real game, we'd wait for input. Here, we stop.
-                        current_node_name = ""; // End simulation
-                        break;
-                    }
-                    "run_event" => {
-                        let name = item_value.get("name").and_then(Value::as_str).unwrap_or("");
-                        println!("  [运行事件: {}]", name);
-                    }
-                    _ => {}
-                }
-            }
-
-            if current_node_name.is_empty() {
-                break;
-            }
-
-            if let Some(next) = &node.next {
-                current_node_name = next;
-                println!();
-            } else {
-                break;
-            }
-        } else {
+        let Some(node) = data.get_node(current_node_name) else {
             println!("  节点 '{}' 不存在！", current_node_name);
+            break;
+        };
+        println!("  === {} ===", node.name);
+
+        let end_simulation = node.content.iter().any(process_dialogue_item);
+        if end_simulation {
+            break;
+        }
+
+        if let Some(next) = &node.next {
+            current_node_name = next;
+            println!();
+        } else {
             break;
         }
     }
