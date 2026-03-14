@@ -20,11 +20,39 @@ Each branch may contain any sequence of valid node statements: text, assignments
 
 ## Supported Expressions
 
-You can compare numbers, check booleans, and call parameterless functions:
+You can compare numbers, check booleans, and call functions (with or without arguments):
 
 ```mortar
-if has_map() && current_region == forest {
-    text: "You spread the map across the stump."
+fn has_map() -> Bool
+fn get_hp() -> Number
+fn get_hp_max() -> Number
+fn has_item(name: String) -> Bool
+
+node ExampleNode {
+    // Boolean function call as condition
+    if has_map() {
+        text: "You spread the map across the stump."
+    }
+
+    // Function call in comparison
+    if get_hp() > 0 {
+        text: "Still standing!"
+    }
+
+    // Function calls on both sides of comparison
+    if get_hp() >= get_hp_max() {
+        text: "Your HP is already full."
+    }
+
+    // Function call with arguments
+    if has_item("sword") {
+        text: "You draw your sword."
+    }
+
+    // Negation and logical operators
+    if get_hp() > 0 && !has_map() {
+        text: "You're alive, but lost."
+    }
 }
 ```
 

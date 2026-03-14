@@ -239,6 +239,40 @@ choice: [
 fn is_unlocked() -> Bool
 ```
 
+## 在 If 条件中使用
+
+函数可以在 `if` 条件中使用——既可以作为布尔判断，也可以作为比较操作数：
+
+```mortar
+fn is_active() -> Bool
+fn get_hp() -> Number
+fn has_item(name: String) -> Bool
+
+node Example {
+    // 布尔函数作为条件
+    if is_active() {
+        text: "激活了！"
+    }
+
+    // 函数返回值参与比较
+    if get_hp() > 0 {
+        text: "还活着！"
+    }
+
+    // 带参数的函数
+    if has_item("key") {
+        text: "你有钥匙。"
+    }
+
+    // 取反
+    if !is_active() {
+        text: "未激活。"
+    }
+}
+```
+
+详见 [控制流](./4_8_control-flow.md) 了解 `if`/`else` 的完整语法。
+
 ## 函数声明的位置
 
 习惯上，把所有函数声明放在文件末尾：
