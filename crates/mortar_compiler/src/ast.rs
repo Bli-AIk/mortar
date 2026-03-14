@@ -73,6 +73,7 @@ pub enum IfCondition {
     Identifier(String),
     EnumMember(String, String), // EnumName.member
     Literal(bool),
+    FuncCall(FuncCall),
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -578,6 +578,43 @@ impl Serializer {
                 operand: None,
                 value: Some(val.to_string()),
             }),
+            IfCondition::FuncCall(func_call) => {
+                let args_part = if func_call.args.is_empty() {
+                    None
+                } else {
+                    Some(Box::new(JsonIfCondition {
+                        cond_type: "literal".to_string(),
+                        operator: None,
+                        left: None,
+                        right: None,
+                        operand: None,
+                        value: Some(
+                            func_call
+                                .args
+                                .iter()
+                                .map(Self::convert_arg_to_string)
+                                .collect::<Vec<_>>()
+                                .join(" "),
+                        ),
+                    }))
+                };
+
+                Ok(JsonIfCondition {
+                    cond_type: "func_call".to_string(),
+                    operator: None,
+                    left: None,
+                    right: args_part,
+                    operand: Some(Box::new(JsonIfCondition {
+                        cond_type: "identifier".to_string(),
+                        operator: None,
+                        left: None,
+                        right: None,
+                        operand: None,
+                        value: Some(func_call.name.clone()),
+                    })),
+                    value: None,
+                })
+            }
         }
     }
 

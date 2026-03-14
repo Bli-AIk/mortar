@@ -18,7 +18,7 @@
 //!
 //! 验证嵌套 if-else 块和条件的解析。
 
-use crate::ast::{ComparisonOp, IfCondition, NodeStmt, TopLevel};
+use crate::ast::{ComparisonOp, FuncCall, IfCondition, NodeStmt, TopLevel};
 use crate::parser::ParseHandler;
 
 #[test]
@@ -293,4 +293,230 @@ fn test_serialize_if_else() {
     assert!(content[1]["condition"].is_object());
     assert_eq!(content[1]["condition"]["type"], "unary");
     assert_eq!(content[1]["condition"]["operator"], "!");
+}
+
+#[test]
+fn test_parse_func_call_in_if() {
+    let source = r#"
+        fn is_active() -> Bool
+
+        node Test {
+            if is_active() {
+                text: "Active"
+            }
+        }
+    "#;
+
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+
+    let program = result.unwrap();
+    match &program.body[1] {
+        TopLevel::NodeDef(node) => match &node.body[0] {
+            NodeStmt::IfElse(if_else) => match &if_else.condition {
+                IfCondition::FuncCall(fc) => {
+                    assert_eq!(fc.name, "is_active");
+                    assert!(fc.args.is_empty());
+                }
+                other => panic!("Expected FuncCall condition, got {:?}", other),
+            },
+            _ => panic!("Expected IfElse"),
+        },
+        _ => panic!("Expected NodeDef"),
+    }
+}
+
+#[test]
+fn test_parse_func_call_comparison_in_if() {
+    let source = r#"
+        fn get_hp() -> Number
+
+        node Test {
+            if get_hp() > 0 {
+                text: "Alive"
+            }
+        }
+    "#;
+
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+
+    let program = result.unwrap();
+    match &program.body[1] {
+        TopLevel::NodeDef(node) => match &node.body[0] {
+            NodeStmt::IfElse(if_else) => match &if_else.condition {
+                IfCondition::Binary(binary) => {
+                    assert_eq!(binary.operator, ComparisonOp::Greater);
+                    assert!(
+                        matches!(&binary.left, IfCondition::FuncCall(FuncCall { name, .. }) if name == "get_hp")
+                    );
+                }
+                other => panic!("Expected Binary condition, got {:?}", other),
+            },
+            _ => panic!("Expected IfElse"),
+        },
+        _ => panic!("Expected NodeDef"),
+    }
+}
+
+#[test]
+fn test_parse_func_call_with_args_in_if() {
+    let source = r#"
+        fn has_item(name: String) -> Bool
+
+        node Test {
+            if has_item("sword") {
+                text: "Armed"
+            }
+        }
+    "#;
+
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+
+    let program = result.unwrap();
+    match &program.body[1] {
+        TopLevel::NodeDef(node) => match &node.body[0] {
+            NodeStmt::IfElse(if_else) => match &if_else.condition {
+                IfCondition::FuncCall(fc) => {
+                    assert_eq!(fc.name, "has_item");
+                    assert_eq!(fc.args.len(), 1);
+                }
+                other => panic!("Expected FuncCall condition, got {:?}", other),
+            },
+            _ => panic!("Expected IfElse"),
+        },
+        _ => panic!("Expected NodeDef"),
+    }
+}
+
+#[test]
+fn test_parse_func_call_negation_in_if() {
+    let source = r#"
+        fn is_dead() -> Bool
+
+        node Test {
+            if !is_dead() {
+                text: "Alive"
+            }
+        }
+    "#;
+
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+
+    let program = result.unwrap();
+    match &program.body[1] {
+        TopLevel::NodeDef(node) => match &node.body[0] {
+            NodeStmt::IfElse(if_else) => match &if_else.condition {
+                IfCondition::Unary(unary) => {
+                    assert!(
+                        matches!(&unary.operand, IfCondition::FuncCall(FuncCall { name, .. }) if name == "is_dead")
+                    );
+                }
+                other => panic!("Expected Unary condition, got {:?}", other),
+            },
+            _ => panic!("Expected IfElse"),
+        },
+        _ => panic!("Expected NodeDef"),
+    }
+}
+
+#[test]
+fn test_parse_func_call_combined_in_if() {
+    let source = r#"
+        fn get_hp() -> Number
+        fn is_active() -> Bool
+
+        node Test {
+            if get_hp() > 0 && is_active() {
+                text: "Ready"
+            }
+        }
+    "#;
+
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+
+    let program = result.unwrap();
+    match &program.body[2] {
+        TopLevel::NodeDef(node) => match &node.body[0] {
+            NodeStmt::IfElse(if_else) => match &if_else.condition {
+                IfCondition::Binary(binary) => {
+                    assert_eq!(binary.operator, ComparisonOp::And);
+                    // left is get_hp() > 0 (a Binary)
+                    assert!(matches!(&binary.left, IfCondition::Binary(_)));
+                    // right is is_active() (a FuncCall)
+                    assert!(
+                        matches!(&binary.right, IfCondition::FuncCall(FuncCall { name, .. }) if name == "is_active")
+                    );
+                }
+                other => panic!("Expected Binary(&&) condition, got {:?}", other),
+            },
+            _ => panic!("Expected IfElse"),
+        },
+        _ => panic!("Expected NodeDef"),
+    }
+}
+
+#[test]
+fn test_serialize_func_call_in_if() {
+    use crate::Serializer;
+    use serde_json::Value;
+
+    let source = r#"
+        fn is_active() -> Bool
+
+        node Test {
+            if is_active() {
+                text: "Active"
+            }
+        }
+    "#;
+
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+
+    let program = result.unwrap();
+    let json_str = Serializer::serialize_to_json(&program, false).unwrap();
+    let json: Value = serde_json::from_str(&json_str).unwrap();
+
+    let content = json["nodes"][0]["content"].as_array().unwrap();
+    assert_eq!(content[0]["type"], "text");
+    assert_eq!(content[0]["value"], "Active");
+
+    let condition = &content[0]["condition"];
+    assert_eq!(condition["type"], "func_call");
+    assert_eq!(condition["operand"]["value"], "is_active");
+}
+
+#[test]
+fn test_serialize_func_call_comparison_in_if() {
+    use crate::Serializer;
+    use serde_json::Value;
+
+    let source = r#"
+        fn get_hp() -> Number
+
+        node Test {
+            if get_hp() > 0 {
+                text: "Alive"
+            }
+        }
+    "#;
+
+    let result = ParseHandler::parse_source_code(source, false);
+    assert!(result.is_ok());
+
+    let program = result.unwrap();
+    let json_str = Serializer::serialize_to_json(&program, false).unwrap();
+    let json: Value = serde_json::from_str(&json_str).unwrap();
+
+    let condition = &json["nodes"][0]["content"][0]["condition"];
+    assert_eq!(condition["type"], "binary");
+    assert_eq!(condition["operator"], ">");
+    assert_eq!(condition["left"]["type"], "func_call");
+    assert_eq!(condition["left"]["operand"]["value"], "get_hp");
+    assert_eq!(condition["right"]["type"], "identifier");
+    assert_eq!(condition["right"]["value"], "0");
 }
