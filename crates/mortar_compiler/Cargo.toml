@@ -26,6 +26,8 @@ chrono.workspace = true
 
 [dev-dependencies]
 tempfile = "3.25"
+proptest = "1.6"
+arbitrary = { version = "1.4", features = ["derive"] }
 
 [package.metadata.workspaces]
 independent = true

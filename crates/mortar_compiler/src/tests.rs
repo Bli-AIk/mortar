@@ -31,6 +31,7 @@ mod performance_test;
 mod serializer_test;
 mod token_test;
 mod variable_test;
+mod fuzz_test;
 // Placeholder for future tests
 // mod interpolation_test;
 // mod separator_test;
