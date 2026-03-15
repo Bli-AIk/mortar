@@ -88,6 +88,17 @@ pub enum ContentItem {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         events: Option<Vec<Event>>,
     },
+    Line {
+        value: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        interpolated_parts: Option<Vec<StringPart>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        condition: Option<IfCondition>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        pre_statements: Vec<Statement>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        events: Option<Vec<Event>>,
+    },
     RunEvent {
         name: String,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]

@@ -50,6 +50,8 @@ pub struct NodeDef {
 pub enum NodeStmt {
     Text(String),
     InterpolatedText(InterpolatedString),
+    Line(String),
+    InterpolatedLine(InterpolatedString),
     Choice(Vec<ChoiceItem>),
     Branch(BranchDef),
     IfElse(IfElseStmt),

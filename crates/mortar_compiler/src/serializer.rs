@@ -258,6 +258,27 @@ impl Serializer {
                         events,
                     });
                 }
+                NodeStmt::Line(text) => {
+                    let events = Self::peek_with_events(&mut body_iter, event_map)?;
+                    content.push(ContentItem::Line {
+                        value: text.clone(),
+                        interpolated_parts: None,
+                        condition: None,
+                        pre_statements: std::mem::take(&mut pending_statements),
+                        events,
+                    });
+                }
+                NodeStmt::InterpolatedLine(interpolated) => {
+                    let (rendered_text, parts) = Self::convert_interpolated_string(interpolated)?;
+                    let events = Self::peek_with_events(&mut body_iter, event_map)?;
+                    content.push(ContentItem::Line {
+                        value: rendered_text,
+                        interpolated_parts: Some(parts),
+                        condition: None,
+                        pre_statements: std::mem::take(&mut pending_statements),
+                        events,
+                    });
+                }
                 NodeStmt::Run(run_stmt) => {
                     // In a Node, a "run" statement can be for an event or a timeline.
                     // We need to check what the name refers to.
@@ -487,6 +508,27 @@ impl Serializer {
                     has_text_in_block = true;
                     let (rendered, parts) = Self::convert_interpolated_string(interp)?;
                     content.push(ContentItem::Text {
+                        value: rendered,
+                        interpolated_parts: Some(parts),
+                        events: None,
+                        condition: condition.clone(),
+                        pre_statements: std::mem::take(&mut pending_stmts),
+                    });
+                }
+                NodeStmt::Line(text) => {
+                    has_text_in_block = true;
+                    content.push(ContentItem::Line {
+                        value: text.clone(),
+                        interpolated_parts: None,
+                        events: None,
+                        condition: condition.clone(),
+                        pre_statements: std::mem::take(&mut pending_stmts),
+                    });
+                }
+                NodeStmt::InterpolatedLine(interp) => {
+                    has_text_in_block = true;
+                    let (rendered, parts) = Self::convert_interpolated_string(interp)?;
+                    content.push(ContentItem::Line {
                         value: rendered,
                         interpolated_parts: Some(parts),
                         events: None,

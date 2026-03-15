@@ -11,6 +11,7 @@ use crate::token::Token;
 pub trait StatementParser {
     fn parse_node_stmt(&mut self) -> Result<NodeStmt, ParseError>;
     fn parse_text_stmt(&mut self) -> Result<NodeStmt, ParseError>;
+    fn parse_line_stmt(&mut self) -> Result<NodeStmt, ParseError>;
     fn parse_choice_stmt(&mut self) -> Result<Vec<ChoiceItem>, ParseError>;
     fn parse_choice_item(&mut self) -> Result<ChoiceItem, ParseError>;
     fn parse_choice_cond(&mut self) -> Result<Condition, ParseError>;
@@ -37,6 +38,7 @@ impl<'a> StatementParser for Parser<'a> {
         match self.peek().map(|t| &t.token) {
             Some(Token::If) => Ok(NodeStmt::IfElse(self.parse_if_else()?)),
             Some(Token::Text) => Ok(self.parse_text_stmt()?),
+            Some(Token::Line) => Ok(self.parse_line_stmt()?),
             Some(Token::Events) => Err(ParseError::Custom("Standalone 'events:' is deprecated. Use 'with events:' after a text statement instead.".to_string())),
             Some(Token::Choice) => Ok(NodeStmt::Choice(self.parse_choice_stmt()?)),
             Some(Token::Run) => Ok(NodeStmt::Run(self.parse_run_stmt()?)),
@@ -44,7 +46,7 @@ impl<'a> StatementParser for Parser<'a> {
             Some(Token::Let) => Err(ParseError::Custom("Variable declarations with 'let' are not allowed inside nodes. Please define variables at the top level (outside of nodes).".to_string())),
             Some(Token::Identifier(_)) => self.parse_identifier_node_stmt(),
             _ => Err(ParseError::UnexpectedToken {
-                expected: "'text', 'choice', 'run', 'with', assignment, or branch definition".to_string(),
+                expected: "'text', 'line', 'choice', 'run', 'with', assignment, or branch definition".to_string(),
                 found: self.peek().map(|t| format!("{}", t.token)).unwrap_or_else(|| "EOF".to_string())
             }),
         }
@@ -66,6 +68,31 @@ impl<'a> StatementParser for Parser<'a> {
                     let text_copy = text.to_string(); // Make a copy to avoid borrow issues
                     let interpolated = self.parse_interpolated_string(&text_copy)?;
                     Ok(NodeStmt::InterpolatedText(interpolated))
+                }
+                _ => Err(ParseError::ExpectedString {
+                    found: format!("{}", token_info.token),
+                }),
+            }
+        } else {
+            Err(ParseError::UnexpectedEOF)
+        }
+    }
+
+    fn parse_line_stmt(&mut self) -> Result<NodeStmt, ParseError> {
+        self.consume(&Token::Line, "Expected 'line'")?;
+        self.consume(&Token::Colon, "Expected ':'")?;
+
+        if let Some(token_info) = self.advance() {
+            match &token_info.token {
+                Token::String(text) => Ok(NodeStmt::Line(unescape(text))),
+                Token::TripleQuotedString(text) => {
+                    let processed = process_triple_quoted_string(text);
+                    Ok(NodeStmt::Line(processed))
+                }
+                Token::InterpolatedString(text) => {
+                    let text_copy = text.to_string();
+                    let interpolated = self.parse_interpolated_string(&text_copy)?;
+                    Ok(NodeStmt::InterpolatedLine(interpolated))
                 }
                 _ => Err(ParseError::ExpectedString {
                     found: format!("{}", token_info.token),
