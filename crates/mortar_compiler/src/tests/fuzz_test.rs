@@ -62,7 +62,7 @@ fn arb_number_literal() -> impl Strategy<Value = String> {
     ]
 }
 
-fn arb_string_literal() -> impl Strategy<Value = String> {
+fn _arb_string_literal() -> impl Strategy<Value = String> {
     "[a-zA-Z0-9 _]{0,30}".prop_map(|s| format!("\"{}\"", s))
 }
 
@@ -229,11 +229,11 @@ proptest! {
     /// Serialized JSON must be valid JSON and contain expected structure.
     #[test]
     fn serialized_json_structure_valid(source in arb_simple_program()) {
-        if let Ok(program) = ParseHandler::parse_source_code(&source, false) {
-            if let Ok(json_str) = Serializer::serialize_to_json(&program, false) {
-                let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
-                prop_assert!(json.get("nodes").is_some(), "Missing 'nodes' in JSON output");
-            }
+        if let Ok(program) = ParseHandler::parse_source_code(&source, false)
+            && let Ok(json_str) = Serializer::serialize_to_json(&program, false)
+        {
+            let json: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+            prop_assert!(json.get("nodes").is_some(), "Missing 'nodes' in JSON output");
         }
     }
 

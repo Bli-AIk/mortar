@@ -24,10 +24,10 @@
 
 use crate::Language;
 use crate::ast::{
-    Arg, AssignValue, BranchDef, ChoiceDest, ChoiceItem, ComparisonOp, Condition, ConstDecl,
-    EnumDef, Event, EventDef, FuncCall, FunctionDecl, IfCondition, IfElseStmt, IndexOverride,
-    InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart, TimelineDef,
-    TimelineStmt, TopLevel, VarDecl, VarValue, WithEventItem, WithEventsStmt,
+    Arg, AssignValue, BranchCase, BranchDef, ChoiceDest, ChoiceItem, ComparisonOp, Condition,
+    ConstDecl, EnumDef, Event, EventDef, FuncCall, FunctionDecl, IfCondition, IfElseStmt,
+    IndexOverride, InterpolatedString, NodeDef, NodeJump, NodeStmt, Program, StringPart,
+    TimelineDef, TimelineStmt, TopLevel, VarDecl, VarValue, WithEventItem, WithEventsStmt,
 };
 use crate::serializer_types::*;
 use chrono::Utc;
@@ -797,20 +797,7 @@ impl Serializer {
                 let cases: Vec<_> = branch_value
                     .cases
                     .iter()
-                    .map(|case| {
-                        let events = case.events.as_ref().and_then(|e| {
-                            e.iter()
-                                .map(Self::convert_event)
-                                .collect::<Result<Vec<_>, _>>()
-                                .ok()
-                        });
-
-                        serde_json::json!({
-                            "condition": case.condition,
-                            "text": case.text,
-                            "events": events
-                        })
-                    })
+                    .map(Self::convert_branch_case)
                     .collect();
 
                 serde_json::json!({
@@ -819,6 +806,20 @@ impl Serializer {
                 })
             }
         }
+    }
+
+    fn convert_branch_case(case: &BranchCase) -> serde_json::Value {
+        let events = case.events.as_ref().and_then(|e| {
+            e.iter()
+                .map(Self::convert_event)
+                .collect::<Result<Vec<_>, _>>()
+                .ok()
+        });
+        serde_json::json!({
+            "condition": case.condition,
+            "text": case.text,
+            "events": events
+        })
     }
 
     fn convert_interpolated_string(

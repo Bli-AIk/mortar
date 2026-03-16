@@ -1,5 +1,9 @@
 use std::time::{Duration, Instant};
 
+fn parse_content(content: &str) -> Option<mortar_compiler::Program> {
+    mortar_compiler::ParseHandler::parse_source_code(content, false).ok()
+}
+
 // Core performance test focused on parsing, not dependent on complex LSP components
 #[tokio::test]
 async fn test_parsing_performance() {
@@ -251,9 +255,7 @@ fn concurrent_test(id: Number) -> String
 
             // Each task parses multiple times
             let results: Vec<_> = (0..20)
-                .filter_map(|_| {
-                    mortar_compiler::ParseHandler::parse_source_code(&content_copy, false).ok()
-                })
+                .filter_map(|_| parse_content(&content_copy))
                 .collect();
 
             let task_duration = task_start.elapsed();
