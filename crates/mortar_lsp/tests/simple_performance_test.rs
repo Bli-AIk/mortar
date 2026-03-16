@@ -251,7 +251,9 @@ fn concurrent_test(id: Number) -> String
 
             // Each task parses multiple times
             let results: Vec<_> = (0..20)
-                .filter_map(|_| mortar_compiler::ParseHandler::parse_source_code(&content_copy, false).ok())
+                .filter_map(|_| {
+                    mortar_compiler::ParseHandler::parse_source_code(&content_copy, false).ok()
+                })
                 .collect();
 
             let task_duration = task_start.elapsed();

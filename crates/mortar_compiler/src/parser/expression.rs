@@ -242,9 +242,7 @@ impl<'a> ExpressionParser for Parser<'a> {
         match &token_info.token {
             Token::Identifier(name) => {
                 // Look ahead to see if it's a function call
-                if self.tokens.get(self.current + 1).map(|t| &t.token)
-                    == Some(&Token::LeftParen)
-                {
+                if self.tokens.get(self.current + 1).map(|t| &t.token) == Some(&Token::LeftParen) {
                     let func_call = self.parse_func_call()?;
                     Ok(IfCondition::FuncCall(func_call))
                 } else {

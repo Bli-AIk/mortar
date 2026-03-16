@@ -798,10 +798,12 @@ impl Serializer {
                     .cases
                     .iter()
                     .map(|case| {
-                        let events = case
-                            .events
-                            .as_ref()
-                            .and_then(|e| e.iter().map(Self::convert_event).collect::<Result<Vec<_>, _>>().ok());
+                        let events = case.events.as_ref().and_then(|e| {
+                            e.iter()
+                                .map(Self::convert_event)
+                                .collect::<Result<Vec<_>, _>>()
+                                .ok()
+                        });
 
                         serde_json::json!({
                             "condition": case.condition,

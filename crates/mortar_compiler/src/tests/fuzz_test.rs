@@ -1,7 +1,7 @@
 use proptest::prelude::*;
 
-use crate::parser::ParseHandler;
 use crate::Serializer;
+use crate::parser::ParseHandler;
 
 // --- Strategy helpers ---
 
@@ -78,7 +78,11 @@ fn arb_comparison_op() -> impl Strategy<Value = &'static str> {
 }
 
 fn arb_value() -> impl Strategy<Value = String> {
-    prop_oneof![arb_number_literal(), Just("true".to_string()), Just("false".to_string()),]
+    prop_oneof![
+        arb_number_literal(),
+        Just("true".to_string()),
+        Just("false".to_string()),
+    ]
 }
 
 fn arb_if_condition() -> impl Strategy<Value = String> {
@@ -361,9 +365,16 @@ fn func_call_with_many_args_does_not_panic() {
 
 #[test]
 fn consecutive_operators_do_not_panic() {
-    let _ = ParseHandler::parse_source_code("let a: Number\nnode T { if a >> 0 { text: \"x\" } }", false);
-    let _ = ParseHandler::parse_source_code("let a: Number\nnode T { if a >< 0 { text: \"x\" } }", false);
-    let _ = ParseHandler::parse_source_code("let a: Bool\nnode T { if !!a { text: \"x\" } }", false);
+    let _ = ParseHandler::parse_source_code(
+        "let a: Number\nnode T { if a >> 0 { text: \"x\" } }",
+        false,
+    );
+    let _ = ParseHandler::parse_source_code(
+        "let a: Number\nnode T { if a >< 0 { text: \"x\" } }",
+        false,
+    );
+    let _ =
+        ParseHandler::parse_source_code("let a: Bool\nnode T { if !!a { text: \"x\" } }", false);
 }
 
 #[test]

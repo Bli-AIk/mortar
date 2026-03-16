@@ -237,9 +237,7 @@ impl Backend {
         match context {
             CompletionContext::TopLevel => Self::completions_top_level(current_word),
             CompletionContext::InNode => Self::completions_in_node(current_word),
-            CompletionContext::InChoice => {
-                Self::completions_in_choice(current_word, symbol_table)
-            }
+            CompletionContext::InChoice => Self::completions_in_choice(current_word, symbol_table),
             CompletionContext::InExpression => {
                 Self::completions_in_expression(current_word, symbol_table)
             }
