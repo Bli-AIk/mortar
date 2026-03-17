@@ -38,6 +38,26 @@ println!("{}", result.json);
 - 使用 ariadne 进行错误处理
 - 使用 serde 进行 JSON 序列化
 
+## 依赖
+
+| Crate                                                         | 版本  | 描述                  |
+|---------------------------------------------------------------|-----|---------------------|
+| [ariadne](https://crates.io/crates/ariadne)                   | *   | 诊断错误报告           |
+| [chumsky](https://crates.io/crates/chumsky)                   | *   | 解析器组合子           |
+| [logos](https://crates.io/crates/logos)                        | *   | 高性能词法分析器        |
+| [owo-colors](https://crates.io/crates/owo-colors)             | *   | 终端颜色输出           |
+| [serde](https://crates.io/crates/serde)                       | *   | 序列化框架             |
+| [serde_json](https://crates.io/crates/serde_json)             | *   | JSON 序列化/反序列化   |
+| [chrono](https://crates.io/crates/chrono)                     | *   | 日期时间工具           |
+
+### 开发依赖
+
+| Crate                                                         | 版本   | 描述                  |
+|---------------------------------------------------------------|------|---------------------|
+| [tempfile](https://crates.io/crates/tempfile)                 | 3.25 | 测试用临时文件管理      |
+| [proptest](https://crates.io/crates/proptest)                 | 1.6  | 属性测试 / 模糊测试    |
+| [arbitrary](https://crates.io/crates/arbitrary)               | 1.4  | 结构化模糊数据生成      |
+
 ## 许可证
 
 Mortar Compiler 采用双许可证模式：

@@ -52,6 +52,18 @@ pub(crate) enum ContentItem {
         #[serde(skip_serializing_if = "Option::is_none")]
         events: Option<Vec<JsonEvent>>,
     },
+    Line {
+        value: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        interpolated_parts: Option<Vec<JsonStringPart>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        condition: Option<JsonIfCondition>,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        #[serde(default)]
+        pre_statements: Vec<JsonStatement>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        events: Option<Vec<JsonEvent>>,
+    },
     RunEvent {
         name: String,
         #[serde(skip_serializing_if = "Vec::is_empty")]

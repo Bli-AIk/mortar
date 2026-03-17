@@ -370,9 +370,10 @@ impl DiagnosticCollector {
                 TopLevel::TimelineDef(timeline_def) => {
                     Self::collect_timeline_usages(timeline_def, &mut used_functions)
                 }
-                TopLevel::VarDecl(var_decl) => if let Some(value) = &var_decl.value {
+                TopLevel::VarDecl(var_decl) if var_decl.value.is_some() => {
+                    let value = var_decl.value.as_ref().unwrap();
                     self.analyze_var_value(value, &declared_functions, &mut used_functions);
-                },
+                }
                 TopLevel::ConstDecl(const_decl) => {
                     self.analyze_var_value(
                         &const_decl.value,
@@ -457,6 +458,16 @@ impl DiagnosticCollector {
                 }
                 NodeStmt::InterpolatedText(interpolated) => {
                     // Check function calls in interpolated string
+                    self.analyze_interpolated_string(
+                        interpolated,
+                        declared_functions,
+                        used_functions,
+                    );
+                }
+                NodeStmt::Line(text) => {
+                    self.analyze_text_interpolation(text, declared_functions, used_functions);
+                }
+                NodeStmt::InterpolatedLine(interpolated) => {
                     self.analyze_interpolated_string(
                         interpolated,
                         declared_functions,

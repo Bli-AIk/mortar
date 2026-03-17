@@ -177,7 +177,7 @@ impl Backend {
 
             Token::Identifier(_) => self.classify_identifier(all_tokens, current_index),
 
-            Token::Error => KEYWORD,
+            Token::Error | Token::Line => KEYWORD,
         }
     }
 

@@ -50,6 +50,8 @@ pub struct NodeDef {
 pub enum NodeStmt {
     Text(String),
     InterpolatedText(InterpolatedString),
+    Line(String),
+    InterpolatedLine(InterpolatedString),
     Choice(Vec<ChoiceItem>),
     Branch(BranchDef),
     IfElse(IfElseStmt),
@@ -73,6 +75,7 @@ pub enum IfCondition {
     Identifier(String),
     EnumMember(String, String), // EnumName.member
     Literal(bool),
+    FuncCall(FuncCall),
 }
 
 #[derive(Debug, Clone, PartialEq)]

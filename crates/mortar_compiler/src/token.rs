@@ -47,6 +47,8 @@ pub enum Token<'a> {
     Node,
     #[token("text")]
     Text,
+    #[token("line")]
+    Line,
     #[token("events")]
     Events,
     #[token("choice")]
@@ -245,6 +247,7 @@ impl fmt::Display for Token<'_> {
 
             Node => write!(f, "node"),
             Text => write!(f, "text"),
+            Line => write!(f, "line"),
             Events => write!(f, "events"),
             Choice => write!(f, "choice"),
             Fn => write!(f, "fn"),

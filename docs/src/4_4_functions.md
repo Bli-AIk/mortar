@@ -240,6 +240,40 @@ choice: [
 fn is_unlocked() -> Bool
 ```
 
+## Using in If-Conditions
+
+Functions can be used inside `if` conditions — both as boolean checks and as comparison operands:
+
+```mortar
+fn is_active() -> Bool
+fn get_hp() -> Number
+fn has_item(name: String) -> Bool
+
+node Example {
+    // Boolean function as condition
+    if is_active() {
+        text: "Active!"
+    }
+
+    // Function return value in comparison
+    if get_hp() > 0 {
+        text: "Alive!"
+    }
+
+    // Function with arguments
+    if has_item("key") {
+        text: "You have the key."
+    }
+
+    // Negation
+    if !is_active() {
+        text: "Inactive."
+    }
+}
+```
+
+See [Control Flow](./4_8_control-flow.md) for more details on `if`/`else` syntax.
+
 ## Position of Function Declarations
 
 By convention, put all function declarations at the end of the file:

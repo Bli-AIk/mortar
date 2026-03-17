@@ -20,11 +20,39 @@ node ExampleNode {
 
 ## 支持的表达式
 
-可以比较数字、判断布尔值，也可以调用无参数函数：
+可以比较数字、判断布尔值，也可以调用函数（无论有无参数）：
 
 ```mortar
-if has_map() && current_region == forest {
-    text: "你摊开地图，研究下一步的路线。"
+fn has_map() -> Bool
+fn get_hp() -> Number
+fn get_hp_max() -> Number
+fn has_item(name: String) -> Bool
+
+node ExampleNode {
+    // 布尔函数调用作为条件
+    if has_map() {
+        text: "你摊开地图，研究下一步的路线。"
+    }
+
+    // 函数调用参与比较
+    if get_hp() > 0 {
+        text: "还站着！"
+    }
+
+    // 比较两侧都是函数调用
+    if get_hp() >= get_hp_max() {
+        text: "你的 HP 已经满了。"
+    }
+
+    // 带参数的函数调用
+    if has_item("sword") {
+        text: "你拔出了剑。"
+    }
+
+    // 取反和逻辑运算符
+    if get_hp() > 0 && !has_map() {
+        text: "你还活着，但迷路了。"
+    }
 }
 ```
 
