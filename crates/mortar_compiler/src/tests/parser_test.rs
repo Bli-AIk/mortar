@@ -325,3 +325,66 @@ fn test_parse_triple_quoted_string_with_escapes() {
         panic!("Expected NodeDef");
     }
 }
+
+#[test]
+fn test_parse_line_stmt() {
+    let source = r#"
+        node eat_food {
+            line: "You ate the food."
+            line: "You recovered 10 HP!"
+        }
+    "#;
+    let expected = Program {
+        body: vec![TopLevel::NodeDef(NodeDef {
+            name: "eat_food".to_string(),
+            name_span: Some((14, 22)),
+            body: vec![
+                NodeStmt::Line("You ate the food.".to_string()),
+                NodeStmt::Line("You recovered 10 HP!".to_string()),
+            ],
+            jump: None,
+        })],
+    };
+    check_parsing(source, expected);
+}
+
+#[test]
+fn test_parse_line_and_text_mixed() {
+    let source = r#"
+        node mixed {
+            text: "Press Z..."
+            line: "Line A"
+            line: "Line B"
+            text: "Done."
+        }
+    "#;
+    let program = ParseHandler::parse_source_code(source, false).unwrap();
+    let TopLevel::NodeDef(node) = &program.body[0] else {
+        panic!("Expected NodeDef");
+    };
+    assert_eq!(node.body.len(), 4);
+    assert!(matches!(&node.body[0], NodeStmt::Text(s) if s == "Press Z..."));
+    assert!(matches!(&node.body[1], NodeStmt::Line(s) if s == "Line A"));
+    assert!(matches!(&node.body[2], NodeStmt::Line(s) if s == "Line B"));
+    assert!(matches!(&node.body[3], NodeStmt::Text(s) if s == "Done."));
+}
+
+#[test]
+fn test_parse_line_triple_quoted() {
+    let source = r#"
+        node multi {
+            line: """
+                First paragraph
+                with multiple lines.
+            """
+        }
+    "#;
+    let program = ParseHandler::parse_source_code(source, false).unwrap();
+    let TopLevel::NodeDef(node) = &program.body[0] else {
+        panic!("Expected NodeDef");
+    };
+    let NodeStmt::Line(text) = &node.body[0] else {
+        panic!("Expected Line statement, got {:?}", node.body[0]);
+    };
+    assert_eq!(text, "First paragraph\nwith multiple lines.");
+}

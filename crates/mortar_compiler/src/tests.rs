@@ -25,6 +25,7 @@ mod deserializer_test;
 mod diagnostics_test;
 #[cfg(test)]
 mod file_handler_tests;
+mod fuzz_test;
 mod parser_test;
 mod performance_serialization_test;
 mod performance_test;

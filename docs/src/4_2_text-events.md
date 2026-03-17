@@ -52,6 +52,55 @@ node Dialogue {
 
 They will display in order.
 
+### Line Groups (Combined Display)
+
+Use `line:` instead of `text:` when multiple entries should be displayed together as a **single dialogue step**, joined by newlines:
+
+```mortar
+node UseFood {
+    line: $"You ate the {item_name}."
+    line: $"You recovered {heal_amount} HP!"
+}
+```
+
+Both lines appear at once in a single text box, separated by a newline — the player only presses the confirm button once to advance past both.
+
+**Key differences from `text:`:**
+
+| Feature | `text:` | `line:` |
+|---------|---------|---------|
+| Display | One entry per step (button press) | All consecutive `line:` entries shown together |
+| Advance | Each `text:` requires a button press | The entire line group advances as one step |
+| Conditions | Skipped entries trigger NextText | False lines are silently omitted from the group |
+
+**Line groups with conditions:**
+
+```mortar
+node UseFood {
+    line: $"You ate the {item_name}."
+    if hp < hp_max {
+        line: $"You recovered {heal_amount} HP!"
+    } else {
+        line: "Your HP was maxed out."
+    }
+}
+```
+
+Each line's condition is evaluated independently. Lines whose conditions are false are simply excluded from the combined text. If **all** lines in a group fail their conditions, the entire group is skipped.
+
+**Mixing `text:` and `line:`:**
+
+```mortar
+node Example {
+    text: "Press Z to continue..."       // Step 1: shown alone
+    line: "Line A of step 2."            // Step 2: both lines shown together
+    line: "Line B of step 2."
+    text: "Press Z to continue again..." // Step 3: shown alone
+}
+```
+
+`line:` supports all the same features as `text:` — single/double quotes, triple-quoted strings, string interpolation (`$"..."`), escape sequences, and `with events:` blocks.
+
 ### Using Quotes
 
 Both single and double quotes work:

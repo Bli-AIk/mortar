@@ -359,8 +359,7 @@ impl Backend {
             self.analyze_document(&uri, &content).await;
         }
 
-        let success_msg =
-            crate::backend::i18n::get_lsp_text("language_changed_success", language);
+        let success_msg = crate::backend::i18n::get_lsp_text("language_changed_success", language);
         Ok(Some(serde_json::json!({
             "message": success_msg,
             "language": lang_str

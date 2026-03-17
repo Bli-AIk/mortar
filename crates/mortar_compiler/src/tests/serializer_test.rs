@@ -320,3 +320,54 @@ fn test_serialize_enum_definitions() {
     assert_eq!(json["enums"][0]["variants"][1], "playing");
     assert_eq!(json["enums"][0]["variants"][2], "paused");
 }
+
+#[test]
+fn test_serialize_line_stmt() {
+    let program = Program {
+        body: vec![TopLevel::NodeDef(NodeDef {
+            name: "eat_food".to_string(),
+            name_span: Some((0, 8)),
+            body: vec![
+                NodeStmt::Line("You ate the food.".to_string()),
+                NodeStmt::Line("You recovered 10 HP!".to_string()),
+            ],
+            jump: None,
+        })],
+    };
+
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
+    let json: Value = serde_json::from_str(&json_string).unwrap();
+
+    let content = &json["nodes"][0]["content"];
+    assert_eq!(content[0]["type"], "line");
+    assert_eq!(content[0]["value"], "You ate the food.");
+    assert_eq!(content[1]["type"], "line");
+    assert_eq!(content[1]["value"], "You recovered 10 HP!");
+}
+
+#[test]
+fn test_serialize_line_and_text_mixed() {
+    let program = Program {
+        body: vec![TopLevel::NodeDef(NodeDef {
+            name: "mixed".to_string(),
+            name_span: Some((0, 5)),
+            body: vec![
+                NodeStmt::Text("Step 1".to_string()),
+                NodeStmt::Line("Line A".to_string()),
+                NodeStmt::Line("Line B".to_string()),
+                NodeStmt::Text("Step 2".to_string()),
+            ],
+            jump: None,
+        })],
+    };
+
+    let json_string = Serializer::serialize_to_json(&program, false).unwrap();
+    let json: Value = serde_json::from_str(&json_string).unwrap();
+
+    let content = json["nodes"][0]["content"].as_array().unwrap();
+    assert_eq!(content.len(), 4);
+    assert_eq!(content[0]["type"], "text");
+    assert_eq!(content[1]["type"], "line");
+    assert_eq!(content[2]["type"], "line");
+    assert_eq!(content[3]["type"], "text");
+}

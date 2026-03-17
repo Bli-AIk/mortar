@@ -38,6 +38,26 @@ println!("{}", result.json);
 - Error handling with ariadne
 - JSON serialization with serde
 
+## Dependencies
+
+| Crate                                                         | Version | Description                                |
+|---------------------------------------------------------------|---------|--------------------------------------------|
+| [ariadne](https://crates.io/crates/ariadne)                   | *       | Diagnostic error reporting                 |
+| [chumsky](https://crates.io/crates/chumsky)                   | *       | Parser combinators                         |
+| [logos](https://crates.io/crates/logos)                        | *       | High-performance lexer                     |
+| [owo-colors](https://crates.io/crates/owo-colors)             | *       | Terminal color output                      |
+| [serde](https://crates.io/crates/serde)                       | *       | Serialization framework                    |
+| [serde_json](https://crates.io/crates/serde_json)             | *       | JSON serialization/deserialization         |
+| [chrono](https://crates.io/crates/chrono)                     | *       | Date and time utilities                    |
+
+### Dev Dependencies
+
+| Crate                                                         | Version | Description                                |
+|---------------------------------------------------------------|---------|--------------------------------------------|
+| [tempfile](https://crates.io/crates/tempfile)                 | 3.25    | Temporary file management for tests        |
+| [proptest](https://crates.io/crates/proptest)                 | 1.6     | Property-based / fuzz testing              |
+| [arbitrary](https://crates.io/crates/arbitrary)               | 1.4     | Structured fuzzing data generation         |
+
 ## License
 
 Mortar Compiler uses a dual-license model:
