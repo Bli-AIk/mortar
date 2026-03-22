@@ -36,15 +36,16 @@ impl DiagnosticCollector {
     }
 
     fn is_type_compatible(&self, actual: &str, expected: &str) -> bool {
-        match (expected, actual) {
-            ("String", "String") | ("Number", "Number") => true,
-            ("Boolean", "Bool")
-            | ("Bool", "Boolean")
-            | ("Boolean", "Boolean")
-            | ("Bool", "Bool") => true,
-            (_, "Unknown") => true,
-            _ => false,
-        }
+        matches!(
+            (expected, actual),
+            ("String", "String")
+                | ("Number", "Number")
+                | ("Boolean", "Bool")
+                | ("Bool", "Boolean")
+                | ("Boolean", "Boolean")
+                | ("Bool", "Bool")
+                | (_, "Unknown")
+        )
     }
 
     pub(super) fn analyze_interpolated_string(
