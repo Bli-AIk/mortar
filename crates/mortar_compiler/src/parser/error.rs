@@ -1,3 +1,18 @@
+//! # error.rs
+//!
+//! # error.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This file defines the parser-local error type used by the Mortar compiler. It keeps the syntax
+//! parser's failure vocabulary small and structured so higher layers can attach spans, collect
+//! diagnostics, and recover parsing progress in a uniform way.
+//!
+//! 这个文件定义了 Mortar 编译器语法解析器本地使用的错误类型。它把解析阶段的失败类型保持得既小
+//! 又结构化，方便更上层统一附加 span、收集诊断并做错误恢复。
+
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]

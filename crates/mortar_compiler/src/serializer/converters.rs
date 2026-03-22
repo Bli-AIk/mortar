@@ -1,3 +1,18 @@
+//! # converters.rs
+//!
+//! # converters.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This file contains the focused conversion helpers used by the Mortar serializer. It translates
+//! conditions, events, timelines, and action-like AST fragments into the JSON-side structures that
+//! the `.mortared` format expects.
+//!
+//! 这个文件包含 Mortar 序列化器使用的集中式转换辅助函数。它负责把条件、事件、时间线以及动作
+//! 类 AST 片段转换成 `.mortared` 格式要求的 JSON 侧结构。
+
 use crate::ast::{
     Arg, BranchCase, ComparisonOp, EventDef, FuncCall, IfCondition, TimelineDef, TimelineStmt,
 };

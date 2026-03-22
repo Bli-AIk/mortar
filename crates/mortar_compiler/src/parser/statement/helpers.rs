@@ -1,3 +1,18 @@
+//! # helpers.rs
+//!
+//! # helpers.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This file contains focused helper routines used by the statement parser. It handles repeated
+//! patterns such as nested choice parsing, brace-delimited node bodies, and `with events` lists so
+//! the main statement parser can stay centered on control flow.
+//!
+//! 这个文件包含语句解析器会反复用到的辅助例程。它负责处理嵌套选项解析、花括号包裹的节点体，
+//! 以及 `with events` 列表等重复模式，让主语句解析器能把重点放在控制流上。
+
 use super::{ParseError, Parser, StatementParser};
 use crate::ast::{ChoiceDest, NodeStmt, WithEventItem};
 use crate::token::Token;
