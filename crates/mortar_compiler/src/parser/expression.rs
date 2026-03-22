@@ -1,6 +1,3 @@
-use std::iter::Peekable;
-use std::str::Chars;
-
 use super::Parser;
 use super::error::ParseError;
 use crate::ast::{
@@ -10,121 +7,11 @@ use crate::ast::{
 use crate::escape::{process_triple_quoted_string, unescape};
 use crate::token::Token;
 
-/// Maps a character after `\` to its escape value, if recognized.
-fn escape_char(ch: char) -> Option<char> {
-    match ch {
-        'n' => Some('\n'),
-        't' => Some('\t'),
-        'r' => Some('\r'),
-        '\\' => Some('\\'),
-        '"' => Some('"'),
-        '\'' => Some('\''),
-        '0' => Some('\0'),
-        '{' => Some('{'),
-        '}' => Some('}'),
-        _ => None,
-    }
-}
+mod interpolation_helpers;
 
-/// Collects characters from `chars` until the matching closing `}` is found,
-/// tracking nested braces and quoted strings.
-fn collect_brace_expression(chars: &mut Peekable<Chars<'_>>) -> Result<String, ParseError> {
-    let mut expr_text = String::new();
-    let mut brace_count = 1i32;
-    let mut in_string = false;
-    let mut escape_next = false;
-
-    for expr_ch in chars.by_ref() {
-        if escape_next {
-            expr_text.push(expr_ch);
-            escape_next = false;
-            continue;
-        }
-        if expr_ch == '\\' {
-            expr_text.push(expr_ch);
-            escape_next = true;
-            continue;
-        }
-        if expr_ch == '"' {
-            in_string = !in_string;
-            expr_text.push(expr_ch);
-            continue;
-        }
-        if !in_string && expr_ch == '{' {
-            brace_count += 1;
-        }
-        if !in_string && expr_ch == '}' {
-            brace_count -= 1;
-            if brace_count == 0 {
-                break;
-            }
-        }
-        expr_text.push(expr_ch);
-    }
-
-    if brace_count != 0 {
-        eprintln!(
-            "DEBUG: brace_count={}, in_string={}, expr_text={:?}",
-            brace_count, in_string, expr_text
-        );
-        return Err(ParseError::Custom(
-            "Unmatched '{' in interpolated string".to_string(),
-        ));
-    }
-
-    Ok(expr_text)
-}
-
-/// Processes a backslash escape sequence from `chars`, appending the result to `current_text`.
-fn handle_escape_sequence(chars: &mut Peekable<Chars<'_>>, current_text: &mut String) {
-    let Some(&next_ch) = chars.peek() else {
-        current_text.push('\\');
-        return;
-    };
-    if let Some(escaped) = escape_char(next_ch) {
-        chars.next();
-        current_text.push(escaped);
-    } else {
-        current_text.push('\\');
-    }
-}
-
-/// Handles a `{…}` interpolation block: flushes accumulated text, collects
-/// the brace expression, and pushes the appropriate `StringPart`.
-fn handle_interpolated_brace(
-    parser: &mut Parser<'_>,
-    chars: &mut Peekable<Chars<'_>>,
-    parts: &mut Vec<StringPart>,
-    current_text: &mut String,
-) -> Result<(), ParseError> {
-    if !current_text.is_empty() {
-        parts.push(StringPart::Text(current_text.clone()));
-        current_text.clear();
-    }
-    let expr_text = collect_brace_expression(chars)?;
-    let expr_trimmed = expr_text.trim();
-    if expr_trimmed.contains('(') {
-        let func_call = parser.parse_expression_from_string(&expr_text)?;
-        parts.push(StringPart::Expression(func_call));
-    } else {
-        parts.push(StringPart::Placeholder(expr_trimmed.to_string()));
-    }
-    Ok(())
-}
-
-/// Parses an identifier that may include dot-access for enum members.
-fn parse_identifier_condition(
-    parser: &mut Parser<'_>,
-    name: String,
-) -> Result<IfCondition, ParseError> {
-    parser.advance();
-    if parser.check(&Token::Dot) {
-        parser.advance();
-        let member = parser.consume_identifier("Expected enum member name after '.'")?;
-        return Ok(IfCondition::EnumMember(name, member));
-    }
-    Ok(IfCondition::Identifier(name))
-}
+use interpolation_helpers::{
+    handle_escape_sequence, handle_interpolated_brace, parse_identifier_condition,
+};
 
 pub trait ExpressionParser {
     fn parse_if_condition(&mut self) -> Result<IfCondition, ParseError>;
@@ -278,7 +165,7 @@ impl<'a> ExpressionParser for Parser<'a> {
                 Token::Identifier(name) => {
                     (name.to_string(), Some((token_info.start, token_info.end)))
                 }
-                // Allow certain keywords as function names for backwards compatibility
+                // Accept a few keyword-shaped builtins as callable names.
                 Token::Wait => ("wait".to_string(), Some((token_info.start, token_info.end))),
                 Token::Run => ("run".to_string(), Some((token_info.start, token_info.end))),
                 Token::Action => (
