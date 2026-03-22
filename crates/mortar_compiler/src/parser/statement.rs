@@ -1,3 +1,18 @@
+//! # statement.rs
+//!
+//! # statement.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This file parses statement-level syntax inside Mortar nodes. It covers text, choices, events,
+//! runs, assignments, branches, and `if` structures, making it the main entry for turning node
+//! bodies from tokens into typed AST statements.
+//!
+//! 这个文件负责解析 Mortar 节点内部的语句级语法。它覆盖文本、选项、事件、run、赋值、分支和
+//! `if` 结构，是把节点体从 token 转成类型化 AST 语句的主入口。
+
 use super::Parser;
 use super::error::ParseError;
 use crate::ast::{

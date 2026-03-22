@@ -1,3 +1,18 @@
+//! # semantic_tokens.rs
+//!
+//! # semantic_tokens.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This file computes semantic tokens for Mortar documents. It tokenizes source text, derives the
+//! correct LSP line and UTF-16 column offsets, and classifies identifiers by surrounding syntax so
+//! editors can provide richer semantic highlighting.
+//!
+//! 这个文件负责为 Mortar 文档计算语义 token。它会对源文本做词法切分，推导正确的 LSP 行号和
+//! UTF-16 列偏移，并结合周围语法上下文给标识符分类，从而支持更丰富的语义高亮。
+
 use mortar_compiler::{Token, TokenInfo, tokenize};
 use tower_lsp_server::lsp_types::*;
 

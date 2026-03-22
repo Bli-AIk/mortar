@@ -1,3 +1,18 @@
+//! # main_tests.rs
+//!
+//! # main_tests.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This file contains the unit tests that exercise the CLI entry helpers defined in `main.rs`. It
+//! checks language conversion, command construction, flag parsing, and the basic file-oriented
+//! workflow pieces that the binary relies on.
+//!
+//! 这个文件包含针对 `main.rs` 里 CLI 入口辅助函数的单元测试。它会检查语言转换、命令构建、
+//! 标志解析，以及二进制程序依赖的基础文件工作流片段。
+
 #[cfg(test)]
 mod tests {
     use crate::i18n::Language as CliLanguage;

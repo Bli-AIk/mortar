@@ -1,3 +1,18 @@
+//! # serializer.rs
+//!
+//! # serializer.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This file is the main serializer entry point that turns Mortar AST into `.mortared` JSON. It
+//! coordinates program-level conversion, file writing, localized status output, and delegates the
+//! detailed node and value conversion work to focused serializer helper modules.
+//!
+//! 这个文件是把 Mortar AST 转成 `.mortared` JSON 的主序列化入口。它负责协调整个程序级别的
+//! 转换、文件写出和本地化状态输出，并把更细的节点和值转换工作分发给专门的序列化辅助模块。
+
 mod converters;
 mod node_content;
 

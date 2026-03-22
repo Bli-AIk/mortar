@@ -1,3 +1,18 @@
+//! # completion.rs
+//!
+//! # completion.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This file implements completion-context analysis and completion-item generation for the Mortar
+//! LSP backend. It inspects document structure, determines whether the cursor is in top-level,
+//! node, choice, or expression context, and then emits the matching keyword and symbol suggestions.
+//!
+//! 这个文件负责 Mortar LSP backend 的补全上下文分析和补全项生成。它会检查文档结构，判断光标
+//! 当前位于顶层、节点体、选项区还是表达式区，然后生成对应的关键字和符号建议。
+
 use tower_lsp_server::lsp_types::*;
 
 use crate::analysis::SymbolTable;

@@ -1,3 +1,18 @@
+//! # presentation.rs
+//!
+//! # presentation.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This file renders compiler diagnostics for human-facing CLI output. It holds the localized text
+//! fragments, formats template-based messages, calculates line and column information, and prints
+//! colored source snippets around each diagnostic.
+//!
+//! 这个文件负责把编译器诊断渲染成人类可读的 CLI 输出。它包含本地化文本片段，负责格式化模板
+//! 消息、计算行列信息，并打印带颜色的源码片段来展示每条诊断的位置。
+
 use owo_colors::OwoColorize;
 
 use crate::Language;
