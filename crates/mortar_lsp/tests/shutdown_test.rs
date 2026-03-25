@@ -1,8 +1,8 @@
-//! This file contains timing-oriented tests for the Mortar LSP shutdown path.
+//! Contains timing-oriented tests for the Mortar LSP shutdown path.
 //! The scenarios simulate repeated and concurrent teardown work so the crate can
 //! catch obviously regressive shutdown latency before it reaches editor users.
 //!
-//! 这个文件包含 Mortar LSP 关闭流程的时序测试。它通过模拟重复和并发的清理工作，
+//! 包含 Mortar LSP 关闭流程的时序测试。它通过模拟重复和并发的清理工作，
 //! 提前抓出明显退化的关闭延迟，避免问题先传到编辑器用户手里。
 
 use std::time::{Duration, Instant};

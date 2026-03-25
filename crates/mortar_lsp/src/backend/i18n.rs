@@ -6,10 +6,10 @@
 //!
 //! ## 模块概述
 //!
-//! This file contains the localized status and error strings used by the Mortar LSP backend. It
+//! Contains the localized status and error strings used by the Mortar LSP backend. It
 //! also provides the small helpers that detect or parse the active language for the server process.
 //!
-//! 这个文件包含 Mortar LSP backend 使用的本地化状态文本和错误文本，同时提供用于检测或解析
+//! 包含 Mortar LSP backend 使用的本地化状态文本和错误文本，同时提供用于检测或解析
 //! 服务器进程当前语言设置的小型辅助函数。
 
 use mortar_compiler::Language;

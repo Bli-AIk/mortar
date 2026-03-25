@@ -6,11 +6,11 @@
 //!
 //! ## 模块概述
 //!
-//! This file defines the shared backend state for the Mortar language server. It owns the open
+//! Defines the shared backend state for the Mortar language server. It owns the open
 //! document cache, diagnostics, symbol tables, language selection, and the submodules that
 //! implement LSP handlers, completion, diagnostics, and semantic-token support.
 //!
-//! 这个文件定义了 Mortar 语言服务器的共享 backend 状态。它负责维护打开文档缓存、诊断结果、
+//! 定义了 Mortar 语言服务器的共享 backend 状态。它负责维护打开文档缓存、诊断结果、
 //! 符号表、语言选择，以及实现 LSP 处理器、补全、诊断和语义 token 支持的子模块。
 
 use std::sync::Arc;

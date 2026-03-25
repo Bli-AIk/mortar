@@ -6,11 +6,11 @@
 //!
 //! ## 模块概述
 //!
-//! This file contains the reusable semantic-analysis helpers used by the Mortar diagnostic
+//! Contains the reusable semantic-analysis helpers used by the Mortar diagnostic
 //! collector. It infers argument types, tracks function and timeline usage, validates naming
 //! conventions, and checks choice conditions and function calls for type mismatches.
 //!
-//! 这个文件包含 Mortar 诊断收集器复用的语义分析辅助逻辑。它负责推断参数类型、跟踪函数和
+//! 包含 Mortar 诊断收集器复用的语义分析辅助逻辑。它负责推断参数类型、跟踪函数和
 //! 时间线的使用、验证命名规范，并检查选项条件和函数调用里的类型不匹配问题。
 
 use std::collections::{HashMap, HashSet};

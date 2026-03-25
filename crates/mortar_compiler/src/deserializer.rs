@@ -18,9 +18,9 @@
 //!
 //! ## 源文件概述
 //!
-//! This file defines the `MortaredData` structure and related helper structs that match the JSON schema.
+//! Defines the `MortaredData` structure and related helper structs that match the JSON schema.
 //!
-//! 此文件定义了与 JSON 模式匹配的 `MortaredData` 结构体和相关辅助结构体。
+//! 定义了与 JSON 模式匹配的 `MortaredData` 结构体和相关辅助结构体。
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

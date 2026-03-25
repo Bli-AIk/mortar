@@ -18,9 +18,9 @@
 //!
 //! ## 源文件概述
 //!
-//! This file defines the `Language` enum and exposes the public API of the compiler.
+//! Defines the `Language` enum and exposes the public API of the compiler.
 //!
-//! 此文件定义了 `Language` 枚举并暴露了编译器的公共 API。
+//! 定义了 `Language` 枚举并暴露了编译器的公共 API。
 
 pub mod deserializer;
 pub mod diagnostics;

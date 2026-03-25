@@ -6,11 +6,11 @@
 //!
 //! ## 模块概述
 //!
-//! This file runs background document analysis for the Mortar LSP backend. It coordinates parsing,
+//! Runs background document analysis for the Mortar LSP backend. It coordinates parsing,
 //! symbol-table construction, diagnostic publication, and the async boundary between the editor
 //! request loop and the blocking compiler work.
 //!
-//! 这个文件负责 Mortar LSP backend 的后台文档分析。它协调解析、符号表构建、诊断发布，
+//! 负责 Mortar LSP backend 的后台文档分析。它协调解析、符号表构建、诊断发布，
 //! 同时处理编辑器请求循环与阻塞式编译工作之间的异步边界。
 
 use tokio;
