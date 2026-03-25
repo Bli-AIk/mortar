@@ -1,3 +1,18 @@
+//! # lsp_handlers.rs
+//!
+//! # lsp_handlers.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Implements the `LanguageServer` trait for the Mortar backend. It is the protocol edge
+//! of the server: initialization, document open/change/close, completion, hover, and the other
+//! LSP requests all enter the system here.
+//!
+//! 为 Mortar backend 实现了 `LanguageServer` trait。它是服务器的协议边界：
+//! 初始化、文档打开/修改/关闭、补全、hover 以及其他 LSP 请求都通过进入系统。
+
 use ropey::Rope;
 use tower_lsp_server::LanguageServer;
 use tower_lsp_server::jsonrpc::Result;

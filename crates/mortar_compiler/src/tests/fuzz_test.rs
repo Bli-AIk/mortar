@@ -1,3 +1,12 @@
+//! Contains property-style fuzz tests for the Mortar compiler.
+//! It generates arbitrary identifiers, conditions, declarations, and small valid
+//! programs so parser and serializer code paths can be stress-tested against a
+//! broad input space instead of a fixed set of handwritten samples.
+//!
+//! 包含 Mortar 编译器的属性式 fuzz 测试。它会生成任意标识符、条件、声明
+//! 和小型合法程序，让解析器和序列化器面对广泛输入空间接受压力测试，而不是只依赖少量
+//! 手写样例。
+
 use proptest::prelude::*;
 
 use crate::Serializer;

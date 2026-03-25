@@ -1,3 +1,18 @@
+//! # analysis.rs
+//!
+//! # analysis.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Performs lightweight semantic analysis for Mortar documents inside the LSP server. It
+//! builds symbol tables, checks for duplicate or missing definitions, and provides the symbol
+//! lookup helpers that power hover and navigation features.
+//!
+//! 负责在 LSP 服务器内部对 Mortar 文档做轻量级语义分析。它会构建符号表，检查重复或
+//! 缺失定义，并提供 hover 和导航功能所需的符号查找辅助逻辑。
+
 use std::collections::HashSet;
 
 use mortar_compiler::ast::{
