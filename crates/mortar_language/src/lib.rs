@@ -1,3 +1,18 @@
+//! # lib.rs
+//!
+//! # lib.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! This crate is the umbrella entry point for the Mortar toolchain. It re-exports compiler and
+//! LSP capabilities and adds a small programmatic CLI facade so external callers can compile Mortar
+//! files without spawning the binary directly.
+//!
+//! 这个 crate 是 Mortar 工具链的总入口。它重新导出编译器和 LSP 能力，并额外提供一个很小的
+//! 编程式 CLI 门面，让外部调用方无需直接启动二进制程序也能编译 Mortar 文件。
+
 // Re-export all functionality from sub-crates
 pub use mortar_compiler::*;
 

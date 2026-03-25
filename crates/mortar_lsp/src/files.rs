@@ -1,3 +1,18 @@
+//! # files.rs
+//!
+//! # files.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Implements the small bidirectional file-id map used by the LSP backend. It assigns
+//! stable numeric ids to document URIs so other backend subsystems can refer to tracked files
+//! without carrying duplicate lookup tables.
+//!
+//! 实现了 LSP backend 使用的小型双向文件 id 映射。它会为文档 URI 分配稳定的数字
+//! 标识，好让其他后端子系统无需维护重复查找表也能引用已跟踪文件。
+
 use std::collections::HashMap;
 
 use tower_lsp_server::lsp_types::Uri;
