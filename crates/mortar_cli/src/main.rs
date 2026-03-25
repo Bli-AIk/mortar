@@ -6,11 +6,11 @@
 //!
 //! ## 模块概述
 //!
-//! This file implements the `mortar` command-line entry point. It parses localized CLI arguments,
+//! Implements the `mortar` command-line entry point. It parses localized CLI arguments,
 //! loads source files, runs the compiler with diagnostics, and optionally writes the resulting
 //! `.mortared` output file.
 //!
-//! 这个文件实现了 `mortar` 命令行入口。它会解析带本地化文案的 CLI 参数，读取源文件，带诊断地
+//! 实现了 `mortar` 命令行入口。它会解析带本地化文案的 CLI 参数，读取源文件，带诊断地
 //! 运行编译器，并在需要时写出生成后的 `.mortared` 输出文件。
 
 use anyhow::{Context, Result, bail};

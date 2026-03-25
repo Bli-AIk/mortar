@@ -6,11 +6,11 @@
 //!
 //! ## 模块概述
 //!
-//! This file contains the localized text table for the Mortar CLI. It detects the preferred
+//! Contains the localized text table for the Mortar CLI. It detects the preferred
 //! language from arguments or environment variables and provides the translated help and runtime
 //! strings used by the command-line frontend.
 //!
-//! 这个文件包含 Mortar CLI 使用的本地化文本表。它会从命令行参数或环境变量里检测偏好语言，
+//! 包含 Mortar CLI 使用的本地化文本表。它会从命令行参数或环境变量里检测偏好语言，
 //! 并提供命令行前端所需的帮助文本和运行时提示的翻译内容。
 
 use std::collections::HashMap;

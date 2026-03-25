@@ -18,9 +18,9 @@
 //!
 //! ## 源文件概述
 //!
-//! This file defines `Diagnostic`, `DiagnosticCollector`, and various analysis methods to validate the AST.
+//! Defines `Diagnostic`, `DiagnosticCollector`, and various analysis methods to validate the AST.
 //!
-//! 此文件定义了 `Diagnostic`、`DiagnosticCollector` 以及用于验证 AST 的各种分析方法。
+//! 定义了 `Diagnostic`、`DiagnosticCollector` 以及用于验证 AST 的各种分析方法。
 
 use crate::Language;
 use crate::ast::{

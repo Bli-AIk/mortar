@@ -6,11 +6,11 @@
 //!
 //! ## 模块概述
 //!
-//! This file parses Mortar expressions, conditions, assignments, and interpolated strings. It is
+//! Parses Mortar expressions, conditions, assignments, and interpolated strings. It is
 //! the grammar layer that turns token sequences into typed AST forms for comparisons, function
 //! calls, literal values, and embedded string expressions.
 //!
-//! 这个文件负责解析 Mortar 的表达式、条件、赋值和值得插值的字符串。它是把 token 序列转换成
+//! 负责解析 Mortar 的表达式、条件、赋值和值得插值的字符串。它是把 token 序列转换成
 //! 比较、函数调用、字面量以及嵌入式字符串表达式等类型化 AST 结构的语法层。
 
 use super::Parser;

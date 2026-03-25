@@ -18,9 +18,9 @@
 //!
 //! ## 源文件概述
 //!
-//! This file contains the `Token` enum definition, token display formatting, and the `tokenize` function used by the parser and LSP.
+//! Contains the `Token` enum definition, token display formatting, and the `tokenize` function used by the parser and LSP.
 //!
-//! 此文件包含 `Token` 枚举定义、token 显示格式化以及解析器和 LSP 使用的 `tokenize` 函数。
+//! 包含 `Token` 枚举定义、token 显示格式化以及解析器和 LSP 使用的 `tokenize` 函数。
 
 use logos::Logos;
 use owo_colors::OwoColorize;

@@ -1,8 +1,8 @@
-//! This file hosts lightweight performance checks for Mortar parsing in an LSP
+//! Hosts lightweight performance checks for Mortar parsing in an LSP
 //! context. The goal is not benchmark-grade precision, but quick feedback when a
 //! parser or allocation change makes ordinary editor workloads noticeably slower.
 //!
-//! 这个文件放的是 Mortar 在 LSP 场景下的轻量性能检查。它追求的不是基准测试级精度，
+//! 放的是 Mortar 在 LSP 场景下的轻量性能检查。它追求的不是基准测试级精度，
 //! 而是在解析器或内存分配策略改动后，尽快发现普通编辑器工作负载出现了明显变慢。
 
 use std::time::{Duration, Instant};

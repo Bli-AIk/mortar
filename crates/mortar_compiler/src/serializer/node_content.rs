@@ -6,11 +6,11 @@
 //!
 //! ## 模块概述
 //!
-//! This file serializes node-local Mortar content into the flattened `.mortared` representation.
+//! Serializes node-local Mortar content into the flattened `.mortared` representation.
 //! It is where text, lines, runs, choices, `if` branches, local statements, and `with events`
 //! blocks are merged into the final node content payload.
 //!
-//! 这个文件负责把节点局部的 Mortar 内容序列化成扁平化的 `.mortared` 表示。文本、line、
+//! 负责把节点局部的 Mortar 内容序列化成扁平化的 `.mortared` 表示。文本、line、
 //! run、choice、`if` 分支、本地语句以及 `with events` 块，都会在这里被合并进最终节点内容载荷。
 
 use crate::ast::{

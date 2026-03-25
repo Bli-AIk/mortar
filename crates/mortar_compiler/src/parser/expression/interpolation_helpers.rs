@@ -6,11 +6,11 @@
 //!
 //! ## 模块概述
 //!
-//! This file contains the low-level helpers used while parsing interpolated Mortar strings. It
+//! Contains the low-level helpers used while parsing interpolated Mortar strings. It
 //! handles brace balancing, escape processing, placeholder extraction, and the small bits of
 //! expression parsing logic that are specific to string interpolation.
 //!
-//! 这个文件包含了解析 Mortar 插值字符串时用到的底层辅助逻辑。它负责处理花括号配平、转义字符、
+//! 包含了解析 Mortar 插值字符串时用到的底层辅助逻辑。它负责处理花括号配平、转义字符、
 //! 占位符提取，以及那些只在字符串插值场景下才会出现的小块表达式解析逻辑。
 
 use std::iter::Peekable;
