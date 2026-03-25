@@ -18,9 +18,9 @@
 //!
 //! ## 源文件概述
 //!
-//! This file defines the `Parser` struct and its methods for parsing different language constructs, as well as the public `ParseHandler`.
+//! Defines the `Parser` struct and its methods for parsing different language constructs, as well as the public `ParseHandler`.
 //!
-//! 此文件定义了 `Parser` 结构体及其解析各种语言构造的方法，以及公共的 `ParseHandler`。
+//! 定义了 `Parser` 结构体及其解析各种语言构造的方法，以及公共的 `ParseHandler`。
 
 pub mod error;
 pub mod expression;
