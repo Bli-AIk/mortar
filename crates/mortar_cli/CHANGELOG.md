@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2](https://github.com/Bli-AIk/mortar/compare/mortar_cli-v0.3.1...mortar_cli-v0.3.2) - 2026-03-25
+
+### Documentation
+
+- tighten file header comments
+- *(mortar)* add bilingual module docs
+
 ## [0.3.1](https://github.com/Bli-AIk/mortar/compare/mortar_cli-v0.3.0...mortar_cli-v0.3.1) - 2026-02-11
 
 ### Miscellaneous Tasks

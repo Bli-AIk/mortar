@@ -610,7 +610,7 @@ dependencies = [
 
 [[package]]
 name = "mortar_cli"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -620,7 +620,7 @@ dependencies = [
 
 [[package]]
 name = "mortar_compiler"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "arbitrary",
  "ariadne",
@@ -636,7 +636,7 @@ dependencies = [
 
 [[package]]
 name = "mortar_language"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "mortar_compiler",
  "mortar_lsp",
@@ -646,7 +646,7 @@ dependencies = [
 
 [[package]]
 name = "mortar_lsp"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "async-trait",
  "dashmap",
