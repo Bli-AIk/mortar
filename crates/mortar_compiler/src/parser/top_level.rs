@@ -1,3 +1,18 @@
+//! # top_level.rs
+//!
+//! # top_level.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Parses Mortar's top-level declarations. It recognizes nodes, functions, variables,
+//! constants, enums, events, and timelines, and is therefore the module that builds the outer
+//! program structure before deeper node or expression parsing begins.
+//!
+//! 负责解析 Mortar 的顶层声明。它识别节点、函数、变量、常量、枚举、事件和时间线，
+//! 因而承担着在更深入的节点或表达式解析开始前先建立程序外层结构的职责。
+
 use super::Parser;
 use super::error::ParseError;
 use crate::ast::{

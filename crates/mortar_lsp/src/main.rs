@@ -1,3 +1,18 @@
+//! # main.rs
+//!
+//! # main.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Bootstraps the standalone Mortar LSP process. It chooses the UI language, configures
+//! structured logging, builds the `tower-lsp` service around the shared backend, and then serves
+//! requests over stdio.
+//!
+//! 负责启动独立运行的 Mortar LSP 进程。它会选择界面语言、配置结构化日志、基于共享
+//! backend 构建 `tower-lsp` 服务，然后通过标准输入输出对外提供协议服务。
+
 use std::env::temp_dir;
 
 use mortar_lsp::backend::{

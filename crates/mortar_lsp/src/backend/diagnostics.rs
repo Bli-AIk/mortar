@@ -1,3 +1,18 @@
+//! # diagnostics.rs
+//!
+//! # diagnostics.rs 文件
+//!
+//! ## Module Overview
+//!
+//! ## 模块概述
+//!
+//! Converts compiler diagnostics into LSP diagnostics and drives parse-plus-analysis
+//! diagnostic generation for editor clients. It is the translation layer between Mortar compiler
+//! spans and the ranges and severities expected by LSP consumers.
+//!
+//! 负责把编译器诊断转换成 LSP 诊断，并驱动面向编辑器客户端的“解析 + 分析”诊断生成。
+//! 它是 Mortar 编译器 span 信息与 LSP 消费者所需范围和严重级别之间的翻译层。
+
 use mortar_compiler::{
     Diagnostic as CompilerDiagnostic, DiagnosticCollector, Language, ParseHandler, Severity,
 };
