@@ -610,7 +610,7 @@ dependencies = [
 
 [[package]]
 name = "mortar_cli"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -620,7 +620,7 @@ dependencies = [
 
 [[package]]
 name = "mortar_compiler"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "arbitrary",
  "ariadne",
