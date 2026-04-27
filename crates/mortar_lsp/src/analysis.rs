@@ -132,16 +132,14 @@ fn validate_choice_target(
     errors: &mut Vec<(String, usize)>,
 ) {
     match target {
-        ChoiceDest::Identifier(target_name, _) => {
-            if !available_nodes.contains(target_name) {
-                errors.push((
-                    format!(
-                        "Undefined node '{}' is referenced in the selection of node '{}'",
-                        node_name, target_name
-                    ),
-                    1,
-                ));
-            }
+        ChoiceDest::Identifier(target_name, _) if !available_nodes.contains(target_name) => {
+            errors.push((
+                format!(
+                    "Undefined node '{}' is referenced in the selection of node '{}'",
+                    node_name, target_name
+                ),
+                1,
+            ));
         }
         ChoiceDest::NestedChoices(nested) => {
             for choice in nested {
